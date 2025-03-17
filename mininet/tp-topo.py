@@ -28,43 +28,107 @@ parser.add_argument('--behavioral-exe', help='Path to behavioral executable',
                     type=str, action="store", default='simple_switch')
 parser.add_argument('--thrift-port', help='Thrift server port for table updates',
                     type=int, action="store", default=9090)
+parser.add_argument('--jsonS1', help='Path to JSON config file',
+                    type=str, action="store", required=True)
 parser.add_argument('--jsonR1', help='Path to JSON config file',
                     type=str, action="store", required=True)
-parser.add_argument('--jsonR2', help='Path to JSON config file',
+parser.add_argument('--jsonR4', help='Path to JSON config file',
+                    type=str, action="store", required=True)
+parser.add_argument('--jsonRX', help='Path to JSON config file',
                     type=str, action="store", required=True)
 
 args = parser.parse_args()
 
 
+sw_mac_base = "cc:00:00:00:01:%02x"
+mac_base = "aa:00:00:00:%02x:%02x"
+
+host_ip_base =  "10.0.%d.%d/24"
+
 
 class SingleSwitchTopo(Topo):
-    def __init__(self, sw_path, json_r1, json_r2, thrift_port, **opts):
+    def __init__(self, sw_path, json_s1, json_r1, json_r4, json_rx, thrift_port, **opts):
         # Initialize topology and default options
         Topo.__init__(self, **opts)
         
-        # TODO: Add switches/routers
-        #r1 = self.addSwitch('r1',
-        #                        sw_path = sw_path,
-        #                        json_path = json_r1,
-        #                        thrift_port = thrift_port)
+        # Add switches/routers
+        s1 = self.addSwitch('s1',
+                                sw_path = sw_path,
+                                json_path = json_s1,
+                                thrift_port = thrift_port)
+        r1 = self.addSwitch('r1',
+                                sw_path = sw_path,
+                                json_path = json_r1,
+                                thrift_port = thrift_port + 1)
+        r2 = self.addSwitch('r2',
+                                sw_path = sw_path,
+                                json_path = json_rx,
+                                thrift_port = thrift_port + 2)
+        r3 = self.addSwitch('r3',
+                                sw_path = sw_path,
+                                json_path = json_rx,
+                                thrift_port = thrift_port + 3)
+        r4 = self.addSwitch('r4',
+                                sw_path = sw_path,
+                                json_path = json_r4,
+                                thrift_port = thrift_port + 4)
+        r5 = self.addSwitch('r5',
+                                sw_path = sw_path,
+                                json_path = json_rx,
+                                thrift_port = thrift_port + 5)
+        r6 = self.addSwitch('r6',
+                                sw_path = sw_path,
+                                json_path = json_rx,
+                                thrift_port = thrift_port + 6)
         
-        # TODO: Add hosts
-        #h1 = self.addHost('h1', ip="10.0.1.1/24", mac="00:04:00:00:00:01")
+        # Add hosts
+        h1 = self.addHost('h1',
+                    ip = host_ip_base % (1,1),
+                    mac = mac_base % (0,1))
+        h2 = self.addHost('h2',
+                    ip = host_ip_base % (1,2),
+                    mac = mac_base % (0,2))
+        h3 = self.addHost('h3',
+                    ip = host_ip_base % (1,3),
+                    mac = mac_base % (0,3))
+        h4 = self.addHost('h4',
+                    ip = host_ip_base % (2,1),
+                    mac = mac_base % (0,4))
         
         # TODO: Add links
-        #self.addLink(r1, r2, port1=2, port2=1, addr1="aa:00:00:00:01:02", addr2="aa:00:00:00:02:01")
+        self.addLink(h1, s1, port2= 1, addr2= sw_mac_base % 1)
+        self.addLink(h2, s1, port2= 2, addr2= sw_mac_base % 2)
+        self.addLink(h3, s1, port2= 3, addr2= sw_mac_base % 3)
+        
+        self.addLink(s1, r1, port1= 4, port2= 1, addr1= sw_mac_base % 4, addr2= mac_base % (1,1))
+        self.addLink(r1, r2, port1= 2, port2= 1, addr1= mac_base % (1,2), addr2= mac_base % (2,1))
+        self.addLink(r1, r6, port1= 3, port2= 1, addr1= mac_base % (1,3), addr2= mac_base % (6,1))
+        self.addLink(r2, r3, port1= 2, port2= 1, addr1= mac_base % (2,2), addr2= mac_base % (3,1))
+        self.addLink(r3, r4, port1= 2, port2= 3, addr1= mac_base % (3,2), addr2= mac_base % (4,3))
+        self.addLink(r4, r5, port1= 2, port2= 2, addr1= mac_base % (4,2), addr2= mac_base % (5,2))
+        self.addLink(r5, r6, port1= 1, port2= 2, addr1= mac_base % (5,1), addr2= mac_base % (6,2))
 
+        self.addLink(h4, r4, port2= 1, addr2= mac_base % (4,1))
+        
 def main():
+    if not os.path.exists(args.jsonS1):
+        print(f"The file {args.jsonS1} does not exist.")
+        sys.exit()
     if not os.path.exists(args.jsonR1):
         print(f"The file {args.jsonR1} does not exist.")
         sys.exit()
-    if not os.path.exists(args.jsonR2):
-        print(f"The file {args.jsonR2} does not exist.")
+    if not os.path.exists(args.jsonR4):
+        print(f"The file {args.jsonR4} does not exist.")
+        sys.exit()
+    if not os.path.exists(args.jsonRX):
+        print(f"The file {args.jsonRX} does not exist.")
         sys.exit()
 
     topo = SingleSwitchTopo(args.behavioral_exe,
+                            args.jsonS1,
                             args.jsonR1,
-                            args.jsonR2,
+                            args.jsonR4,
+                            args.jsonRX,
                             args.thrift_port)
 
     # the host class is the P4Host
@@ -83,10 +147,19 @@ def main():
 
     # TODO: configurar ARP tables dos hosts
 
-    #h1 = net.get('h1')
-    #h1.setARP("10.0.1.254", "aa:00:00:00:01:01")
-    #h1.setDefaultRoute("dev eth0 via 10.0.1.254")
+    h1 = net.get('h1')
+    h1.setARP("10.0.1.254", "aa:00:00:00:01:01")
+    h1.setDefaultRoute("dev eth0 via 10.0.1.254")
+    h2 = net.get('h2')
+    h2.setARP("10.0.1.254", "aa:00:00:00:01:01")
+    h2.setDefaultRoute("dev eth0 via 10.0.1.254")
+    h3 = net.get('h3')
+    h3.setARP("10.0.1.254", "aa:00:00:00:01:01")
+    h3.setDefaultRoute("dev eth0 via 10.0.1.254")
 
+    h4 = net.get('h4')
+    h4.setARP("10.0.2.254", "aa:00:00:00:04:01")
+    h4.setDefaultRoute("dev eth0 via 10.0.2.254")
     
 
     print("Ready !")
