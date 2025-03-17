@@ -95,7 +95,7 @@ class SingleSwitchTopo(Topo):
                     ip = host_ip_base % (2,1),
                     mac = mac_base % (0,4))
         
-        # TODO: Add links
+        # Add links
         self.addLink(h1, s1, port2= 1, addr2= sw_mac_base % 1)
         self.addLink(h2, s1, port2= 2, addr2= sw_mac_base % 2)
         self.addLink(h3, s1, port2= 3, addr2= sw_mac_base % 3)
@@ -145,16 +145,18 @@ def main():
     
     sleep(1)  # time for the host and switch confs to take effect
 
-    # TODO: configurar ARP tables dos hosts
+    # Configurar ARP tables dos hosts
 
     h1 = net.get('h1')
-    h1.setARP("10.0.1.254", "aa:00:00:00:01:01")
-    h1.setDefaultRoute("dev eth0 via 10.0.1.254")
     h2 = net.get('h2')
-    h2.setARP("10.0.1.254", "aa:00:00:00:01:01")
-    h2.setDefaultRoute("dev eth0 via 10.0.1.254")
     h3 = net.get('h3')
+
+    h1.setARP("10.0.1.254", "aa:00:00:00:01:01")
+    h2.setARP("10.0.1.254", "aa:00:00:00:01:01")
     h3.setARP("10.0.1.254", "aa:00:00:00:01:01")
+    
+    h1.setDefaultRoute("dev eth0 via 10.0.1.254")
+    h2.setDefaultRoute("dev eth0 via 10.0.1.254")
     h3.setDefaultRoute("dev eth0 via 10.0.1.254")
 
     h4 = net.get('h4')
