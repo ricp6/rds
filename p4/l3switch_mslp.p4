@@ -21,7 +21,7 @@ typedef bit<32> ip4Addr_t;
 const bit<16> TYPE_IPV4 = 0x0800;
 const bit<16> TYPE_MSLP = 0x88B5;
 
-#define MAX_LABELS 3
+
 
 /**
 * Here we define the headers of the protocols
@@ -38,12 +38,12 @@ header ethernet_t {
 }
 
 header mslp_t {
-    bit<8>  numLabels; // tamanho do header tem de ser multiplo de 8
     bit<16> etherType; // L3 protocol
 }
 
 header label_t {
-    varbit<48> labels; // max 3 labels * 16 bits
+    bit<16> label;
+    bit<8>  bos;
 }
 
 header ipv4_t {
@@ -63,13 +63,14 @@ header ipv4_t {
 
 struct metadata {
     macAddr_t nextHopMac;
+    bit<1>    tunnel;
 }
 
 struct headers {
-    ethernet_t   ethernet;
-    ipv4_t   ipv4;
-    mslp_t   mslp;
-    label_t  label;
+    ethernet_t    ethernet;
+    mslp_t        mslp;
+    label_t[3]    labels;
+    ipv4_t        ipv4;
 }
 
 /*************************************************************************
@@ -101,15 +102,22 @@ parser MyParser(packet_in packet,
     
     state parse_mslp {
         packet.extract(hdr.mslp);
-        transition select(hdr.mslp.numLabels) {
-            0: parse_ipv4;
-            default: parse_label;
-        }
+        transition parse_labels;
     }
     
-    state parse_label {
-        packet.extract(hdr.label, (bit<32>)hdr.mslp.numLabels * 16);
-        transition parse_ipv4;
+    state parse_labels {
+        packet.extract(hdr.labels.next);
+        transition select(hdr.labels.last.bos) {
+            0x00: parse_labels; // Create a loop
+            0x01: guess_labels_payload;
+        }
+    }
+
+    state guess_labels_payload {
+        transition select(hdr.mslp.etherType) {
+            TYPE_IPV4: parse_ipv4;
+            default: accept;
+        }
     }
 
     state parse_ipv4 {
@@ -170,15 +178,98 @@ control MyIngress(inout headers hdr,
         size = 256;
         default_action = drop;
     }
+
+    action selectTunnel(bit<16> dstPort) {
+        hash(
+            meta.tunnel,
+            HashAlgorithm.crc32,
+            (bit<1>)0,
+            {
+                hdr.ipv4.protocol,
+                hdr.ipv4.dstAddr,
+                dstPort
+            },
+            (bit<1>)1
+        );
+    }
+    
+    action createMSLP(bit<48> labels) {
+        // Populate mslp header
+        hdr.mslp.etherType = hdr.ethernet.etherType;
+        hdr.mslp.setValid();
+        
+        // Populate label header
+        hdr.labels[0] = {labels[15:0] , 0x00};
+        hdr.labels[1] = {labels[31:16], 0x00};
+        hdr.labels[2] = {labels[47:32], 0x01};
+        hdr.labels[0].setValid();
+        hdr.labels[1].setValid();
+        hdr.labels[2].setValid();
+
+        // Update ethernet header
+        hdr.ethernet.etherType = TYPE_MSLP;
+    }
+
+    action removeMSLP() {
+        // restore etherType
+        hdr.ethernet.etherType = hdr.mslp.etherType;
+
+        // set validity of the removed headers
+        hdr.mslp.setInvalid();
+        hdr.labels[0].setInvalid();
+        hdr.labels[1].setInvalid();
+        hdr.labels[2].setInvalid();
+    }
+
+    action forwardTunnel(bit<9> egressPort, macAddr_t nextHopMac, bit<48> labels) {
+        // Set forwarding info
+        standard_metadata.egress_spec = egressPort;
+        meta.nextHopMac = nextHopMac;
+        hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
+
+        // Create the MSLP header
+        createMSLP(labels);
+    }
+
+    table labelStack {
+        key = {meta.tunnel: exact;}
+        actions = {
+            forwardTunnel;
+            drop;
+        }
+        size = 2;
+        default_action = drop;
+    }
+
      
     apply {
         if(hdr.ipv4.isValid()){
+
+            // It's the end of the tunnel
+            if(hdr.mslp.isValid()) {
+                // Remove the MSLP header
+                removeMSLP();
+
+                // Forward the unencapsulated packet
             if(ipv4Lpm.apply().hit){
                 internalMacLookup.apply();
             }
+            
+            // Start of the tunnel    
+            } else {
+
+                // Select the tunnel
+
+                // Create MSLP header and forward to the tunnel
+                if(labelStack.apply().hit) {
+                    internalMacLookup.apply();
+                }
+            }
+
         } else {
             drop();
         }
+
     }
 }
 
