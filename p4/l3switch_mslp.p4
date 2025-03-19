@@ -22,6 +22,8 @@ const bit<16> TYPE_IPV4 = 0x0800;
 const bit<16> TYPE_MSLP = 0x88B5;
 
 
+const bit<8> TYPE_TCP = 0x06;
+const bit<8> TYPE_UDP = 0x11;
 
 /**
 * Here we define the headers of the protocols
@@ -61,8 +63,40 @@ header ipv4_t {
     ip4Addr_t dstAddr;
 }
 
+header tcp_t {
+    bit<16> srcPort;
+    bit<16> dstPort;
+    bit<32> seqNo;
+    bit<32> ackNo;
+    bit<4>  dataOffset;
+    bit<4>  rsv;
+    bit<1>  cwr;
+    bit<1>  ece;
+    bit<1>  urg;
+    bit<1>  ack;
+    bit<1>  psh;
+    bit<1>  rst;
+    bit<1>  syn;
+    bit<1>  fin;
+    bit<16> window;
+    bit<16> hdrChecksum;
+    bit<16> urgentPtr;
+}
+
+header tcp_options_t {
+    varbit<320> tcp_options; // max size (40 bytes)
+}
+
+header udp_t {
+    bit<16> srcPort;
+    bit<16> dstPort;
+    bit<16> length;
+    bit<16> hdrChecksum;
+}
+
 struct metadata {
     macAddr_t nextHopMac;
+    bit<8> tcp_options_size;
     bit<1>    tunnel;
 }
 
@@ -71,6 +105,9 @@ struct headers {
     mslp_t        mslp;
     label_t[3]    labels;
     ipv4_t        ipv4;
+    tcp_t         tcp;
+    tcp_options_t tcp_options;
+    udp_t         udp;
 }
 
 /*************************************************************************
@@ -122,9 +159,34 @@ parser MyParser(packet_in packet,
 
     state parse_ipv4 {
         packet.extract(hdr.ipv4);
-        transition accept;
+        transition select(hdr.ipv4.protocol) {
+            TYPE_TCP: parse_tcp;
+            TYPE_UDP: parse_udp;
+            default: accept;
+        }
+    }
+
+    state parse_tcp {
+        packet.extract(hdr.tcp);
+
+        // Calculate TCP options size
+        meta.tcp_options_size = (bit<8>)(hdr.tcp.dataOffset * 4) - 20;
+
+        transition select(meta.tcp_options_size) {
+            0: accept;
+            default: parse_tcp_options;
+        }
     }
     
+    state parse_tcp_options {
+        packet.extract(hdr.tcp_options, (bit<32>)meta.tcp_options_size);
+        transition accept;
+    }
+
+    state parse_udp {
+        packet.extract(hdr.udp);
+        transition accept;
+    }
 }
 
 /*************************************************************************
@@ -171,7 +233,7 @@ control MyIngress(inout headers hdr,
 
     table internalMacLookup{
         key = {standard_metadata.egress_spec: exact;}
-        actions = { 
+        actions = {
             rewriteMacs;
             drop;
         }
@@ -241,7 +303,7 @@ control MyIngress(inout headers hdr,
         default_action = drop;
     }
 
-     
+
     apply {
         if(hdr.ipv4.isValid()){
 
@@ -251,14 +313,19 @@ control MyIngress(inout headers hdr,
                 removeMSLP();
 
                 // Forward the unencapsulated packet
-            if(ipv4Lpm.apply().hit){
-                internalMacLookup.apply();
-            }
+                if(ipv4Lpm.apply().hit){
+                    internalMacLookup.apply();
+                }
             
             // Start of the tunnel    
             } else {
 
                 // Select the tunnel
+                if(hdr.tcp.isValid()) {
+                    selectTunnel(hdr.tcp.dstPort);
+                } else if(hdr.udp.isValid()) {
+                    selectTunnel(hdr.udp.dstPort);
+                }
 
                 // Create MSLP header and forward to the tunnel
                 if(labelStack.apply().hit) {
