@@ -21,7 +21,6 @@ typedef bit<32> ip4Addr_t;
 const bit<16> TYPE_IPV4 = 0x0800;
 const bit<16> TYPE_MSLP = 0x88B5;
 
-
 const bit<8> TYPE_TCP = 0x06;
 const bit<8> TYPE_UDP = 0x11;
 
@@ -96,8 +95,9 @@ header udp_t {
 
 struct metadata {
     macAddr_t nextHopMac;
-    bit<8> tcp_options_size;
-    bit<1>    tunnel;
+    bit<8>    tcp_options_size;
+    bit<2>    tunnel;
+    bit<1>    toRemove;
 }
 
 struct headers {
@@ -242,8 +242,9 @@ control MyIngress(inout headers hdr,
     }
 
     action selectTunnel(bit<16> dstPort) {
+        bit<1> tunnel;
         hash(
-            meta.tunnel,
+            tunnel,
             HashAlgorithm.crc32,
             (bit<1>)0,
             {
@@ -253,11 +254,16 @@ control MyIngress(inout headers hdr,
             },
             (bit<1>)1
         );
+        if(tunnel == 0) {
+            meta.tunnel = 1;
+        } else {
+            meta.tunnel = 2;
+        }
     }
     
     action createMSLP(bit<48> labels) {
         // Populate mslp header
-        hdr.mslp.etherType = hdr.ethernet.etherType;
+        hdr.mslp = {hdr.ethernet.etherType};
         hdr.mslp.setValid();
         
         // Populate label header
@@ -270,17 +276,6 @@ control MyIngress(inout headers hdr,
 
         // Update ethernet header
         hdr.ethernet.etherType = TYPE_MSLP;
-    }
-
-    action removeMSLP() {
-        // restore etherType
-        hdr.ethernet.etherType = hdr.mslp.etherType;
-
-        // set validity of the removed headers
-        hdr.mslp.setInvalid();
-        hdr.labels[0].setInvalid();
-        hdr.labels[1].setInvalid();
-        hdr.labels[2].setInvalid();
     }
 
     action forwardTunnel(bit<9> egressPort, macAddr_t nextHopMac, bit<48> labels) {
@@ -303,14 +298,13 @@ control MyIngress(inout headers hdr,
         default_action = drop;
     }
 
-
     apply {
         if(hdr.ipv4.isValid()){
 
             // It's the end of the tunnel
             if(hdr.mslp.isValid()) {
-                // Remove the MSLP header
-                removeMSLP();
+                // Set flag to remove packet
+                meta.toRemove = 1;
 
                 // Forward the unencapsulated packet
                 if(ipv4Lpm.apply().hit){
@@ -319,12 +313,15 @@ control MyIngress(inout headers hdr,
             
             // Start of the tunnel    
             } else {
-
+                meta.toRemove = 0;
+                
                 // Select the tunnel
                 if(hdr.tcp.isValid()) {
                     selectTunnel(hdr.tcp.dstPort);
                 } else if(hdr.udp.isValid()) {
                     selectTunnel(hdr.udp.dstPort);
+                } else {
+                    selectTunnel(0x0000);
                 }
 
                 // Create MSLP header and forward to the tunnel
@@ -349,7 +346,24 @@ control MyEgress(inout headers hdr,
                  inout standard_metadata_t standard_metadata) {
     
 
-    apply {  /* do nothing */  }
+    action removeMSLP() {
+        // restore etherType
+        hdr.ethernet.etherType = hdr.mslp.etherType;
+
+        // set validity of the removed headers
+        hdr.mslp.setInvalid();
+        hdr.labels[0].setInvalid();
+        hdr.labels[1].setInvalid(); // só vai ter uma label na stack supostamente, pode dar erro?
+        hdr.labels[2].setInvalid();
+    }
+
+    apply {
+        // It's the end of the tunnel
+        if(meta.toRemove == 1) {
+            // Remove the MSLP header
+            removeMSLP();            
+        }
+    }
 }
 
 /*************************************************************************
@@ -384,7 +398,11 @@ control MyDeparser(packet_out packet, in headers hdr) {
     apply {
         packet.emit(hdr.ethernet);
         packet.emit(hdr.mslp);
+        packet.emit(hdr.labels);
         packet.emit(hdr.ipv4);
+        packet.emit(hdr.tcp);
+        packet.emit(hdr.tcp_options);
+        packet.emit(hdr.udp);
     }
 }
 

@@ -1,0 +1,7 @@
+reset_state
+table_set_default labelLookup drop
+table_set_default internalMacLookup drop
+table_add labelLookup forward 0x5010 => 1 aa:00:00:00:06:02
+table_add labelLookup forward 0x5020 => 2 aa:00:00:00:04:02
+table_add internalMacLookup rewriteMacs 1 => aa:00:00:00:05:01
+table_add internalMacLookup rewriteMacs 2 => aa:00:00:00:05:02

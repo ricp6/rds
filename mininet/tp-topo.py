@@ -43,7 +43,7 @@ args = parser.parse_args()
 sw_mac_base = "cc:00:00:00:01:%02x"
 mac_base = "aa:00:00:00:%02x:%02x"
 
-host_ip_base =  "10.0.%d.%d/24"
+host_ip_base = "10.0.%d.%d/24"
 
 
 class SingleSwitchTopo(Topo):
