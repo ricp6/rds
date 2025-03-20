@@ -222,7 +222,7 @@ control MyIngress(inout headers hdr,
             forward;
             drop;
         }
-        size = 256;
+        size = 8;
         default_action = drop;
     }
 
@@ -237,7 +237,7 @@ control MyIngress(inout headers hdr,
             rewriteMacs;
             drop;
         }
-        size = 256;
+        size = 4;
         default_action = drop;
     }
 
@@ -267,9 +267,9 @@ control MyIngress(inout headers hdr,
         hdr.mslp.setValid();
         
         // Populate label header
-        hdr.labels[0] = {labels[15:0] , 0x00};
+        hdr.labels[0] = {labels[47:32], 0x00};
         hdr.labels[1] = {labels[31:16], 0x00};
-        hdr.labels[2] = {labels[47:32], 0x01};
+        hdr.labels[2] = {labels[15:00], 0x01};
         hdr.labels[0].setValid();
         hdr.labels[1].setValid();
         hdr.labels[2].setValid();

@@ -3,19 +3,25 @@
 ### Compile P4
 ```bash
 p4c-bm2-ss --std p4-16  p4/l2switch.p4 -o json/l2switch.json
-p4c-bm2-ss --std p4-16  p4/l3switch.p4 -o json/l3switch.json
+p4c-bm2-ss --std p4-16  p4/l3switch_mslp.p4 -o json/l3switch_mslp.json
+p4c-bm2-ss --std p4-16  p4/l3switch_tunnel.p4 -o json/l3switch_tunnel.json
 p4c-bm2-ss --std p4-16  p4/l3switch_firewall.p4 -o json/l3switch_firewall.json
 ```
 
 ### Run
 ```bash
-sudo python3 mininet/tp-topo.py --jsonS1 json/l2switch.json --jsonR1 json/l3switch.json --jsonR2 json/l3switch_firewall.json
+sudo python3 mininet/tp-topo.py --jsonS1 json/l2switch.json --jsonR1 json/l3switch_mslp.json --jsonR4 json/l3switch_firewall.json --jsonRX json/l3switch_tunnel.json
 ```
 
 ### Load flow rules
 ```bash
 simple_switch_CLI --thrift-port 9090 < flows/s1-flows.txt
 simple_switch_CLI --thrift-port 9091 < flows/r1-flows.txt
+simple_switch_CLI --thrift-port 9092 < flows/r2-flows.txt
+simple_switch_CLI --thrift-port 9093 < flows/r3-flows.txt
+simple_switch_CLI --thrift-port 9094 < flows/r4-flows.txt
+simple_switch_CLI --thrift-port 9095 < flows/r5-flows.txt
+simple_switch_CLI --thrift-port 9096 < flows/r6-flows.txt
 ...
 ```
 

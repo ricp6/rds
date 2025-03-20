@@ -48,26 +48,8 @@
       ]
     },
     {
-      "name" : "ipv4_t",
-      "id" : 4,
-      "fields" : [
-        ["version", 4, false],
-        ["ihl", 4, false],
-        ["diffserv", 8, false],
-        ["totalLen", 16, false],
-        ["identification", 16, false],
-        ["flags", 3, false],
-        ["fragOffset", 13, false],
-        ["ttl", 8, false],
-        ["protocol", 8, false],
-        ["hdrChecksum", 16, false],
-        ["srcAddr", 32, false],
-        ["dstAddr", 32, false]
-      ]
-    },
-    {
       "name" : "label_t",
-      "id" : 5,
+      "id" : 4,
       "fields" : [
         ["label", 16, false],
         ["bos", 8, false]
@@ -104,29 +86,22 @@
       "pi_omit" : true
     },
     {
-      "name" : "ipv4",
-      "id" : 4,
-      "header_type" : "ipv4_t",
-      "metadata" : false,
-      "pi_omit" : true
-    },
-    {
       "name" : "labels[0]",
-      "id" : 5,
+      "id" : 4,
       "header_type" : "label_t",
       "metadata" : false,
       "pi_omit" : true
     },
     {
       "name" : "labels[1]",
-      "id" : 6,
+      "id" : 5,
       "header_type" : "label_t",
       "metadata" : false,
       "pi_omit" : true
     },
     {
       "name" : "labels[2]",
-      "id" : 7,
+      "id" : 6,
       "header_type" : "label_t",
       "metadata" : false,
       "pi_omit" : true
@@ -138,7 +113,7 @@
       "id" : 0,
       "header_type" : "label_t",
       "size" : 3,
-      "header_ids" : [5, 6, 7]
+      "header_ids" : [4, 5, 6]
     }
   ],
   "header_union_types" : [],
@@ -181,12 +156,6 @@
               "value" : "0x88b5",
               "mask" : null,
               "next_state" : "parse_mslp"
-            },
-            {
-              "type" : "hexstr",
-              "value" : "0x0800",
-              "mask" : null,
-              "next_state" : "parse_ipv4"
             },
             {
               "type" : "default",
@@ -251,7 +220,7 @@
               "type" : "hexstr",
               "value" : "0x01",
               "mask" : null,
-              "next_state" : "guess_labels_payload"
+              "next_state" : null
             }
           ],
           "transition_key" : [
@@ -260,55 +229,6 @@
               "value" : ["labels", "bos"]
             }
           ]
-        },
-        {
-          "name" : "guess_labels_payload",
-          "id" : 3,
-          "parser_ops" : [],
-          "transitions" : [
-            {
-              "type" : "hexstr",
-              "value" : "0x0800",
-              "mask" : null,
-              "next_state" : "parse_ipv4"
-            },
-            {
-              "type" : "default",
-              "value" : null,
-              "mask" : null,
-              "next_state" : null
-            }
-          ],
-          "transition_key" : [
-            {
-              "type" : "field",
-              "value" : ["mslp", "etherType"]
-            }
-          ]
-        },
-        {
-          "name" : "parse_ipv4",
-          "id" : 4,
-          "parser_ops" : [
-            {
-              "parameters" : [
-                {
-                  "type" : "regular",
-                  "value" : "ipv4"
-                }
-              ],
-              "op" : "extract"
-            }
-          ],
-          "transitions" : [
-            {
-              "type" : "default",
-              "value" : null,
-              "mask" : null,
-              "next_state" : null
-            }
-          ],
-          "transition_key" : []
         }
       ]
     }
@@ -320,76 +240,18 @@
       "id" : 0,
       "source_info" : {
         "filename" : "p4/l3switch_tunnel.p4",
-        "line" : 238,
+        "line" : 189,
         "column" : 8,
         "source_fragment" : "MyDeparser"
       },
-      "order" : ["ethernet", "mslp", "labels[0]", "labels[1]", "labels[2]", "ipv4"],
+      "order" : ["ethernet", "mslp", "labels[0]", "labels[1]", "labels[2]"],
       "primitives" : []
     }
   ],
   "meter_arrays" : [],
   "counter_arrays" : [],
   "register_arrays" : [],
-  "calculations" : [
-    {
-      "name" : "calc",
-      "id" : 0,
-      "source_info" : {
-        "filename" : "p4/l3switch_tunnel.p4",
-        "line" : 217,
-        "column" : 8,
-        "source_fragment" : "update_checksum( ..."
-      },
-      "algo" : "csum16",
-      "input" : [
-        {
-          "type" : "field",
-          "value" : ["ipv4", "version"]
-        },
-        {
-          "type" : "field",
-          "value" : ["ipv4", "ihl"]
-        },
-        {
-          "type" : "field",
-          "value" : ["ipv4", "diffserv"]
-        },
-        {
-          "type" : "field",
-          "value" : ["ipv4", "totalLen"]
-        },
-        {
-          "type" : "field",
-          "value" : ["ipv4", "identification"]
-        },
-        {
-          "type" : "field",
-          "value" : ["ipv4", "flags"]
-        },
-        {
-          "type" : "field",
-          "value" : ["ipv4", "fragOffset"]
-        },
-        {
-          "type" : "field",
-          "value" : ["ipv4", "ttl"]
-        },
-        {
-          "type" : "field",
-          "value" : ["ipv4", "protocol"]
-        },
-        {
-          "type" : "field",
-          "value" : ["ipv4", "srcAddr"]
-        },
-        {
-          "type" : "field",
-          "value" : ["ipv4", "dstAddr"]
-        }
-      ]
-    }
-  ],
+  "calculations" : [],
   "learn_lists" : [],
   "actions" : [
     {
@@ -407,7 +269,7 @@
           ],
           "source_info" : {
             "filename" : "p4/l3switch_tunnel.p4",
-            "line" : 145,
+            "line" : 113,
             "column" : 8,
             "source_fragment" : "mark_to_drop(standard_metadata)"
           }
@@ -429,7 +291,7 @@
           ],
           "source_info" : {
             "filename" : "p4/l3switch_tunnel.p4",
-            "line" : 145,
+            "line" : 113,
             "column" : 8,
             "source_fragment" : "mark_to_drop(standard_metadata)"
           }
@@ -451,7 +313,7 @@
           ],
           "source_info" : {
             "filename" : "p4/l3switch_tunnel.p4",
-            "line" : 145,
+            "line" : 113,
             "column" : 8,
             "source_fragment" : "mark_to_drop(standard_metadata)"
           }
@@ -486,7 +348,7 @@
           ],
           "source_info" : {
             "filename" : "p4/l3switch_tunnel.p4",
-            "line" : 149,
+            "line" : 117,
             "column" : 8,
             "source_fragment" : "standard_metadata.egress_spec = egressPort"
           }
@@ -505,51 +367,9 @@
           ],
           "source_info" : {
             "filename" : "p4/l3switch_tunnel.p4",
-            "line" : 150,
+            "line" : 118,
             "column" : 8,
             "source_fragment" : "meta.nextHopMac = nextHopMac"
-          }
-        },
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["ipv4", "ttl"]
-            },
-            {
-              "type" : "expression",
-              "value" : {
-                "type" : "expression",
-                "value" : {
-                  "op" : "&",
-                  "left" : {
-                    "type" : "expression",
-                    "value" : {
-                      "op" : "+",
-                      "left" : {
-                        "type" : "field",
-                        "value" : ["ipv4", "ttl"]
-                      },
-                      "right" : {
-                        "type" : "hexstr",
-                        "value" : "0xff"
-                      }
-                    }
-                  },
-                  "right" : {
-                    "type" : "hexstr",
-                    "value" : "0xff"
-                  }
-                }
-              }
-            }
-          ],
-          "source_info" : {
-            "filename" : "p4/l3switch_tunnel.p4",
-            "line" : 151,
-            "column" : 8,
-            "source_fragment" : "hdr.ipv4.ttl = hdr.ipv4.ttl - 1"
           }
         }
       ]
@@ -578,7 +398,7 @@
           ],
           "source_info" : {
             "filename" : "p4/l3switch_tunnel.p4",
-            "line" : 165,
+            "line" : 132,
             "column" : 8,
             "source_fragment" : "hdr.ethernet.srcAddr = srcMac"
           }
@@ -597,7 +417,7 @@
           ],
           "source_info" : {
             "filename" : "p4/l3switch_tunnel.p4",
-            "line" : 166,
+            "line" : 133,
             "column" : 8,
             "source_fragment" : "hdr.ethernet.dstAddr = meta.nextHopMac"
           }
@@ -605,7 +425,7 @@
       ]
     },
     {
-      "name" : "l3switch_tunnel155",
+      "name" : "l3switch_tunnel122",
       "id" : 5,
       "runtime_data" : [],
       "primitives" : [
@@ -623,7 +443,7 @@
           ],
           "source_info" : {
             "filename" : "p4/l3switch_tunnel.p4",
-            "line" : 155,
+            "line" : 122,
             "column" : 15,
             "source_fragment" : "hdr.labels[0].label"
           }
@@ -649,7 +469,7 @@
           ],
           "source_info" : {
             "filename" : "p4/l3switch_tunnel.p4",
-            "line" : 200,
+            "line" : 167,
             "column" : 8,
             "source_fragment" : "hdr.labels.pop_front(1)"
           }
@@ -663,18 +483,18 @@
       "id" : 0,
       "source_info" : {
         "filename" : "p4/l3switch_tunnel.p4",
-        "line" : 140,
+        "line" : 108,
         "column" : 8,
         "source_fragment" : "MyIngress"
       },
       "init_table" : "node_2",
       "tables" : [
         {
-          "name" : "tbl_l3switch_tunnel155",
+          "name" : "tbl_l3switch_tunnel122",
           "id" : 0,
           "source_info" : {
             "filename" : "p4/l3switch_tunnel.p4",
-            "line" : 155,
+            "line" : 122,
             "column" : 15,
             "source_fragment" : "hdr.labels[0].label"
           },
@@ -686,10 +506,10 @@
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [5],
-          "actions" : ["l3switch_tunnel155"],
+          "actions" : ["l3switch_tunnel122"],
           "base_default_next" : "MyIngress.labelLookup",
           "next_tables" : {
-            "l3switch_tunnel155" : "MyIngress.labelLookup"
+            "l3switch_tunnel122" : "MyIngress.labelLookup"
           },
           "default_entry" : {
             "action_id" : 5,
@@ -703,7 +523,7 @@
           "id" : 1,
           "source_info" : {
             "filename" : "p4/l3switch_tunnel.p4",
-            "line" : 154,
+            "line" : 121,
             "column" : 10,
             "source_fragment" : "labelLookup"
           },
@@ -717,7 +537,7 @@
           ],
           "match_type" : "exact",
           "type" : "simple",
-          "max_size" : 256,
+          "max_size" : 4,
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
@@ -740,7 +560,7 @@
           "id" : 2,
           "source_info" : {
             "filename" : "p4/l3switch_tunnel.p4",
-            "line" : 169,
+            "line" : 136,
             "column" : 10,
             "source_fragment" : "internalMacLookup"
           },
@@ -754,7 +574,7 @@
           ],
           "match_type" : "exact",
           "type" : "simple",
-          "max_size" : 256,
+          "max_size" : 4,
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
@@ -777,7 +597,7 @@
           "id" : 3,
           "source_info" : {
             "filename" : "p4/l3switch_tunnel.p4",
-            "line" : 185,
+            "line" : 152,
             "column" : 12,
             "source_fragment" : "drop()"
           },
@@ -809,22 +629,39 @@
           "id" : 0,
           "source_info" : {
             "filename" : "p4/l3switch_tunnel.p4",
-            "line" : 180,
+            "line" : 147,
             "column" : 11,
-            "source_fragment" : "hdr.ipv4.isValid()"
+            "source_fragment" : "hdr.mslp.isValid() && hdr.labels[0].isValid()"
           },
           "expression" : {
             "type" : "expression",
             "value" : {
-              "op" : "d2b",
-              "left" : null,
+              "op" : "and",
+              "left" : {
+                "type" : "expression",
+                "value" : {
+                  "op" : "d2b",
+                  "left" : null,
+                  "right" : {
+                    "type" : "field",
+                    "value" : ["mslp", "$valid$"]
+                  }
+                }
+              },
               "right" : {
-                "type" : "field",
-                "value" : ["ipv4", "$valid$"]
+                "type" : "expression",
+                "value" : {
+                  "op" : "d2b",
+                  "left" : null,
+                  "right" : {
+                    "type" : "field",
+                    "value" : ["labels[0]", "$valid$"]
+                  }
+                }
               }
             }
           },
-          "true_next" : "tbl_l3switch_tunnel155",
+          "true_next" : "tbl_l3switch_tunnel122",
           "false_next" : "tbl_drop"
         }
       ]
@@ -834,7 +671,7 @@
       "id" : 1,
       "source_info" : {
         "filename" : "p4/l3switch_tunnel.p4",
-        "line" : 194,
+        "line" : 161,
         "column" : 8,
         "source_fragment" : "MyEgress"
       },
@@ -845,7 +682,7 @@
           "id" : 4,
           "source_info" : {
             "filename" : "p4/l3switch_tunnel.p4",
-            "line" : 205,
+            "line" : 172,
             "column" : 12,
             "source_fragment" : "popLabel()"
           },
@@ -877,18 +714,35 @@
           "id" : 1,
           "source_info" : {
             "filename" : "p4/l3switch_tunnel.p4",
-            "line" : 204,
+            "line" : 171,
             "column" : 11,
-            "source_fragment" : "hdr.ipv4.isValid()"
+            "source_fragment" : "hdr.mslp.isValid() && hdr.labels[0].isValid()"
           },
           "expression" : {
             "type" : "expression",
             "value" : {
-              "op" : "d2b",
-              "left" : null,
+              "op" : "and",
+              "left" : {
+                "type" : "expression",
+                "value" : {
+                  "op" : "d2b",
+                  "left" : null,
+                  "right" : {
+                    "type" : "field",
+                    "value" : ["mslp", "$valid$"]
+                  }
+                }
+              },
               "right" : {
-                "type" : "field",
-                "value" : ["ipv4", "$valid$"]
+                "type" : "expression",
+                "value" : {
+                  "op" : "d2b",
+                  "left" : null,
+                  "right" : {
+                    "type" : "field",
+                    "value" : ["labels[0]", "$valid$"]
+                  }
+                }
               }
             }
           },
@@ -898,34 +752,7 @@
       ]
     }
   ],
-  "checksums" : [
-    {
-      "name" : "cksum",
-      "id" : 0,
-      "source_info" : {
-        "filename" : "p4/l3switch_tunnel.p4",
-        "line" : 217,
-        "column" : 8,
-        "source_fragment" : "update_checksum( ..."
-      },
-      "target" : ["ipv4", "hdrChecksum"],
-      "type" : "generic",
-      "calculation" : "calc",
-      "verify" : false,
-      "update" : true,
-      "if_cond" : {
-        "type" : "expression",
-        "value" : {
-          "op" : "d2b",
-          "left" : null,
-          "right" : {
-            "type" : "field",
-            "value" : ["ipv4", "$valid$"]
-          }
-        }
-      }
-    }
-  ],
+  "checksums" : [],
   "force_arith" : [],
   "extern_instances" : [],
   "field_aliases" : [
