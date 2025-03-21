@@ -222,7 +222,7 @@ control MyIngress(inout headers hdr,
             forward;
             drop;
         }
-        size = 8;
+        size = 8; // 3 hosts, some extra entries to leave space for more hosts
         default_action = drop;
     }
 
@@ -237,7 +237,7 @@ control MyIngress(inout headers hdr,
             rewriteMacs;
             drop;
         }
-        size = 4;
+        size = 3; // 3 ports
         default_action = drop;
     }
 
@@ -294,25 +294,21 @@ control MyIngress(inout headers hdr,
             forwardTunnel;
             drop;
         }
-        size = 2;
+        size = 2; // 2 tunnels
         default_action = drop;
     }
 
     apply {
         if(hdr.ipv4.isValid()){
-
-            // It's the end of the tunnel
-            if(hdr.mslp.isValid()) {
-                // Set flag to remove packet
-                meta.toRemove = 1;
+            if(hdr.mslp.isValid()) {  // It's the end of the tunnel
+                meta.toRemove = 1;  // Set flag to remove packet
 
                 // Forward the unencapsulated packet
                 if(ipv4Lpm.apply().hit){
                     internalMacLookup.apply();
                 }
             
-            // Start of the tunnel    
-            } else {
+            } else {  // Start of the tunnel
                 meta.toRemove = 0;
                 
                 // Select the tunnel

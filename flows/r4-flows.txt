@@ -2,9 +2,16 @@ reset_state
 table_set_default ipv4Lpm drop
 table_set_default internalMacLookup drop
 table_set_default labelStack drop
+table_set_default checkDirection NoAction
+table_set_default checkPorts NoAction
 table_add ipv4Lpm forward 10.0.2.1/32 => 1 aa:00:00:00:00:04
 table_add internalMacLookup rewriteMacs 1 => aa:00:00:00:04:01
 table_add internalMacLookup rewriteMacs 2 => aa:00:00:00:04:02
 table_add internalMacLookup rewriteMacs 3 => aa:00:00:00:04:03
 table_add labelStack forwardTunnel 1 => 3 aa:00:00:00:03:02 0x301020101010
 table_add labelStack forwardTunnel 2 => 2 aa:00:00:00:05:02 0x501060101010
+table_add checkDirection setDirection 1 2 => 0
+table_add checkDirection setDirection 1 3 => 0
+table_add checkDirection setDirection 2 1 => 1
+table_add checkDirection setDirection 3 1 => 1
+table_add checkPorts NoAction 8080 => 
