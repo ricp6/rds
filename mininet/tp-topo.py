@@ -6,12 +6,12 @@ from mininet.topo import Topo
 from mininet.log import setLogLevel, info
 from mininet.cli import CLI
 
-from p4_mininet import P4Switch, P4Host
+from p4_mininet import P4Host
+from p4runtime_switch import P4RuntimeSwitch
 
-import os
-import sys
 import argparse
 from time import sleep
+
 
 # If you look at this parser, it can identify 4 arguments
 # --behavioral-exe, with the default value 'simple_switch'
@@ -24,18 +24,17 @@ from time import sleep
 # --json, is the path to JSON config file - the output of your p4 program compilation
 ## this is the only argument that you will need to pass in orther to run the script
 parser = argparse.ArgumentParser(description='Mininet demo')
+
+# Argument to specify the path to the behavioral executable (the P4 program executable)
+# Use the default value
 parser.add_argument('--behavioral-exe', help='Path to behavioral executable',
-                    type=str, action="store", default='simple_switch')
+                    type=str, action="store", default='simple_switch_grpc')
+# Argument to specify the Thrift server port for table updates (default 9090)
 parser.add_argument('--thrift-port', help='Thrift server port for table updates',
                     type=int, action="store", default=9090)
-parser.add_argument('--jsonS1', help='Path to JSON config file',
-                    type=str, action="store", required=True)
-parser.add_argument('--jsonR1', help='Path to JSON config file',
-                    type=str, action="store", required=True)
-parser.add_argument('--jsonR4', help='Path to JSON config file',
-                    type=str, action="store", required=True)
-parser.add_argument('--jsonRX', help='Path to JSON config file',
-                    type=str, action="store", required=True)
+# Argument to specify the gRPC server port for controller communication (default 50051)
+parser.add_argument('--grpc-port', help='gRPC server port for controller comm',
+                        type=int, action="store", default=50051)
 
 args = parser.parse_args()
 
@@ -47,39 +46,61 @@ host_ip_base = "10.0.%d.%d/24"
 
 
 class SingleSwitchTopo(Topo):
-    def __init__(self, sw_path, json_s1, json_r1, json_r4, json_rx, thrift_port, **opts):
+    def __init__(self, sw_path, thrift_port, grpc_port, **opts):
         # Initialize topology and default options
         Topo.__init__(self, **opts)
-        
+
         # Add switches/routers
         s1 = self.addSwitch('s1',
+                                cls = P4RuntimeSwitch,
                                 sw_path = sw_path,
-                                json_path = json_s1,
-                                thrift_port = thrift_port)
+                                thrift_port = thrift_port,
+                                grpc_port = grpc_port,
+                                device_id = 1,
+                                cpu_port = 510)
+        
         r1 = self.addSwitch('r1',
+                                cls = P4RuntimeSwitch,
                                 sw_path = sw_path,
-                                json_path = json_r1,
-                                thrift_port = thrift_port + 1)
+                                thrift_port = thrift_port + 1,
+                                grpc_port = grpc_port + 1,
+                                device_id = 2,
+                                cpu_port = 511)
         r2 = self.addSwitch('r2',
+                                cls = P4RuntimeSwitch,
                                 sw_path = sw_path,
-                                json_path = json_rx,
-                                thrift_port = thrift_port + 2)
+                                thrift_port = thrift_port + 2,
+                                grpc_port = grpc_port + 2,
+                                device_id = 3,
+                                cpu_port = 512)
         r3 = self.addSwitch('r3',
+                                cls = P4RuntimeSwitch,
                                 sw_path = sw_path,
-                                json_path = json_rx,
-                                thrift_port = thrift_port + 3)
+                                thrift_port = thrift_port + 3,
+                                grpc_port = grpc_port + 3,
+                                device_id = 4,
+                                cpu_port = 513)
         r4 = self.addSwitch('r4',
+                                cls = P4RuntimeSwitch,
                                 sw_path = sw_path,
-                                json_path = json_r4,
-                                thrift_port = thrift_port + 4)
+                                thrift_port = thrift_port + 4,
+                                grpc_port = grpc_port + 4,
+                                device_id = 5,
+                                cpu_port = 514)
         r5 = self.addSwitch('r5',
+                                cls = P4RuntimeSwitch,
                                 sw_path = sw_path,
-                                json_path = json_rx,
-                                thrift_port = thrift_port + 5)
+                                thrift_port = thrift_port + 5,
+                                grpc_port = grpc_port + 5,
+                                device_id = 6,
+                                cpu_port = 515)
         r6 = self.addSwitch('r6',
+                                cls = P4RuntimeSwitch,
                                 sw_path = sw_path,
-                                json_path = json_rx,
-                                thrift_port = thrift_port + 6)
+                                thrift_port = thrift_port + 6,
+                                grpc_port = grpc_port + 6,
+                                device_id = 7,
+                                cpu_port = 516)
         
         # Add hosts
         h1 = self.addHost('h1',
@@ -111,31 +132,15 @@ class SingleSwitchTopo(Topo):
         self.addLink(h4, r4, port2= 1, addr2= mac_base % (4,1))
         
 def main():
-    if not os.path.exists(args.jsonS1):
-        print(f"The file {args.jsonS1} does not exist.")
-        sys.exit()
-    if not os.path.exists(args.jsonR1):
-        print(f"The file {args.jsonR1} does not exist.")
-        sys.exit()
-    if not os.path.exists(args.jsonR4):
-        print(f"The file {args.jsonR4} does not exist.")
-        sys.exit()
-    if not os.path.exists(args.jsonRX):
-        print(f"The file {args.jsonRX} does not exist.")
-        sys.exit()
 
+    # Initialize the custom topology with the provided arguments
     topo = SingleSwitchTopo(args.behavioral_exe,
-                            args.jsonS1,
-                            args.jsonR1,
-                            args.jsonR4,
-                            args.jsonRX,
-                            args.thrift_port)
+                            args.thrift_port,
+                            args.grpc_port)
 
     # the host class is the P4Host
-    # the switch class is the P4Switch
     net = Mininet(topo = topo,
                   host = P4Host,
-                  switch = P4Switch,
                   controller = None)
 
     # Here, the mininet will use the constructor (__init__()) of the P4Switch class, 
@@ -166,9 +171,12 @@ def main():
 
     print("Ready !")
 
+    # Start the Mininet CLI, which allows interactive control of the network
     CLI( net )
+    # Stop the network after exiting the CLI
     net.stop()
 
 if __name__ == '__main__':
+    # Set the log level for Mininet to display info-level messages
     setLogLevel( 'info' )
     main()

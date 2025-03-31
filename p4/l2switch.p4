@@ -1,32 +1,13 @@
-/* -*- P4_16 -*- */
-/**
- * The following includes should come from /usr/share/p4c/p4include/.
- * 
- * The files:
- *   - p4/core.p4
- *   - p4/v1model.p4
- * 
- * are available if you need to reference or consult them.
- */
-
 #include <core.p4>
 #include <v1model.p4>
+
+const bit<16> L2_LEARN_ETHER_TYPE = 0x1234;
 
 /*************************************************************************
 *********************** H E A D E R S  ***********************************
 *************************************************************************/
 
-/* Simple typedef to simplify MAC address handling */
 typedef bit<48> macAddr_t;
-
-/**
- * This section defines the protocol headers we will be working with.
- * 
- * A header consists of multiple fields, each with a specific size.
- * It is essential to understand all the fields and their sizes.
- * 
- * All the necessary headers have already been declared for you.
- */
 
 header ethernet_t {
     macAddr_t dstAddr;
@@ -34,29 +15,26 @@ header ethernet_t {
     bit<16>   etherType;
 }
 
-struct metadata {
-    /* empty for now */
+header cpu_t {
+    macAddr_t srcAddr;
+    bit<16> ingress_port; // to be read by the controller like a 16bit int
 }
 
+
+struct metadata {
+    @field_list(0) // preserved on clone_preserving_field_list
+    bit<9> ingress_port;
+}
+
+
 struct headers {
-    ethernet_t   ethernet;
+    ethernet_t   eth;
+    cpu_t        cpu;
 }
 
 /*************************************************************************
 *********************** P A R S E R  ***********************************
 *************************************************************************/
- /**
-* A parser always begins in the 'start' state.
-* 
-* A state can transition to another state using two methods:
-*   - `transition <next-state>;` → Direct transition to a specified state.
-*   - `transition select(<expression>) { ... };` → Works like a switch-case statement,
-*     selecting the next state based on the given expression.
-*
-* A parser can be viewed as a state machine,  
-* always starting in the 'start' state and ending  
-* in one of two possible states: 'accept' or 'reject'.
-*/
 
 parser MyParser(packet_in packet,
                 out headers hdr,
@@ -68,7 +46,7 @@ parser MyParser(packet_in packet,
     }
 
     state parse_ethernet {
-        packet.extract(hdr.ethernet);
+        packet.extract(hdr.eth);
         transition accept;
     }
 
@@ -79,7 +57,7 @@ parser MyParser(packet_in packet,
 *************************************************************************/
 
 control MyVerifyChecksum(inout headers hdr, inout metadata meta) {   
-    apply { /* empty for now */  }
+    apply { /* do nothing */  }
 }
 
 
@@ -91,23 +69,40 @@ control MyIngress(inout headers hdr,
                   inout metadata meta,
                   inout standard_metadata_t standard_metadata) {
 
-    action setEgress(bit<9>  egressPort) {
+    
+    action learnMac() {
+        meta.ingress_port = standard_metadata.ingress_port;
+        clone_preserving_field_list(CloneType.I2E, 100, 0);
+    }
+
+    table sMacLookup{
+        key = {hdr.eth.srcAddr : exact;}
+        actions = { 
+            learnMac;
+            NoAction;
+        }
+        size = 256;
+        default_action = learnMac;
+    }
+
+    action forward(bit<9>  egressPort) {
         standard_metadata.egress_spec = egressPort;
     }
 
-    table macLookup{
-        key = {hdr.ethernet.dstAddr : exact;}
+    table dMacLookup{
+        key = {hdr.eth.dstAddr : exact;}
         actions = { 
-            setEgress;
+            forward;
             NoAction;
         }
-        size = 1024;
-        default_action = NoAction();
+        size = 256;
+        default_action = NoAction;
     }
      
     apply {
-       if(hdr.ethernet.isValid()){
-        if(!macLookup.apply().hit){
+       if(hdr.eth.isValid()){
+        sMacLookup.apply(); /* On Miss, runs the default action, on Hit the action should be NoAction */
+        if(!dMacLookup.apply().hit){
             standard_metadata.mcast_grp = 1;
         }
        } else {
@@ -128,7 +123,15 @@ control MyEgress(inout headers hdr,
     }
 
     apply {
-        // Prune multicast packets to the ingress port to prevent loops.
+        if(standard_metadata.instance_type == 1){
+            hdr.cpu.setValid();
+            hdr.cpu.srcAddr = hdr.eth.srcAddr;
+            hdr.cpu.ingress_port = (bit<16>)meta.ingress_port;
+            hdr.eth.etherType = L2_LEARN_ETHER_TYPE;
+            // If the packet is a clone to be sent to CPU it will be truncated
+            truncate((bit<32>)22); // it already had 22 bytes, but just to make you aware that this method exists
+        }
+        // Prune multicast packet to ingress port to preventing loop
         if (standard_metadata.egress_port == standard_metadata.ingress_port)
             drop();
     }
@@ -139,7 +142,7 @@ control MyEgress(inout headers hdr,
 *************************************************************************/
 
 control MyComputeChecksum(inout headers  hdr, inout metadata meta) {
-    apply { /* empty for now */ }
+    apply { /* do nothing */ }
 }
 
 /*************************************************************************
@@ -148,7 +151,8 @@ control MyComputeChecksum(inout headers  hdr, inout metadata meta) {
 
 control MyDeparser(packet_out packet, in headers hdr) {
     apply {
-        packet.emit(hdr.ethernet);
+        packet.emit(hdr.eth);
+        packet.emit(hdr.cpu);
     }
 }
 

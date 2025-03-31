@@ -1,29 +1,25 @@
 # Trabalho Prático RDS 24/25
 
-### Compile P4
+## How to Run
+
+1. **Start Compile P4 program with API description in P4Info file:**
 ```bash
-p4c-bm2-ss --std p4-16  p4/l2switch.p4 -o json/l2switch.json
-p4c-bm2-ss --std p4-16  p4/l3switch_tunnel.p4 -o json/l3switch_tunnel.json
-p4c-bm2-ss --std p4-16  p4/l3switch_mslp.p4 -o json/l3switch_mslp.json
-p4c-bm2-ss --std p4-16  p4/l3switch_mslp_firewall.p4 -o json/l3switch_mslp_firewall.json
+p4c-bm2-ss --std p4-16  p4/l2switch.p4 -o json/l2switch.json --p4runtime-files json/l2switch.p4info.txt
+p4c-bm2-ss --std p4-16  p4/l3switch_tunnel.p4 -o json/l3switch_tunnel.json  --p4runtime-files json/l3switch_tunnel.p4info.txt
+p4c-bm2-ss --std p4-16  p4/l3switch_mslp.p4 -o json/l3switch_mslp.json  --p4runtime-files json/l3switch_mslp.p4info.txt
+p4c-bm2-ss --std p4-16  p4/l3switch_mslp_firewall.p4 -o json/l3switch_mslp_firewall.json  --p4runtime-files json/l3switch_mslp_firewall.p4info.txt
 ```
 
-### Run
+2. **Run the mininet script (terminal 1):**
 ```bash
-sudo python3 mininet/tp-topo.py --jsonS1 json/l2switch.json --jsonR1 json/l3switch_mslp.json --jsonR4 json/l3switch_mslp_firewall.json --jsonRX json/l3switch_tunnel.json
+sudo python3 mininet/tp-topo.py
 ```
 
-### Load flow rules
+3. **Run the controller (terminal 2):**
 ```bash
-simple_switch_CLI --thrift-port 9090 < flows/s1-flows.txt
-simple_switch_CLI --thrift-port 9091 < flows/r1-flows.txt
-simple_switch_CLI --thrift-port 9092 < flows/r2-flows.txt
-simple_switch_CLI --thrift-port 9093 < flows/r3-flows.txt
-simple_switch_CLI --thrift-port 9094 < flows/r4-flows.txt
-simple_switch_CLI --thrift-port 9095 < flows/r5-flows.txt
-simple_switch_CLI --thrift-port 9096 < flows/r6-flows.txt
-...
+python3 controller/tp-controller.py --p4infoL2 json/l2switch.p4info.txt --p4infoL3M json/l3switch_mslp.p4info.txt --p4infoL3MF json/l3switch_mslp_firewall.p4info.txt --p4infoL3T json/l3switch_tunnel.p4info.txt --jsonL2 json/l2switch.json --jsonL3M json/l3switch_mslp.json --jsonL3MF json/l3switch_mslp_firewall.json --jsonL3T json/l3switch_tunnel.json
 ```
+
 
 ## Debugging Tips
 
@@ -54,5 +50,24 @@ Here are some useful commands to help troubleshoot and verify your topology:
      ```bash
      sudo ./tools/nanomsg_client.py --thrift-port 9090
      ```
+
+### 5. **Check the controller terminal in order to see some logs**
+   You can also check `logs/s1-p4runtime-request.txt`
+
+### 6. **Check configuration with `simple_switch_CLI`**
+   ```bash
+   $ simple_switch_CLI --thrift-port 9090
+   ```
+   ```bash
+   RuntimeCmd: table_dump MyIngress.dMacLookup
+   ```
+   ```bash
+   RuntimeCmd: table_dump MyIngress.sMacLookup
+   ```
+   for help
+   ```bash
+   RuntimeCmd: help
+   ```
+
 
 These commands will help you inspect network traffic, verify ARP entries, check interface states, and interact directly with the P4 routers.
