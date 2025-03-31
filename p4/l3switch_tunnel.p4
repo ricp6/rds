@@ -1,12 +1,3 @@
-/* -*- P4_16 -*- */
-/**
-* The following includes 
-* should come form /usr/share/p4c/p4include/
-* The files :
- * ~/RDS-tut/p4/core.p4
- * ~/RDS-tut/p4/v1model.p4
-* are here if you need/want to consult them
-*/
 #include <core.p4>
 #include <v1model.p4>
 
@@ -14,18 +5,10 @@
 *********************** H E A D E R S  ***********************************
 *************************************************************************/
 
-/* simple typedef to ease your task */
 typedef bit<48> macAddr_t;
 
 const bit<16> TYPE_MSLP = 0x88B5;
 
-/**
-* Here we define the headers of the protocols
-* that we want to work with.
-* A header has many fields you need to know all of them
-* and their sizes.
-* All the headers that you will need are already declared.
-*/
 
 header ethernet_t {
     macAddr_t dstAddr;
@@ -49,7 +32,7 @@ struct metadata {
 struct headers {
     ethernet_t ethernet;
     mslp_t     mslp;
-    label_t[3] labels;
+    label_t[3] labels; // in the tunnel the packet comes with 2 or 3 labels
 }
 
 /*************************************************************************
@@ -60,12 +43,7 @@ parser MyParser(packet_in packet,
                 out headers hdr,
                 inout metadata meta,
                 inout standard_metadata_t standard_metadata) {
-    /**
-     * a parser always begins in the start state
-     * a state can invoke other state with two methods
-     * transition <next-state>
-     * transition select(<expression>) -> works like a switch case
-     */
+
     state start {
         transition parse_ethernet;
     }
@@ -113,7 +91,7 @@ control MyIngress(inout headers hdr,
         mark_to_drop(standard_metadata);
     }
 
-    action forward(bit<9>  egressPort, macAddr_t nextHopMac) {
+    action forwardTunnel(bit<9>  egressPort, macAddr_t nextHopMac) {
         standard_metadata.egress_spec = egressPort;
         meta.nextHopMac = nextHopMac;
     }
@@ -121,7 +99,7 @@ control MyIngress(inout headers hdr,
     table labelLookup {
         key = {hdr.labels[0].label : exact;}
         actions = {
-            forward;
+            forwardTunnel;
             drop;
         }
         size = 2;

@@ -240,7 +240,7 @@
       "id" : 0,
       "source_info" : {
         "filename" : "p4/l3switch_tunnel.p4",
-        "line" : 189,
+        "line" : 167,
         "column" : 8,
         "source_fragment" : "MyDeparser"
       },
@@ -269,7 +269,7 @@
           ],
           "source_info" : {
             "filename" : "p4/l3switch_tunnel.p4",
-            "line" : 113,
+            "line" : 91,
             "column" : 8,
             "source_fragment" : "mark_to_drop(standard_metadata)"
           }
@@ -291,7 +291,7 @@
           ],
           "source_info" : {
             "filename" : "p4/l3switch_tunnel.p4",
-            "line" : 113,
+            "line" : 91,
             "column" : 8,
             "source_fragment" : "mark_to_drop(standard_metadata)"
           }
@@ -313,7 +313,7 @@
           ],
           "source_info" : {
             "filename" : "p4/l3switch_tunnel.p4",
-            "line" : 113,
+            "line" : 91,
             "column" : 8,
             "source_fragment" : "mark_to_drop(standard_metadata)"
           }
@@ -321,7 +321,7 @@
       ]
     },
     {
-      "name" : "MyIngress.forward",
+      "name" : "MyIngress.forwardTunnel",
       "id" : 3,
       "runtime_data" : [
         {
@@ -348,7 +348,7 @@
           ],
           "source_info" : {
             "filename" : "p4/l3switch_tunnel.p4",
-            "line" : 117,
+            "line" : 95,
             "column" : 8,
             "source_fragment" : "standard_metadata.egress_spec = egressPort"
           }
@@ -367,7 +367,7 @@
           ],
           "source_info" : {
             "filename" : "p4/l3switch_tunnel.p4",
-            "line" : 118,
+            "line" : 96,
             "column" : 8,
             "source_fragment" : "meta.nextHopMac = nextHopMac"
           }
@@ -398,7 +398,7 @@
           ],
           "source_info" : {
             "filename" : "p4/l3switch_tunnel.p4",
-            "line" : 132,
+            "line" : 110,
             "column" : 8,
             "source_fragment" : "hdr.ethernet.srcAddr = srcMac"
           }
@@ -417,7 +417,7 @@
           ],
           "source_info" : {
             "filename" : "p4/l3switch_tunnel.p4",
-            "line" : 133,
+            "line" : 111,
             "column" : 8,
             "source_fragment" : "hdr.ethernet.dstAddr = meta.nextHopMac"
           }
@@ -425,7 +425,7 @@
       ]
     },
     {
-      "name" : "l3switch_tunnel122",
+      "name" : "l3switch_tunnel100",
       "id" : 5,
       "runtime_data" : [],
       "primitives" : [
@@ -443,7 +443,7 @@
           ],
           "source_info" : {
             "filename" : "p4/l3switch_tunnel.p4",
-            "line" : 122,
+            "line" : 100,
             "column" : 15,
             "source_fragment" : "hdr.labels[0].label"
           }
@@ -469,7 +469,7 @@
           ],
           "source_info" : {
             "filename" : "p4/l3switch_tunnel.p4",
-            "line" : 167,
+            "line" : 145,
             "column" : 8,
             "source_fragment" : "hdr.labels.pop_front(1)"
           }
@@ -483,18 +483,18 @@
       "id" : 0,
       "source_info" : {
         "filename" : "p4/l3switch_tunnel.p4",
-        "line" : 108,
+        "line" : 86,
         "column" : 8,
         "source_fragment" : "MyIngress"
       },
       "init_table" : "node_2",
       "tables" : [
         {
-          "name" : "tbl_l3switch_tunnel122",
+          "name" : "tbl_l3switch_tunnel100",
           "id" : 0,
           "source_info" : {
             "filename" : "p4/l3switch_tunnel.p4",
-            "line" : 122,
+            "line" : 100,
             "column" : 15,
             "source_fragment" : "hdr.labels[0].label"
           },
@@ -506,10 +506,10 @@
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [5],
-          "actions" : ["l3switch_tunnel122"],
+          "actions" : ["l3switch_tunnel100"],
           "base_default_next" : "MyIngress.labelLookup",
           "next_tables" : {
-            "l3switch_tunnel122" : "MyIngress.labelLookup"
+            "l3switch_tunnel100" : "MyIngress.labelLookup"
           },
           "default_entry" : {
             "action_id" : 5,
@@ -523,7 +523,7 @@
           "id" : 1,
           "source_info" : {
             "filename" : "p4/l3switch_tunnel.p4",
-            "line" : 121,
+            "line" : 99,
             "column" : 10,
             "source_fragment" : "labelLookup"
           },
@@ -542,7 +542,7 @@
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [3, 0],
-          "actions" : ["MyIngress.forward", "MyIngress.drop"],
+          "actions" : ["MyIngress.forwardTunnel", "MyIngress.drop"],
           "base_default_next" : null,
           "next_tables" : {
             "__MISS__" : null,
@@ -560,7 +560,7 @@
           "id" : 2,
           "source_info" : {
             "filename" : "p4/l3switch_tunnel.p4",
-            "line" : 136,
+            "line" : 114,
             "column" : 10,
             "source_fragment" : "internalMacLookup"
           },
@@ -597,7 +597,7 @@
           "id" : 3,
           "source_info" : {
             "filename" : "p4/l3switch_tunnel.p4",
-            "line" : 152,
+            "line" : 130,
             "column" : 12,
             "source_fragment" : "drop()"
           },
@@ -629,7 +629,7 @@
           "id" : 0,
           "source_info" : {
             "filename" : "p4/l3switch_tunnel.p4",
-            "line" : 147,
+            "line" : 125,
             "column" : 11,
             "source_fragment" : "hdr.mslp.isValid() && hdr.labels[0].isValid()"
           },
@@ -661,7 +661,7 @@
               }
             }
           },
-          "true_next" : "tbl_l3switch_tunnel122",
+          "true_next" : "tbl_l3switch_tunnel100",
           "false_next" : "tbl_drop"
         }
       ]
@@ -671,7 +671,7 @@
       "id" : 1,
       "source_info" : {
         "filename" : "p4/l3switch_tunnel.p4",
-        "line" : 161,
+        "line" : 139,
         "column" : 8,
         "source_fragment" : "MyEgress"
       },
@@ -682,7 +682,7 @@
           "id" : 4,
           "source_info" : {
             "filename" : "p4/l3switch_tunnel.p4",
-            "line" : 172,
+            "line" : 150,
             "column" : 12,
             "source_fragment" : "popLabel()"
           },
@@ -714,7 +714,7 @@
           "id" : 1,
           "source_info" : {
             "filename" : "p4/l3switch_tunnel.p4",
-            "line" : 171,
+            "line" : 149,
             "column" : 11,
             "source_fragment" : "hdr.mslp.isValid() && hdr.labels[0].isValid()"
           },

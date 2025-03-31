@@ -1,14 +1,3 @@
-/* -*- P4_16 -*- */
-/**
- * The following includes should come from /usr/share/p4c/p4include/.
- * 
- * The files:
- *   - p4/core.p4
- *   - p4/v1model.p4
- * 
- * are available if you need to reference or consult them.
- */
-
 #include <core.p4>
 #include <v1model.p4>
 
@@ -16,17 +5,8 @@
 *********************** H E A D E R S  ***********************************
 *************************************************************************/
 
-/* Simple typedef to simplify MAC address handling */
 typedef bit<48> macAddr_t;
 
-/**
- * This section defines the protocol headers we will be working with.
- * 
- * A header consists of multiple fields, each with a specific size.
- * It is essential to understand all the fields and their sizes.
- * 
- * All the necessary headers have already been declared for you.
- */
 
 header ethernet_t {
     macAddr_t dstAddr;
@@ -45,18 +25,6 @@ struct headers {
 /*************************************************************************
 *********************** P A R S E R  ***********************************
 *************************************************************************/
- /**
-* A parser always begins in the 'start' state.
-* 
-* A state can transition to another state using two methods:
-*   - `transition <next-state>;` → Direct transition to a specified state.
-*   - `transition select(<expression>) { ... };` → Works like a switch-case statement,
-*     selecting the next state based on the given expression.
-*
-* A parser can be viewed as a state machine,  
-* always starting in the 'start' state and ending  
-* in one of two possible states: 'accept' or 'reject'.
-*/
 
 parser MyParser(packet_in packet,
                 out headers hdr,
@@ -106,13 +74,13 @@ control MyIngress(inout headers hdr,
     }
      
     apply {
-       if(hdr.ethernet.isValid()){
-        if(!macLookup.apply().hit){
-            standard_metadata.mcast_grp = 1;
+        if(hdr.ethernet.isValid()){
+            if(!macLookup.apply().hit){
+                standard_metadata.mcast_grp = 1;
+            }
+        } else {
+            mark_to_drop(standard_metadata);
         }
-       } else {
-         mark_to_drop(standard_metadata);
-       }
     }
 }
 
@@ -123,7 +91,8 @@ control MyIngress(inout headers hdr,
 control MyEgress(inout headers hdr,
                  inout metadata meta,
                  inout standard_metadata_t standard_metadata) {
-     action drop() {
+    
+    action drop() {
         mark_to_drop(standard_metadata);
     }
 
