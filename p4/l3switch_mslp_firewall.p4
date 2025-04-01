@@ -12,8 +12,9 @@ typedef bit<32> ip4Addr_t;
 const bit<16> TYPE_IPV4 = 0x0800;
 const bit<16> TYPE_MSLP = 0x88B5;
 
-const bit<8> TYPE_TCP = 0x06;
-const bit<8> TYPE_UDP = 0x11;
+const bit<8> TYPE_ICMP = 0x01;
+const bit<8> TYPE_TCP  = 0x06;
+const bit<8> TYPE_UDP  = 0x11;
 
 #define BLOOM_FILTER_ENTRIES 4096
 #define BLOOM_FILTER_BIT_WIDTH 1
@@ -69,8 +70,8 @@ header tcp_t {
     bit<16> urgentPtr;
 }
 
-header tcp_options_t {
-    varbit<320> tcp_options; // max size (40 bytes)
+header tcp_opt_t {
+    varbit<320> tcp_opt; // max size (40 bytes)
 }
 
 header udp_t {
@@ -80,21 +81,32 @@ header udp_t {
     bit<16> hdrChecksum;
 }
 
+header icmp_t {
+    bit<8>   typ;
+    bit<8>   code;
+    bit<16>  hdrChecksum;
+    bit<16>  identifier;
+    bit<16>  sequence;
+    bit<64>  timestamp;
+    bit<384> payload;  // Added variable-length payload field
+}
+
 struct metadata {
     macAddr_t nextHopMac;
-    bit<8>    tcp_options_size;
+    bit<8>    tcp_opt_size;
     bit<2>    tunnel;
     bit<1>    setRecirculate;
 }
 
 struct headers {
-    ethernet_t    ethernet;
-    mslp_t        mslp;
-    label_t[4]    labels;
-    ipv4_t        ipv4;
-    tcp_t         tcp;
-    tcp_options_t tcp_options;
-    udp_t         udp;
+    ethernet_t  ethernet;
+    mslp_t      mslp;
+    label_t[4]  labels;
+    ipv4_t      ipv4;
+    icmp_t      icmp;
+    tcp_t       tcp;
+    tcp_opt_t   tcp_opt;
+    udp_t       udp;
 }
 
 /*************************************************************************
@@ -142,26 +154,32 @@ parser MyParser(packet_in packet,
     state parse_ipv4 {
         packet.extract(hdr.ipv4);
         transition select(hdr.ipv4.protocol) {
+            TYPE_ICMP: parse_icmp;
             TYPE_TCP: parse_tcp;
             TYPE_UDP: parse_udp;
             default: accept;
         }
+    }
+        
+    state parse_icmp {
+        packet.extract(hdr.icmp);
+        transition accept;
     }
 
     state parse_tcp {
         packet.extract(hdr.tcp);
 
         // Calculate TCP options size
-        meta.tcp_options_size = (bit<8>)(hdr.tcp.dataOffset * 4) - 20;
+        meta.tcp_opt_size = (bit<8>)(hdr.tcp.dataOffset * 4) - 20;
 
-        transition select(meta.tcp_options_size) {
+        transition select(meta.tcp_opt_size) {
             0: accept;
-            default: parse_tcp_options;
+            default: parse_tcp_opt;
         }
     }
     
-    state parse_tcp_options {
-        packet.extract(hdr.tcp_options, (bit<32>)meta.tcp_options_size);
+    state parse_tcp_opt {
+        packet.extract(hdr.tcp_opt, (bit<32>)meta.tcp_opt_size);
         transition accept;
     }
 
@@ -381,33 +399,29 @@ control MyIngress(inout headers hdr,
             
             direction = 1; // Default direction: incoming (block)
             if(checkDirection.apply().hit) {  // Set correct direction
-                if(hdr.udp.isValid()) {  // Monitor UDP traffic
 
+                if(hdr.udp.isValid()) {  // Monitor UDP traffic
                     if(direction == 0) {  // Outgoing packet
-                        // Write flow on the registers
                         compute_hashes(hdr.ipv4.srcAddr, hdr.ipv4.dstAddr, hdr.udp.srcPort, hdr.udp.dstPort);
                         bloom_filter_1.write(reg_pos_1, 1);
                         bloom_filter_2.write(reg_pos_2, 1);
 
                     } else {  // Incoming packet
                         if(!allowedPortsUDP.apply().hit) {  // If it's not directed to an allowed port
-                            
-                            // Read the registers
+
                             compute_hashes(hdr.ipv4.dstAddr, hdr.ipv4.srcAddr, hdr.udp.dstPort, hdr.udp.srcPort);
                             bloom_filter_1.read(reg_val_1, reg_pos_1);
                             bloom_filter_2.read(reg_val_2, reg_pos_2);
 
-                            // If it's missing in some register, deny the access
                             if(reg_val_1 != 1 || reg_val_2 != 1) {
-                                drop();
+                                drop();  // If it's missing in some register, deny the access
                             }
                         }
                     }
                 } else if(hdr.tcp.isValid()) {  // Monitor TCP traffic
 
                     if(direction == 0) {  // Outgoing packet
-                        // If it's a syn packet, write flow on the registers
-                        if(hdr.tcp.syn == 1) {
+                        if(hdr.tcp.syn == 1) { // If it's a syn packet, it's a new flow
                             compute_hashes(hdr.ipv4.srcAddr, hdr.ipv4.dstAddr, hdr.tcp.srcPort, hdr.tcp.dstPort);
                             bloom_filter_1.write(reg_pos_1, 1);
                             bloom_filter_2.write(reg_pos_2, 1);
@@ -425,6 +439,17 @@ control MyIngress(inout headers hdr,
                             if(reg_val_1 != 1 || reg_val_2 != 1) {
                                 drop();
                             }
+                        }
+                    }
+                } else if(hdr.icmp.isValid()) {  // Monitor ICMP traffic
+
+                    if(direction == 0) {  // Outgoing packet
+                        if(hdr.icmp.typ == 0) {  // Ping reply
+                            drop();
+                        } 
+                    } else {  // Incoming packet
+                        if(hdr.icmp.typ == 8) {  // Ping request
+                            drop();
                         }
                     }
                 }
@@ -490,8 +515,9 @@ control MyDeparser(packet_out packet, in headers hdr) {
         packet.emit(hdr.mslp);
         packet.emit(hdr.labels);
         packet.emit(hdr.ipv4);
+        packet.emit(hdr.icmp);
         packet.emit(hdr.tcp);
-        packet.emit(hdr.tcp_options);
+        packet.emit(hdr.tcp_opt);
         packet.emit(hdr.udp);
     }
 }

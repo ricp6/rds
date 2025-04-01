@@ -17,7 +17,7 @@
         ["tmp_9", 16, false],
         ["key_0", 16, false],
         ["metadata.nextHopMac", 48, false],
-        ["metadata.tcp_options_size", 8, false],
+        ["metadata.tcp_opt_size", 8, false],
         ["metadata.tunnel", 2, false],
         ["metadata.setRecirculate", 1, false],
         ["_padding_0", 5, false]
@@ -104,10 +104,10 @@
       ]
     },
     {
-      "name" : "tcp_options_t",
+      "name" : "tcp_opt_t",
       "id" : 6,
       "fields" : [
-        ["tcp_options", "*"]
+        ["tcp_opt", "*"]
       ],
       "max_length" : 40
     },
@@ -174,9 +174,9 @@
       "pi_omit" : true
     },
     {
-      "name" : "tcp_options",
+      "name" : "tcp_opt",
       "id" : 6,
-      "header_type" : "tcp_options_t",
+      "header_type" : "tcp_opt_t",
       "metadata" : false,
       "pi_omit" : true
     },
@@ -434,7 +434,7 @@
               "parameters" : [
                 {
                   "type" : "field",
-                  "value" : ["scalars", "metadata.tcp_options_size"]
+                  "value" : ["scalars", "metadata.tcp_opt_size"]
                 },
                 {
                   "type" : "expression",
@@ -574,7 +574,7 @@
               "type" : "default",
               "value" : null,
               "mask" : null,
-              "next_state" : "parse_tcp_options"
+              "next_state" : "parse_tcp_opt"
             }
           ],
           "transition_key" : [
@@ -585,7 +585,7 @@
           ]
         },
         {
-          "name" : "parse_tcp_options",
+          "name" : "parse_tcp_opt",
           "id" : 6,
           "parser_ops" : [
             {
@@ -602,7 +602,7 @@
                       "op" : "&",
                       "left" : {
                         "type" : "field",
-                        "value" : ["scalars", "metadata.tcp_options_size"]
+                        "value" : ["scalars", "metadata.tcp_opt_size"]
                       },
                       "right" : {
                         "type" : "hexstr",
@@ -618,7 +618,7 @@
               "parameters" : [
                 {
                   "type" : "regular",
-                  "value" : "tcp_options"
+                  "value" : "tcp_opt"
                 },
                 {
                   "type" : "expression",
@@ -679,7 +679,7 @@
         "column" : 8,
         "source_fragment" : "MyDeparser"
       },
-      "order" : ["ethernet", "mslp", "labels[0]", "labels[1]", "labels[2]", "labels[3]", "ipv4", "tcp", "tcp_options", "udp"],
+      "order" : ["ethernet", "mslp", "labels[0]", "labels[1]", "labels[2]", "labels[3]", "ipv4", "tcp", "tcp_opt", "udp"],
       "primitives" : []
     }
   ],

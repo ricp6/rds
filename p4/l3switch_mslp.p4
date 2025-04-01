@@ -66,8 +66,8 @@ header tcp_t {
     bit<16> urgentPtr;
 }
 
-header tcp_options_t {
-    varbit<320> tcp_options; // max size (40 bytes)
+header tcp_opt_t {
+    varbit<320> tcp_opt; // max size (40 bytes)
 }
 
 header udp_t {
@@ -79,19 +79,19 @@ header udp_t {
 
 struct metadata {
     macAddr_t nextHopMac;
-    bit<8>    tcp_options_size;
+    bit<8>    tcp_opt_size;
     bit<2>    tunnel;
     bit<1>    setRecirculate;
 }
 
 struct headers {
-    ethernet_t    ethernet;
-    mslp_t        mslp;
-    label_t[4]    labels; // in the sides, the packet comes with 1 or 4 labels
-    ipv4_t        ipv4;
-    tcp_t         tcp;
-    tcp_options_t tcp_options;
-    udp_t         udp;
+    ethernet_t  ethernet;
+    mslp_t      mslp;
+    label_t[4]  labels; // in the sides, the packet comes with 1 or 4 labels
+    ipv4_t      ipv4;
+    tcp_t       tcp;
+    tcp_opt_t   tcp_opt;
+    udp_t       udp;
 }
 
 /*************************************************************************
@@ -149,16 +149,16 @@ parser MyParser(packet_in packet,
         packet.extract(hdr.tcp);
 
         // Calculate TCP options size
-        meta.tcp_options_size = (bit<8>)(hdr.tcp.dataOffset * 4) - 20;
+        meta.tcp_opt_size = (bit<8>)(hdr.tcp.dataOffset * 4) - 20;
 
-        transition select(meta.tcp_options_size) {
+        transition select(meta.tcp_opt_size) {
             0: accept;
-            default: parse_tcp_options;
+            default: parse_tcp_opt;
         }
     }
     
-    state parse_tcp_options {
-        packet.extract(hdr.tcp_options, (bit<32>)meta.tcp_options_size);
+    state parse_tcp_opt {
+        packet.extract(hdr.tcp_opt, (bit<32>)meta.tcp_opt_size);
         transition accept;
     }
 
@@ -380,7 +380,7 @@ control MyDeparser(packet_out packet, in headers hdr) {
         packet.emit(hdr.labels);
         packet.emit(hdr.ipv4);
         packet.emit(hdr.tcp);
-        packet.emit(hdr.tcp_options);
+        packet.emit(hdr.tcp_opt);
         packet.emit(hdr.udp);
     }
 }
