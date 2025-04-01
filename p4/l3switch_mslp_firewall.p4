@@ -304,13 +304,13 @@ control MyIngress(inout headers hdr,
         // First register, with one algorithm
         hash( 
             reg_pos_1, HashAlgorithm.crc16, (bit<32>)0, 
-            { ipAddr1, ipAddr2, port1, port2 }, 
+            { ipAddr1, ipAddr2, port1, port2, hdr.ipv4.protocol }, 
             (bit<32>)BLOOM_FILTER_ENTRIES
         );
         // Second register, with another algorithm
         hash( 
             reg_pos_2, HashAlgorithm.crc32, (bit<32>)0,
-            { ipAddr1, ipAddr2, port1, port2 }, 
+            { ipAddr1, ipAddr2, port1, port2, hdr.ipv4.protocol }, 
             (bit<32>)BLOOM_FILTER_ENTRIES
         );
     }
@@ -331,7 +331,16 @@ control MyIngress(inout headers hdr,
         default_action = NoAction;
     }
 
-    table checkPorts {
+    table allowedPortsTCP {
+        key= {hdr.tcp.dstPort: exact;}
+        actions= {
+            NoAction;
+        }
+        size = 16;
+        default_action = NoAction;
+    }
+    
+    table allowedPortsUDP {
         key= {hdr.udp.dstPort: exact;}
         actions= {
             NoAction;
@@ -362,17 +371,17 @@ control MyIngress(inout headers hdr,
                     meta.setRecirculate = 1;
                 }
             }
-        } else {
-            drop();
+        } else {  // Deny traffic other than ipv4 or mslp
+            drop(); 
         }
 
-        if(activateFirewall == 1) {  // Go through the firewall
-            direction = 1; // Default direction
-            
+        // Firewall processing
+        if(activateFirewall == 1) {  
             internalMacLookup.apply();  // Rewrite Macs to send the packet
-
-            if(hdr.udp.isValid()) {  // Monitor UDP traffic
-                if(checkDirection.apply().hit) {  // Set correct direction
+            
+            direction = 1; // Default direction: incoming (block)
+            if(checkDirection.apply().hit) {  // Set correct direction
+                if(hdr.udp.isValid()) {  // Monitor UDP traffic
 
                     if(direction == 0) {  // Outgoing packet
                         // Write flow on the registers
@@ -381,10 +390,34 @@ control MyIngress(inout headers hdr,
                         bloom_filter_2.write(reg_pos_2, 1);
 
                     } else {  // Incoming packet
-                        if(!checkPorts.apply().hit) {  // If it's not directed to an allowed port
+                        if(!allowedPortsUDP.apply().hit) {  // If it's not directed to an allowed port
                             
                             // Read the registers
                             compute_hashes(hdr.ipv4.dstAddr, hdr.ipv4.srcAddr, hdr.udp.dstPort, hdr.udp.srcPort);
+                            bloom_filter_1.read(reg_val_1, reg_pos_1);
+                            bloom_filter_2.read(reg_val_2, reg_pos_2);
+
+                            // If it's missing in some register, deny the access
+                            if(reg_val_1 != 1 || reg_val_2 != 1) {
+                                drop();
+                            }
+                        }
+                    }
+                } else if(hdr.tcp.isValid()) {  // Monitor TCP traffic
+
+                    if(direction == 0) {  // Outgoing packet
+                        // If it's a syn packet, write flow on the registers
+                        if(hdr.tcp.syn == 1) {
+                            compute_hashes(hdr.ipv4.srcAddr, hdr.ipv4.dstAddr, hdr.tcp.srcPort, hdr.tcp.dstPort);
+                            bloom_filter_1.write(reg_pos_1, 1);
+                            bloom_filter_2.write(reg_pos_2, 1);
+                        }
+
+                    } else {  // Incoming packet
+                        if(!allowedPortsTCP.apply().hit) {  // If it's not directed to an allowed port
+                            
+                            // Read the registers
+                            compute_hashes(hdr.ipv4.dstAddr, hdr.ipv4.srcAddr, hdr.tcp.dstPort, hdr.tcp.srcPort);
                             bloom_filter_1.read(reg_val_1, reg_pos_1);
                             bloom_filter_2.read(reg_val_2, reg_pos_2);
 
