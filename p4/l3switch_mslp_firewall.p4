@@ -1,12 +1,3 @@
-/* -*- P4_16 -*- */
-/**
-* The following includes 
-* should come form /usr/share/p4c/p4include/
-* The files :
- * ~/RDS-tut/p4/core.p4
- * ~/RDS-tut/p4/v1model.p4
-* are here if you need/want to consult them
-*/
 #include <core.p4>
 #include <v1model.p4>
 
@@ -27,13 +18,6 @@ const bit<8> TYPE_UDP = 0x11;
 #define BLOOM_FILTER_ENTRIES 4096
 #define BLOOM_FILTER_BIT_WIDTH 1
 
-/**
-* Here we define the headers of the protocols
-* that we want to work with.
-* A header has many fields you need to know all of them
-* and their sizes.
-* All the headers that you will need are already declared.
-*/
 
 header ethernet_t {
     macAddr_t dstAddr;
@@ -100,13 +84,13 @@ struct metadata {
     macAddr_t nextHopMac;
     bit<8>    tcp_options_size;
     bit<2>    tunnel;
-    bit<1>    toRemove;
+    bit<1>    setRecirculate;
 }
 
 struct headers {
     ethernet_t    ethernet;
     mslp_t        mslp;
-    label_t[3]    labels;
+    label_t[4]    labels;
     ipv4_t        ipv4;
     tcp_t         tcp;
     tcp_options_t tcp_options;
@@ -121,12 +105,7 @@ parser MyParser(packet_in packet,
                 out headers hdr,
                 inout metadata meta,
                 inout standard_metadata_t standard_metadata) {
-    /**
-     * a parser always begins in the start state
-     * a state can invoke other state with two methods
-     * transition <next-state>
-     * transition select(<expression>) -> works like a switch case
-     */
+
     state start {
         transition parse_ethernet;
     }
@@ -213,7 +192,7 @@ control MyIngress(inout headers hdr,
     register<bit<1>>(BLOOM_FILTER_ENTRIES) bloom_filter_2;
     bit<32> reg_pos_1; bit<32> reg_pos_2;
     bit<1> reg_val_1; bit<1> reg_val_2;
-    bit<1> direction;
+    bit<1> direction; bit<1> activateFirewall;
 
     action drop() {
         mark_to_drop(standard_metadata);
@@ -229,10 +208,10 @@ control MyIngress(inout headers hdr,
         key = {hdr.ipv4.dstAddr : lpm;}
         actions = {
             forward;
-            drop;
+            NoAction;
         }
-        size = 8; // 1 host, some extra entries to leave space for more hosts
-        default_action = drop;
+        size = 16;
+        default_action = NoAction;
     }
 
     action rewriteMacs(macAddr_t srcMac) {
@@ -246,14 +225,70 @@ control MyIngress(inout headers hdr,
             rewriteMacs;
             drop;
         }
-        size = 3; // 3 ports
+        size = 16;
+        default_action = drop;
+    }
+
+    action forwardTunnel(bit<9>  egressPort, macAddr_t nextHopMac) {
+        standard_metadata.egress_spec = egressPort;
+        meta.nextHopMac = nextHopMac;
+    }
+
+    action removeMSLP() {
+        // restore etherType
+        hdr.ethernet.etherType = hdr.mslp.etherType;
+
+        // set validity of the removed headers
+        hdr.mslp.setInvalid();
+        hdr.labels[0].setInvalid();
+        hdr.labels[1].setInvalid(); // vale a pena?
+        hdr.labels[2].setInvalid();
+        hdr.labels[3].setInvalid();
+    }
+
+    table labelLookup {
+        key = {hdr.labels[0].label : exact;}
+        actions = {
+            forwardTunnel;
+            removeMSLP;
+            drop;
+        }
+        size = 16;
+        default_action = drop;
+    }
+
+    action addMSLP(bit<64> labels) {
+        // Populate mslp header
+        hdr.mslp = {hdr.ethernet.etherType};
+        hdr.mslp.setValid();
+        
+        // Populate label header
+        hdr.labels[0] = {labels[63:48], 0x00};
+        hdr.labels[1] = {labels[47:32], 0x00};
+        hdr.labels[2] = {labels[31:16], 0x00};
+        hdr.labels[3] = {labels[15:00], 0x01};
+        hdr.labels[0].setValid();
+        hdr.labels[1].setValid();
+        hdr.labels[2].setValid();
+        hdr.labels[3].setValid();
+
+        // Update ethernet header
+        hdr.ethernet.etherType = TYPE_MSLP;
+    }
+
+    table tunnelLookup {
+        key = {meta.tunnel: exact;}
+        actions = {
+            addMSLP;
+            drop;
+        }
+        size = 16;
         default_action = drop;
     }
 
     action selectTunnel(bit<16> dstPort) {
-        bit<1> tunnel;
         hash(
-            tunnel,
+            meta.tunnel,
             HashAlgorithm.crc32,
             (bit<1>)0,
             {
@@ -263,61 +298,19 @@ control MyIngress(inout headers hdr,
             },
             (bit<1>)1
         );
-        if(tunnel == 0) {
-            meta.tunnel = 1;
-        } else {
-            meta.tunnel = 2;
-        }
-    }
-    
-    action createMSLP(bit<48> labels) {
-        // Populate mslp header
-        hdr.mslp = {hdr.ethernet.etherType};
-        hdr.mslp.setValid();
-        
-        // Populate label header
-        hdr.labels[0] = {labels[47:32], 0x00};
-        hdr.labels[1] = {labels[31:16], 0x00};
-        hdr.labels[2] = {labels[15:00], 0x01};
-        hdr.labels[0].setValid();
-        hdr.labels[1].setValid();
-        hdr.labels[2].setValid();
-
-        // Update ethernet header
-        hdr.ethernet.etherType = TYPE_MSLP;
-    }
-
-    action forwardTunnel(bit<9> egressPort, macAddr_t nextHopMac, bit<48> labels) {
-        // Set forwarding info
-        standard_metadata.egress_spec = egressPort;
-        meta.nextHopMac = nextHopMac;
-        hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
-
-        // Create the MSLP header
-        createMSLP(labels);
-    }
-
-    table labelStack {
-        key = {meta.tunnel: exact;}
-        actions = {
-            forwardTunnel;
-            drop;
-        }
-        size = 2; // only 2 tunnels
-        default_action = drop;
     }
 
     action compute_hashes(ip4Addr_t ipAddr1, ip4Addr_t ipAddr2, bit<16> port1, bit<16> port2) {
         // First register, with one algorithm
         hash( 
             reg_pos_1, HashAlgorithm.crc16, (bit<32>)0, 
-            { ipAddr1, ipAddr2, port1, port2 }, 
+            { ipAddr1, ipAddr2, port1, port2, hdr.ipv4.protocol }, 
             (bit<32>)BLOOM_FILTER_ENTRIES
         );
         // Second register, with another algorithm
         hash( 
             reg_pos_2, HashAlgorithm.crc32, (bit<32>)0,
-            { ipAddr1, ipAddr2, port1, port2 }, 
+            { ipAddr1, ipAddr2, port1, port2, hdr.ipv4.protocol }, 
             (bit<32>)BLOOM_FILTER_ENTRIES
         );
     }
@@ -328,70 +321,103 @@ control MyIngress(inout headers hdr,
 
     table checkDirection {
         key = {
-            standard_metadata.ingress_port: exact;
             standard_metadata.egress_spec: exact;
         }
         actions = { 
             setDirection;
             NoAction;
         }
-        size = 8; // 3 ingress ports * 2 egress ports = 6 combinations
+        size = 16;
         default_action = NoAction;
     }
 
-    table checkPorts {
+    table allowedPortsTCP {
+        key= {hdr.tcp.dstPort: exact;}
+        actions= {
+            NoAction;
+        }
+        size = 16;
+        default_action = NoAction;
+    }
+    
+    table allowedPortsUDP {
         key= {hdr.udp.dstPort: exact;}
         actions= {
             NoAction;
         }
-        size = 32; // leaving some space to define some ports
+        size = 16;
         default_action = NoAction;
     }
 
     apply {
-        if(hdr.ipv4.isValid()){
-            if(hdr.mslp.isValid()) {  // It's the end of the tunnel
-                meta.toRemove = 1;  // Set flag to remove mslp packet
-                
-                // Forward the unencapsulated packet
-                if(ipv4Lpm.apply().hit){
-                    internalMacLookup.apply();
-                }
-            } else {  // Start of the tunnel    
-                meta.toRemove = 0;
-                
-                // Select the tunnel
-                if(hdr.tcp.isValid()) {
-                    selectTunnel(hdr.tcp.dstPort);
-                } else if(hdr.udp.isValid()) {
-                    selectTunnel(hdr.udp.dstPort);
-                } else {
-                    selectTunnel(0x0000);
-                }
+        activateFirewall = 0;
+        if(hdr.mslp.isValid()) { // If encapsulated
+            switch(labelLookup.apply().action_run) {
+                removeMSLP: { meta.setRecirculate = 1; }  // If its the last label, removeMSLP and recirculate the ipv4 packet
+                forwardTunnel: { activateFirewall = 1; }  // If still inside the tunnel, forward in the tunnel
+            }
+            
+        } else if(hdr.ipv4.isValid()) { // If unencapsulated
+            if(ipv4Lpm.apply().hit) { // Dst it the LAN
+                activateFirewall = 1;
 
-                // Create MSLP packet and forward to the tunnel
-                if(labelStack.apply().hit) {
-                    internalMacLookup.apply();
+            } else { // Send through a tunnel
+                if(hdr.tcp.isValid())       selectTunnel(hdr.tcp.dstPort);
+                else if(hdr.udp.isValid())  selectTunnel(hdr.udp.dstPort);
+                else                        selectTunnel(0x0000);
+
+                // Create MSLP header and recirculate the packet with MSLP header
+                if(tunnelLookup.apply().hit) {
+                    meta.setRecirculate = 1;
                 }
             }
+        } else {  // Deny traffic other than ipv4 or mslp
+            drop(); 
+        }
 
-            if(hdr.udp.isValid()) {  // Monitor UDP traffic
-                direction = 1; // Default
-                if(checkDirection.apply().hit) {  // Set correct direction
+        // Firewall processing
+        if(activateFirewall == 1) {  
+            internalMacLookup.apply();  // Rewrite Macs to send the packet
+            
+            direction = 1; // Default direction: incoming (block)
+            if(checkDirection.apply().hit) {  // Set correct direction
+                if(hdr.udp.isValid()) {  // Monitor UDP traffic
 
                     if(direction == 0) {  // Outgoing packet
-                        compute_hashes( hdr.ipv4.srcAddr, hdr.ipv4.dstAddr, hdr.udp.srcPort, hdr.udp.dstPort);
-                        
                         // Write flow on the registers
+                        compute_hashes(hdr.ipv4.srcAddr, hdr.ipv4.dstAddr, hdr.udp.srcPort, hdr.udp.dstPort);
                         bloom_filter_1.write(reg_pos_1, 1);
                         bloom_filter_2.write(reg_pos_2, 1);
 
                     } else {  // Incoming packet
-                        if(!checkPorts.apply().hit) {  // If it's not directed to an allowed port
+                        if(!allowedPortsUDP.apply().hit) {  // If it's not directed to an allowed port
                             
-                            compute_hashes( hdr.ipv4.dstAddr, hdr.ipv4.srcAddr, hdr.udp.dstPort, hdr.udp.srcPort);
-
                             // Read the registers
+                            compute_hashes(hdr.ipv4.dstAddr, hdr.ipv4.srcAddr, hdr.udp.dstPort, hdr.udp.srcPort);
+                            bloom_filter_1.read(reg_val_1, reg_pos_1);
+                            bloom_filter_2.read(reg_val_2, reg_pos_2);
+
+                            // If it's missing in some register, deny the access
+                            if(reg_val_1 != 1 || reg_val_2 != 1) {
+                                drop();
+                            }
+                        }
+                    }
+                } else if(hdr.tcp.isValid()) {  // Monitor TCP traffic
+
+                    if(direction == 0) {  // Outgoing packet
+                        // If it's a syn packet, write flow on the registers
+                        if(hdr.tcp.syn == 1) {
+                            compute_hashes(hdr.ipv4.srcAddr, hdr.ipv4.dstAddr, hdr.tcp.srcPort, hdr.tcp.dstPort);
+                            bloom_filter_1.write(reg_pos_1, 1);
+                            bloom_filter_2.write(reg_pos_2, 1);
+                        }
+
+                    } else {  // Incoming packet
+                        if(!allowedPortsTCP.apply().hit) {  // If it's not directed to an allowed port
+                            
+                            // Read the registers
+                            compute_hashes(hdr.ipv4.dstAddr, hdr.ipv4.srcAddr, hdr.tcp.dstPort, hdr.tcp.srcPort);
                             bloom_filter_1.read(reg_val_1, reg_pos_1);
                             bloom_filter_2.read(reg_val_2, reg_pos_2);
 
@@ -403,9 +429,6 @@ control MyIngress(inout headers hdr,
                     }
                 }
             }
-
-        } else {
-            drop();
         }
 
     }
@@ -420,22 +443,15 @@ control MyEgress(inout headers hdr,
                  inout standard_metadata_t standard_metadata) {
     
 
-    action removeMSLP() {
-        // restore etherType
-        hdr.ethernet.etherType = hdr.mslp.etherType;
-
-        // set validity of the removed headers
-        hdr.mslp.setInvalid();
-        hdr.labels[0].setInvalid();
-        hdr.labels[1].setInvalid(); // só vai ter uma label na stack supostamente, pode dar erro?
-        hdr.labels[2].setInvalid();
+    action popLabel() {
+        hdr.labels.pop_front(1);
     }
 
     apply {
-        // It's the end of the tunnel
-        if(meta.toRemove == 1) {
-            // Remove the MSLP header
-            removeMSLP();            
+        if(meta.setRecirculate == 1) {
+            recirculate_preserving_field_list(0);
+        } else if(hdr.mslp.isValid() && hdr.labels[0].isValid()) {
+            popLabel();  // Remove a sua label antes de enviar ao seguinte
         }
     }
 }
