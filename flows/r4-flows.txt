@@ -4,7 +4,8 @@ table_set_default internalMacLookup drop
 table_set_default tunnelLookup drop
 table_set_default labelLookup drop
 table_set_default checkDirection NoAction
-table_set_default checkPorts NoAction
+table_set_default allowedPortsTCP NoAction
+table_set_default allowedPortsUDP NoAction
 table_add ipv4Lpm forward 10.0.2.1/32 => 1 aa:00:00:00:00:04
 table_add internalMacLookup rewriteMacs 1 => aa:00:00:00:04:01
 table_add internalMacLookup rewriteMacs 2 => aa:00:00:00:04:02
@@ -18,4 +19,5 @@ table_add checkDirection setDirection 1 2 => 0
 table_add checkDirection setDirection 1 3 => 0
 table_add checkDirection setDirection 2 1 => 1
 table_add checkDirection setDirection 3 1 => 1
-table_add checkPorts NoAction 8080 => 
+table_add allowedPortsTCP NoAction 5201 =>
+table_add allowedPortsUDP NoAction 5201 =>
