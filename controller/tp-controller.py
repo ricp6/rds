@@ -129,36 +129,171 @@ def writeCpuSession(p4info_helper, sw, sessionId):
     sw.WritePREEntry(clone_entry)
     print("Installed clone session on %s" % sw.name)
 
+
+
+# Function to instanciate the P4info helpers for all kinds of switches
+def getP4Helpers(L2_fp, L3M_fp, L3MF_fp, L3T_fp):
+    L2_helper   = p4runtime_lib.helper.P4InfoHelper(L2_fp)
+    L3M_helper  = p4runtime_lib.helper.P4InfoHelper(L3M_fp)
+    L3MF_helper = p4runtime_lib.helper.P4InfoHelper(L3MF_fp)
+    L3T_helper  = p4runtime_lib.helper.P4InfoHelper(L3T_fp)
+    return L2_helper, L3M_helper, L3MF_helper, L3T_helper
+
+# Function to create all P4Runtime connections to all the switches
+# with gRPC and proto dump files for logging
+def createConnectionsToSwitches():
+    s1 = p4runtime_lib.bmv2.Bmv2SwitchConnection(
+        name='s1',
+        address='127.0.0.1:50051',
+        device_id=1,
+        proto_dump_file='logs/s1-p4runtime-request.txt') # the file need to exist
+    r1 = p4runtime_lib.bmv2.Bmv2SwitchConnection(
+        name='r1',
+        address='127.0.0.1:50052',
+        device_id=2,
+        proto_dump_file='logs/r1-p4runtime-request.txt')
+    r2 = p4runtime_lib.bmv2.Bmv2SwitchConnection(
+        name='r2',
+        address='127.0.0.1:50053',
+        device_id=3,
+        proto_dump_file='logs/r2-p4runtime-request.txt')
+    r3 = p4runtime_lib.bmv2.Bmv2SwitchConnection(
+        name='r3',
+        address='127.0.0.1:50054',
+        device_id=4,
+        proto_dump_file='logs/r3-p4runtime-request.txt')
+    r4 = p4runtime_lib.bmv2.Bmv2SwitchConnection(
+        name='r4',
+        address='127.0.0.1:50055',
+        device_id=5,
+        proto_dump_file='logs/r4-p4runtime-request.txt')
+    r5 = p4runtime_lib.bmv2.Bmv2SwitchConnection(
+        name='r5',
+        address='127.0.0.1:50056',
+        device_id=6,
+        proto_dump_file='logs/r5-p4runtime-request.txt')
+    r6 = p4runtime_lib.bmv2.Bmv2SwitchConnection(
+        name='r6',
+        address='127.0.0.1:50057',
+        device_id=7,
+        proto_dump_file='logs/r6-p4runtime-request.txt')
+    
+    print("Connection successful")
+    return s1,r1,r2,r3,r4,r5,r6
+
+# Function to send master arbitration update messages to all switches to establish
+# this controller as master
+def sendMasterAtributionMessage(s1,r1,r2,r3,r4,r5,r6):
+    s1.MasterArbitrationUpdate()
+    r1.MasterArbitrationUpdate()
+    r2.MasterArbitrationUpdate()
+    r3.MasterArbitrationUpdate()
+    r4.MasterArbitrationUpdate()
+    r5.MasterArbitrationUpdate()
+    r6.MasterArbitrationUpdate()
+        
+# Function to install the P4 programs on all switches
+def installP4Programs(L2_helper, L3M_helper, L3MF_helper, L3T_helper, 
+                      jsonL2, jsonL3M, jsonL3MF, jsonL3T,
+                      s1,r1,r2,r3,r4,r5,r6):
+    
+    s1.SetForwardingPipelineConfig(p4info=L2_helper.p4info,
+                                    bmv2_json_file_path=jsonL2)
+    print("Installed L2 - P4 Program using SetForwardingPipelineConfig on s1")
+    r1.SetForwardingPipelineConfig(p4info=L3M_helper.p4info,
+                                    bmv2_json_file_path=jsonL3M)
+    print("Installed L3 MSLP - P4 Program using SetForwardingPipelineConfig on r1")
+    r4.SetForwardingPipelineConfig(p4info=L3MF_helper.p4info,
+                                    bmv2_json_file_path=jsonL3MF)
+    print("Installed L3 MSLP & FIREWALL - P4 Program using SetForwardingPipelineConfig on r4")
+    r2.SetForwardingPipelineConfig(p4info=L3T_helper.p4info,
+                                    bmv2_json_file_path=jsonL3T)
+    r3.SetForwardingPipelineConfig(p4info=L3T_helper.p4info,
+                                    bmv2_json_file_path=jsonL3T)
+    r5.SetForwardingPipelineConfig(p4info=L3T_helper.p4info,
+                                    bmv2_json_file_path=jsonL3T)
+    r6.SetForwardingPipelineConfig(p4info=L3T_helper.p4info,
+                                    bmv2_json_file_path=jsonL3T)
+    print("Installed L3 TUNNEL - P4 Program using SetForwardingPipelineConfig on r2, r3, r5 and r6")
+    
+# Function to write the default actions on all tables from all switches
+def writeDefaultActions(L2_helper, L3M_helper, L3MF_helper, L3T_helper,
+                        s1,r1,r2,r3,r4,r5,r6):
+    # L2 Switch
+    writeDefaultTableAction(L2_helper, s1, "MyIngress.sMacLookup", "MyIngress.learnMac")
+    writeDefaultTableAction(L2_helper, s1, "MyIngress.dMacLookup", "NoAction")
+    # L3 MSLP Switch
+    writeDefaultTableAction(L3M_helper, r1, "MyIngress.ipv4Lpm",           "NoAction")
+    writeDefaultTableAction(L3M_helper, r1, "MyIngress.internalMacLookup", "drop")
+    writeDefaultTableAction(L3M_helper, r1, "MyIngress.tunnelLookup",      "drop")
+    writeDefaultTableAction(L3M_helper, r1, "MyIngress.labelLookup",       "drop")
+    # L3 MSLP & Firewall Switch
+    writeDefaultTableAction(L3MF_helper, r4, "MyIngress.ipv4Lpm",           "NoAction")
+    writeDefaultTableAction(L3MF_helper, r4, "MyIngress.internalMacLookup", "drop")
+    writeDefaultTableAction(L3MF_helper, r4, "MyIngress.tunnelLookup",      "drop")
+    writeDefaultTableAction(L3MF_helper, r4, "MyIngress.labelLookup",       "drop")
+    writeDefaultTableAction(L3MF_helper, r4, "MyIngress.checkDirection",    "NoAction")
+    writeDefaultTableAction(L3MF_helper, r4, "MyIngress.allowedPortsTCP",   "NoAction")
+    writeDefaultTableAction(L3MF_helper, r4, "MyIngress.allowedPortsUDP",   "NoAction")
+    # L3 Tunnel Switches
+    writeDefaultTableAction(L3T_helper, r2, "MyIngress.labelLookup",       "drop")
+    writeDefaultTableAction(L3T_helper, r2, "MyIngress.internalMacLookup", "drop")
+    writeDefaultTableAction(L3T_helper, r3, "MyIngress.labelLookup",       "drop")
+    writeDefaultTableAction(L3T_helper, r3, "MyIngress.internalMacLookup", "drop")
+    writeDefaultTableAction(L3T_helper, r5, "MyIngress.labelLookup",       "drop")
+    writeDefaultTableAction(L3T_helper, r5, "MyIngress.internalMacLookup", "drop")
+    writeDefaultTableAction(L3T_helper, r6, "MyIngress.labelLookup",       "drop")
+    writeDefaultTableAction(L3T_helper, r6, "MyIngress.internalMacLookup", "drop")
+
+# Function to write clone engines and their sessionId
+def writeCloneEngines(L2_helper, L3M_helper, L3MF_helper, L3T_helper,
+                      s1,r1,r2,r3,r4,r5,r6):
+    # Write Multicast Group
+    writeMcGroup(L2_helper, s1, mcSessionId)
+    # Write CPU Session
+    writeCpuSession(L2_helper,   s1, cpuSessionId)
+    writeCpuSession(L3M_helper,  r1, cpuSessionId)
+    writeCpuSession(L3T_helper,  r2, cpuSessionId)
+    writeCpuSession(L3T_helper,  r3, cpuSessionId)
+    writeCpuSession(L3MF_helper, r4, cpuSessionId)
+    writeCpuSession(L3T_helper,  r5, cpuSessionId)
+    writeCpuSession(L3T_helper,  r6, cpuSessionId)
+
+
+
 # Main function that initializes P4Runtime connections and performs setup
-def main(p4info_file_path, json_file_path):
+def main(p4infoL2_file_path, p4infoL3M_file_path, p4infoL3MF_file_path, p4infoL3T_file_path, 
+         jsonL2_file_path, jsonL3M_file_path, jsonL3MF_file_path, jsonL3T_file_path):
+
+    # Variables to store the state of the switche's tables
     macList = []
-    # Instantiate a P4Runtime helper from the p4info file
-    p4info_helper = p4runtime_lib.helper.P4InfoHelper(p4info_file_path)
+
+    # Instantiate P4Runtime helpers from the p4info files
+    L2_helper, L3M_helper, L3MF_helper, L3T_helper = getP4Helpers(p4infoL2_file_path, 
+                                                                  p4infoL3M_file_path, 
+                                                                  p4infoL3MF_file_path, 
+                                                                  p4infoL3T_file_path)
 
     try:
-        # Create a P4Runtime connection to the switch with gRPC and proto dump file for logging
-        s1 = p4runtime_lib.bmv2.Bmv2SwitchConnection(
-            name='s1',
-            address='127.0.0.1:50051',
-            device_id=1,
-            proto_dump_file='logs/s1-p4runtime-request.txt') # the file need to exist
-        print("Connection successful")
+        # Create P4Runtime connections to the switches
+        s1,r1,r2,r3,r4,r5,r6 = createConnectionsToSwitches()
 
         # Send master arbitration update message to establish this controller as
         # master (required by P4Runtime before performing any other write operation)
-        s1.MasterArbitrationUpdate()
+        sendMasterAtributionMessage(s1,r1,r2,r3,r4,r5,r6)
 
-        # Install the P4 program on the switch using the SetForwardingPipelineConfig API
-        s1.SetForwardingPipelineConfig(p4info=p4info_helper.p4info,
-                                       bmv2_json_file_path=json_file_path)
-        print("Installed P4 Program using SetForwardingPipelineConfig on s1")
-        
+        # Install the P4 programS on the switches using the SetForwardingPipelineConfig API
+        installP4Programs(L2_helper, L3M_helper, L3MF_helper, L3T_helper, 
+                          jsonL2_file_path, jsonL3M_file_path, jsonL3MF_file_path, jsonL3T_file_path,
+                          s1,r1,r2,r3,r4,r5,r6)
+
         # Write default actions
-        writeDefaultTableAction(p4info_helper, s1, "MyIngress.sMacLookup", "MyIngress.learnMac")
-        writeDefaultTableAction(p4info_helper, s1, "MyIngress.dMacLookup", "NoAction")
-        # write clone engines and their sessioId
-        writeCpuSession(p4info_helper, s1, cpuSessionId)
-        writeMcGroup(p4info_helper, s1, mcSessionId)
+        writeDefaultActions(L2_helper, L3M_helper, L3MF_helper, L3T_helper,
+                            s1,r1,r2,r3,r4,r5,r6)
+        
+        # Write clone engines and their sessioId
+        writeCloneEngines(L2_helper, L3M_helper, L3MF_helper, L3T_helper,
+                          s1,r1,r2,r3,r4,r5,r6)
 
         # readTableRules(p4info_helper, s1)
         # A good approach is to read the current table entries from the switch and populate
@@ -177,8 +312,8 @@ def main(p4info_file_path, json_file_path):
                     cpu_header = CpuHeader(bytes(packet.load))
                     print("mac: %012X ingress_port: %s " % (cpu_header.macAddr, cpu_header.ingressPort))
                     if cpu_header.macAddr not in macList:
-                        writeMacSrcLookUp(p4info_helper, s1, cpu_header.macAddr)
-                        writeMacDstLookUp(p4info_helper, s1, cpu_header.macAddr, cpu_header.ingressPort)
+                        writeMacSrcLookUp(L2_helper, s1, cpu_header.macAddr)
+                        writeMacDstLookUp(L2_helper, s1, cpu_header.macAddr, cpu_header.ingressPort)
                         macList.append(cpu_header.macAddr)
                     else :
                         print("Rules already set")
@@ -194,22 +329,65 @@ def main(p4info_file_path, json_file_path):
     except grpc.RpcError as e:
         printGrpcError(e) # Handle any gRPC errors that might occur
 
+
+
 # Entry point for the script
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='P4Runtime Controller')
-    parser.add_argument('--p4info', help='p4info proto in text format from p4c',
-                        type=str, action="store", required=True)
-    parser.add_argument('--json', help='BMv2 JSON file from p4c',
-                        type=str, action="store", required=True)
+    parser.add_argument('--p4infoL2', type=str, action="store", required=True,
+                        help='p4info proto in text format from p4c for L2 Switch')
+    parser.add_argument('--p4infoL3M', type=str, action="store", required=True,
+                        help='p4info proto in text format from p4c for L3 Switch with MSLP')
+    parser.add_argument('--p4infoL3MF', type=str, action="store", required=True,
+                        help='p4info proto in text format from p4c for L3 Switch with MSLP and Firewall')
+    parser.add_argument('--p4infoL3T', type=str, action="store", required=True,
+                        help='p4info proto in text format from p4c for L3 Switch with Tunnel')
+    
+    parser.add_argument('--jsonL2', type=str, action="store", required=True,
+                        help='BMv2 JSON file from p4c for L2 Switch')
+    parser.add_argument('--jsonL3M', type=str, action="store", required=True,
+                        help='BMv2 JSON file from p4c for L3 Switch with MSLP')
+    parser.add_argument('--jsonL3MF', type=str, action="store", required=True,
+                        help='BMv2 JSON file from p4c for L3 Switch with MSLP and Firewall')
+    parser.add_argument('--jsonL3T', type=str, action="store", required=True,
+                        help='BMv2 JSON file from p4c for L3 Switch with Tunnel')
+
     args = parser.parse_args()
 
-    # Validate the provided paths for p4info and JSON files
-    if not os.path.exists(args.p4info):
+    # Validate the provided paths for p4infos and JSONs files
+    if not os.path.exists(args.p4infoL2):
         parser.print_help()
-        print("\np4info file not found:")
+        print("\np4infoL2 file not found:")
         parser.exit(1)
-    if not os.path.exists(args.json):
+    if not os.path.exists(args.p4infoL3M):
         parser.print_help()
-        print("\nBMv2 JSON file not found:")
+        print("\np4infoL3M file not found:")
         parser.exit(1)
-    main(args.p4info, args.json)
+    if not os.path.exists(args.p4infoL3MF):
+        parser.print_help()
+        print("\np4infoL3MF file not found:")
+        parser.exit(1)
+    if not os.path.exists(args.p4infoL3T):
+        parser.print_help()
+        print("\np4infoL3T file not found:")
+        parser.exit(1)
+    
+    if not os.path.exists(args.jsonL2):
+        parser.print_help()
+        print("\nBMv2 JSONL2 file not found:")
+        parser.exit(1)
+    if not os.path.exists(args.jsonL3M):
+        parser.print_help()
+        print("\nBMv2 JSONL3M file not found:")
+        parser.exit(1)
+    if not os.path.exists(args.jsonL3MF):
+        parser.print_help()
+        print("\nBMv2 JSONL3MF file not found:")
+        parser.exit(1)
+    if not os.path.exists(args.jsonL3T):
+        parser.print_help()
+        print("\nBMv2 JSONL3T file not found:")
+        parser.exit(1)
+    
+    main(args.p4infoL2, args.p4infoL3M, args.p4infoL3MF, args.p4infoL3T, 
+         args.jsonL2, args.jsonL3M, args.jsonL3MF, args.jsonL3T)

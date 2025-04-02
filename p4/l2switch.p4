@@ -105,6 +105,8 @@ control MyIngress(inout headers hdr,
             if(!dMacLookup.apply().hit){
                 standard_metadata.mcast_grp = 1;
             }
+        } else {
+            mark_to_drop(standard_metadata);
         }
     }
 }
@@ -116,7 +118,6 @@ control MyIngress(inout headers hdr,
 control MyEgress(inout headers hdr,
                  inout metadata meta,
                  inout standard_metadata_t standard_metadata) {
-    
     action drop() {
         mark_to_drop(standard_metadata);
     }

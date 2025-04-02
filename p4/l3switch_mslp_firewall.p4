@@ -208,9 +208,9 @@ control MyIngress(inout headers hdr,
 
     register<bit<1>>(BLOOM_FILTER_ENTRIES) bloom_filter_1;
     register<bit<1>>(BLOOM_FILTER_ENTRIES) bloom_filter_2;
-    bit<32> reg_pos_1; bit<32> reg_pos_2;
-    bit<1> reg_val_1; bit<1> reg_val_2;
-    bit<1> direction; bit<1> activateFirewall;
+    bit<32> reg_pos_1;   bit<32> reg_pos_2;
+    bit<1>  reg_val_1;   bit<1>  reg_val_2;
+    bit<1>  direction;   bit<1>  activateFirewall;
 
     action drop() {
         mark_to_drop(standard_metadata);
@@ -525,23 +525,6 @@ control MyDeparser(packet_out packet, in headers hdr) {
 /*************************************************************************
 ***********************  S W I T C H  *******************************
 *************************************************************************/
-/*
- * Architecture.
- *
- * M must be a struct.
- *
- * H must be a struct where every one if its members is of type
- * header, header stack, or header_union.
- *
- * package V1Switch<H, M>(Parser<H, M> p,
- *                      VerifyChecksum<H, M> vr,
- *                      Ingress<H, M> ig,
- *                      Egress<H, M> eg,
- *                      ComputeChecksum<H, M> ck,
- *                      Deparser<H> dep
- *                      );
- * you can define the blocks of your sowtware switch in the following way:
- */
 
 V1Switch(
 MyParser(),
