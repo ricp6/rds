@@ -224,26 +224,26 @@ def writeDefaultActions(L2_helper, L3M_helper, L3MF_helper, L3T_helper,
     writeDefaultTableAction(L2_helper, s1, "MyIngress.dMacLookup", "NoAction")
     # L3 MSLP Switch
     writeDefaultTableAction(L3M_helper, r1, "MyIngress.ipv4Lpm",           "NoAction")
-    writeDefaultTableAction(L3M_helper, r1, "MyIngress.internalMacLookup", "drop")
-    writeDefaultTableAction(L3M_helper, r1, "MyIngress.tunnelLookup",      "drop")
-    writeDefaultTableAction(L3M_helper, r1, "MyIngress.labelLookup",       "drop")
+    writeDefaultTableAction(L3M_helper, r1, "MyIngress.internalMacLookup", "MyIngress.drop")
+    writeDefaultTableAction(L3M_helper, r1, "MyIngress.tunnelLookup",      "MyIngress.drop")
+    writeDefaultTableAction(L3M_helper, r1, "MyIngress.labelLookup",       "MyIngress.drop")
     # L3 MSLP & Firewall Switch
     writeDefaultTableAction(L3MF_helper, r4, "MyIngress.ipv4Lpm",           "NoAction")
-    writeDefaultTableAction(L3MF_helper, r4, "MyIngress.internalMacLookup", "drop")
-    writeDefaultTableAction(L3MF_helper, r4, "MyIngress.tunnelLookup",      "drop")
-    writeDefaultTableAction(L3MF_helper, r4, "MyIngress.labelLookup",       "drop")
+    writeDefaultTableAction(L3MF_helper, r4, "MyIngress.internalMacLookup", "MyIngress.drop")
+    writeDefaultTableAction(L3MF_helper, r4, "MyIngress.tunnelLookup",      "MyIngress.drop")
+    writeDefaultTableAction(L3MF_helper, r4, "MyIngress.labelLookup",       "MyIngress.drop")
     writeDefaultTableAction(L3MF_helper, r4, "MyIngress.checkDirection",    "NoAction")
     writeDefaultTableAction(L3MF_helper, r4, "MyIngress.allowedPortsTCP",   "NoAction")
     writeDefaultTableAction(L3MF_helper, r4, "MyIngress.allowedPortsUDP",   "NoAction")
     # L3 Tunnel Switches
-    writeDefaultTableAction(L3T_helper, r2, "MyIngress.labelLookup",       "drop")
-    writeDefaultTableAction(L3T_helper, r2, "MyIngress.internalMacLookup", "drop")
-    writeDefaultTableAction(L3T_helper, r3, "MyIngress.labelLookup",       "drop")
-    writeDefaultTableAction(L3T_helper, r3, "MyIngress.internalMacLookup", "drop")
-    writeDefaultTableAction(L3T_helper, r5, "MyIngress.labelLookup",       "drop")
-    writeDefaultTableAction(L3T_helper, r5, "MyIngress.internalMacLookup", "drop")
-    writeDefaultTableAction(L3T_helper, r6, "MyIngress.labelLookup",       "drop")
-    writeDefaultTableAction(L3T_helper, r6, "MyIngress.internalMacLookup", "drop")
+    writeDefaultTableAction(L3T_helper, r2, "MyIngress.labelLookup",       "MyIngress.drop")
+    writeDefaultTableAction(L3T_helper, r2, "MyIngress.internalMacLookup", "MyIngress.drop")
+    writeDefaultTableAction(L3T_helper, r3, "MyIngress.labelLookup",       "MyIngress.drop")
+    writeDefaultTableAction(L3T_helper, r3, "MyIngress.internalMacLookup", "MyIngress.drop")
+    writeDefaultTableAction(L3T_helper, r5, "MyIngress.labelLookup",       "MyIngress.drop")
+    writeDefaultTableAction(L3T_helper, r5, "MyIngress.internalMacLookup", "MyIngress.drop")
+    writeDefaultTableAction(L3T_helper, r6, "MyIngress.labelLookup",       "MyIngress.drop")
+    writeDefaultTableAction(L3T_helper, r6, "MyIngress.internalMacLookup", "MyIngress.drop")
 
 # Function to write clone engines and their sessionId
 def writeCloneEngines(L2_helper, L3M_helper, L3MF_helper, L3T_helper,
@@ -258,6 +258,128 @@ def writeCloneEngines(L2_helper, L3M_helper, L3MF_helper, L3T_helper,
     writeCpuSession(L3MF_helper, r4, cpuSessionId)
     writeCpuSession(L3T_helper,  r5, cpuSessionId)
     writeCpuSession(L3T_helper,  r6, cpuSessionId)
+
+# Function to write the static rules in all tables from all L3 switches
+def writeStaticRules(L3M_helper, L3MF_helper, L3T_helper, r1,r2,r3,r4,r5,r6):
+    # Ideia: em vez de passar os switches, fazer dinamico de acordo com o p4 injetado em cada um
+    writeTunnelSelectionRules(L3M_helper, L3MF_helper, r1, r4)
+    writeIPv4ForwardingRules(L3M_helper, L3MF_helper, r1, r4)
+    writeLabelForwardingRules(L3M_helper, L3MF_helper, L3T_helper, r1,r2,r3,r4,r5,r6)
+    writeMacRules(L3M_helper, L3MF_helper, L3T_helper, r1,r2,r3,r4,r5,r6)
+    writeFirewallRules(L3MF_helper, r4)
+
+# Function to write the static tunnel selection rules
+def writeTunnelSelectionRules(L3M_helper, L3MF_helper, r1, r4):
+    table = "MyIngress.tunnelLookup"
+    action = "MyIngress.addMSLP"
+    match = { "meta.tunnel" : "%s" }  # TODO: Confirmar se isto se pode fazer aqui
+    params = { "labels" : "%016x"}  # TODO: confirmar isto tbm
+    
+    writeTableEntry(L3M_helper,  r1, table, match % "0", action, params % 0x1020202030204010) 
+    writeTableEntry(L3M_helper,  r1, table, match % "1", action, params % 0x1030602050204010)
+    writeTableEntry(L3MF_helper, r4, table, match % "0", action, params % 0x4030301020101010)
+    writeTableEntry(L3MF_helper, r4, table, match % "1", action, params % 0x4020501060101010)
+
+# Function to write the static ipv4 forwarding rules
+def writeIPv4ForwardingRules(L3M_helper, L3MF_helper, r1, r4):
+    table = "MyIngress.ipv4Lpm"
+    action = "MyIngress.forward"
+    match = { "hdr.ipv4.dstAddr" : "%s" } # TODO: Confirmar se isto se pode fazer aqui
+    params = { 
+        "egressPort" : "%s",
+        "nextHopMac" : "%012x"
+    }  # TODO: confirmar isto tbm
+    
+    writeTableEntry(L3M_helper,  r1, table, match % "10.0.1.1/32", action, params % ("1", 0xaa0000000001))
+    writeTableEntry(L3M_helper,  r1, table, match % "10.0.1.2/32", action, params % ("1", 0xaa0000000002))
+    writeTableEntry(L3M_helper,  r1, table, match % "10.0.1.3/32", action, params % ("1", 0xaa0000000003))
+    writeTableEntry(L3MF_helper, r4, table, match % "10.0.2.1/32", action, params % ("1", 0xaa0000000004))
+
+# Function to write the static label forwarding rules
+def writeLabelForwardingRules(L3M_helper, L3MF_helper, L3T_helper, r1,r2,r3,r4,r5,r6):
+    table = "MyIngress.labelLookup"
+    frwdTunnel = "MyIngress.forwardTunnel"
+    removeMSLP = "MyIngress.removeMSLP"
+    match = { "hdr.labels[0].label" : "%04x" } # TODO: Confirmar se isto se pode fazer aqui
+    params = { 
+        "egressPort" : "%s",
+        "nextHopMac" : "%012x"
+    }  # TODO: confirmar isto tbm
+
+    writeTableEntry(L3M_helper, r1, table, match % 0x1010, removeMSLP, None)
+    writeTableEntry(L3M_helper, r1, table, match % 0x1020, frwdTunnel, params % ("2", 0xaa0000000201))
+    writeTableEntry(L3M_helper, r1, table, match % 0x1030, frwdTunnel, params % ("3", 0xaa0000000601))
+
+    writeTableEntry(L3MF_helper, r4, table, match % 0x4010, removeMSLP, None)
+    writeTableEntry(L3MF_helper, r4, table, match % 0x4020, frwdTunnel, params % ("2", 0xaa0000000502))
+    writeTableEntry(L3MF_helper, r4, table, match % 0x4030, frwdTunnel, params % ("3", 0xaa0000000302))
+
+    writeTableEntry(L3T_helper, r2, table, match % 0x2010, frwdTunnel, params % ("1", 0xaa0000000102))
+    writeTableEntry(L3T_helper, r2, table, match % 0x2020, frwdTunnel, params % ("2", 0xaa0000000301))
+    writeTableEntry(L3T_helper, r3, table, match % 0x3010, frwdTunnel, params % ("1", 0xaa0000000202))
+    writeTableEntry(L3T_helper, r3, table, match % 0x3020, frwdTunnel, params % ("2", 0xaa0000000403))
+    writeTableEntry(L3T_helper, r5, table, match % 0x5010, frwdTunnel, params % ("1", 0xaa0000000602))
+    writeTableEntry(L3T_helper, r5, table, match % 0x5020, frwdTunnel, params % ("2", 0xaa0000000402))
+    writeTableEntry(L3T_helper, r6, table, match % 0x6010, frwdTunnel, params % ("1", 0xaa0000000103))
+    writeTableEntry(L3T_helper, r6, table, match % 0x6020, frwdTunnel, params % ("2", 0xaa0000000501))
+
+# Function to write the static internal macs rules
+def writeMacRules(L3M_helper, L3MF_helper, L3T_helper, r1,r2,r3,r4,r5,r6):
+    table = "MyIngress.internalMacLookup"
+    action = "MyIngress.rewriteMacs"
+    match = { "standard_metadata.egress_spec" : "%s" } # TODO: Confirmar se isto se pode fazer aqui
+    params = { 
+        "srcMac" : "%012x"
+    }  # TODO: confirmar isto tbm
+
+    writeTableEntry(L3M_helper, r1, table, match % "1", action, params % 0xaa0000000101)
+    writeTableEntry(L3M_helper, r1, table, match % "2", action, params % 0xaa0000000102)
+    writeTableEntry(L3M_helper, r1, table, match % "3", action, params % 0xaa0000000103)
+
+    writeTableEntry(L3MF_helper, r4, table, match % "1", action, params % 0xaa0000000401)
+    writeTableEntry(L3MF_helper, r4, table, match % "2", action, params % 0xaa0000000402)
+    writeTableEntry(L3MF_helper, r4, table, match % "3", action, params % 0xaa0000000403)
+
+    writeTableEntry(L3T_helper, r2, table, match % "1", action, params % 0xaa0000000201)
+    writeTableEntry(L3T_helper, r2, table, match % "2", action, params % 0xaa0000000202)
+    writeTableEntry(L3T_helper, r3, table, match % "1", action, params % 0xaa0000000301)
+    writeTableEntry(L3T_helper, r3, table, match % "2", action, params % 0xaa0000000302)
+    writeTableEntry(L3T_helper, r5, table, match % "1", action, params % 0xaa0000000501)
+    writeTableEntry(L3T_helper, r5, table, match % "2", action, params % 0xaa0000000502)
+    writeTableEntry(L3T_helper, r6, table, match % "1", action, params % 0xaa0000000601)
+    writeTableEntry(L3T_helper, r6, table, match % "2", action, params % 0xaa0000000602)
+
+# Function to write the static firewall rules
+def writeFirewallRules(L3MF_helper, r4):
+    dirTable = "MyIngress.checkDirection"
+    tcpTable = "MyIngress.allowedPortsTCP"
+    udpTable = "MyIngress.allowedPortsUDP"
+    action = "MyIngress.setDirection"
+    matchDir = { "standard_metadata.egress_spec" : "%s" } # TODO: Confirmar se isto se pode fazer aqui
+    matchTcp = { "hdr.tcp.dstPort" : "%s" } # TODO: Confirmar se isto se pode fazer aqui
+    matchUdp = { "hdr.tcp.dstPort" : "%s" } # TODO: Confirmar se isto se pode fazer aqui
+    params = { 
+        "dir" : "%d"
+    }  # TODO: confirmar isto tbm
+
+    writeTableEntry(L3MF_helper, r4, dirTable, matchDir % "1", action, params % 1)
+    writeTableEntry(L3MF_helper, r4, dirTable, matchDir % "2", action, params % 0)
+    writeTableEntry(L3MF_helper, r4, dirTable, matchDir % "3", action, params % 0)
+
+    writeTableEntry(L3MF_helper, r4, tcpTable, matchTcp % "81", "NoAction", None)
+    writeTableEntry(L3MF_helper, r4, udpTable, matchUdp % "53", "NoAction", None)
+
+# Function to write an entry to a table of a switch
+def writeTableEntry(helper, sw, table, match, action, params):
+    table_entry = helper.buildTableEntry(
+        table_name = table,
+        match_fields = match,
+        default_action = False,
+        action_name = action,
+        action_params = params,
+        priority = 0)
+    sw.WriteTableEntry(table_entry)
+    print("Installed %s rule for %s on %s" % (action, table, sw.name))
 
 
 
@@ -294,6 +416,9 @@ def main(p4infoL2_file_path, p4infoL3M_file_path, p4infoL3MF_file_path, p4infoL3
         # Write clone engines and their sessioId
         writeCloneEngines(L2_helper, L3M_helper, L3MF_helper, L3T_helper,
                           s1,r1,r2,r3,r4,r5,r6)
+
+        # Add the static rules to the L3 Switches
+        writeStaticRules(L3M_helper, L3MF_helper, L3T_helper, r1,r2,r3,r4,r5,r6)
 
         # readTableRules(p4info_helper, s1)
         # A good approach is to read the current table entries from the switch and populate
