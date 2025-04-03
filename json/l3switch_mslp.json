@@ -18,9 +18,8 @@
         ["key_0", 16, false],
         ["metadata.nextHopMac", 48, false],
         ["metadata.tcp_opt_size", 8, false],
-        ["metadata.tunnel", 2, false],
-        ["metadata.setRecirculate", 1, false],
-        ["_padding_0", 5, false]
+        ["metadata.tunnel", 8, false],
+        ["metadata.setRecirculate", 8, false]
       ]
     },
     {

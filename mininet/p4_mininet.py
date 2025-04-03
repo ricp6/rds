@@ -13,14 +13,17 @@
 # limitations under the License.
 #
 
-from mininet.net import Mininet
-from mininet.node import Switch, Host
-from mininet.log import setLogLevel, info, error, debug
-from mininet.moduledeps import pathCheck
-from sys import exit
 import os
 import tempfile
-import socket
+from sys import exit
+from time import sleep
+
+from mininet.log import debug, error, info
+from mininet.moduledeps import pathCheck
+from mininet.node import Host, Switch
+from netstat import check_listening_on_port
+
+SWITCH_START_TIMEOUT = 10 # seconds
 
 class P4Host(Host):
     def config(self, **params):
@@ -57,6 +60,7 @@ class P4Switch(Switch):
                  thrift_port = None,
                  pcap_dump = False,
                  log_console = False,
+                 log_file = None,
                  verbose = False,
                  device_id = None,
                  enable_debugger = False,
@@ -76,9 +80,16 @@ class P4Switch(Switch):
         logfile = "/tmp/p4s.{}.log".format(self.name)
         self.output = open(logfile, 'w')
         self.thrift_port = thrift_port
+        if check_listening_on_port(self.thrift_port):
+            error('%s cannot bind port %d because it is bound by another process\n' % (self.name, self.grpc_port))
+            exit(1)
         self.pcap_dump = pcap_dump
         self.enable_debugger = enable_debugger
         self.log_console = log_console
+        if log_file is not None:
+            self.log_file = log_file
+        else:
+            self.log_file = "/tmp/p4s.{}.log".format(self.name)
         if device_id is not None:
             self.device_id = device_id
             P4Switch.device_id = max(P4Switch.device_id, device_id)
@@ -99,25 +110,19 @@ class P4Switch(Switch):
         while True:
             if not os.path.exists(os.path.join("/proc", str(pid))):
                 return False
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            try:
-                sock.settimeout(0.5)
-                result = sock.connect_ex(("localhost", self.thrift_port))
-            finally:
-                sock.close()
-            if result == 0:
-                return  True
+            if check_listening_on_port(self.thrift_port):
+                return True
+            sleep(0.5)
 
     def start(self, controllers):
         "Start up a new P4 switch"
         info("Starting P4 switch {}.\n".format(self.name))
         args = [self.sw_path]
-        for port, intf in self.intfs.items():
+        for port, intf in list(self.intfs.items()):
             if not intf.IP():
                 args.extend(['-i', str(port) + "@" + intf.name])
         if self.pcap_dump:
-            args.append("--pcap")
-            # args.append("--useFiles")
+            args.append("--pcap %s" % self.pcap_dump)
         if self.thrift_port:
             args.extend(['--thrift-port', str(self.thrift_port)])
         if self.nanomsg:
@@ -129,13 +134,17 @@ class P4Switch(Switch):
             args.append("--debugger")
         if self.log_console:
             args.append("--log-console")
-        logfile = "/tmp/p4s.{}.log".format(self.name)
         info(' '.join(args) + "\n")
+
+        # disable IPv6
+        self.cmd("sysctl -w net.ipv6.conf.all.disable_ipv6=1")
+        self.cmd("sysctl -w net.ipv6.conf.default.disable_ipv6=1")
+        self.cmd("sysctl -w net.ipv6.conf.lo.disable_ipv6=1")
 
         pid = None
         with tempfile.NamedTemporaryFile() as f:
             # self.cmd(' '.join(args) + ' > /dev/null 2>&1 &')
-            self.cmd(' '.join(args) + ' >' + logfile + ' 2>&1 & echo $! >> ' + f.name)
+            self.cmd(' '.join(args) + ' >' + self.log_file + ' 2>&1 & echo $! >> ' + f.name)
             pid = int(f.read())
         debug("P4 switch {} PID is {}.\n".format(self.name, pid))
         if not self.check_switch_started(pid):

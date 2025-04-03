@@ -199,13 +199,13 @@ def installP4Programs(L2_helper, L3M_helper, L3MF_helper, L3T_helper,
     
     s1.SetForwardingPipelineConfig(p4info=L2_helper.p4info,
                                     bmv2_json_file_path=jsonL2)
-    print("Installed L2 - P4 Program using SetForwardingPipelineConfig on s1")
+    print("Installed L2   - P4 Program using SetForwardingPipelineConfig on s1")
     r1.SetForwardingPipelineConfig(p4info=L3M_helper.p4info,
                                     bmv2_json_file_path=jsonL3M)
-    print("Installed L3 MSLP - P4 Program using SetForwardingPipelineConfig on r1")
+    print("Installed L3M  - P4 Program using SetForwardingPipelineConfig on r1")
     r4.SetForwardingPipelineConfig(p4info=L3MF_helper.p4info,
                                     bmv2_json_file_path=jsonL3MF)
-    print("Installed L3 MSLP & FIREWALL - P4 Program using SetForwardingPipelineConfig on r4")
+    print("Installed L3MF - P4 Program using SetForwardingPipelineConfig on r4")
     r2.SetForwardingPipelineConfig(p4info=L3T_helper.p4info,
                                     bmv2_json_file_path=jsonL3T)
     r3.SetForwardingPipelineConfig(p4info=L3T_helper.p4info,
@@ -214,7 +214,7 @@ def installP4Programs(L2_helper, L3M_helper, L3MF_helper, L3T_helper,
                                     bmv2_json_file_path=jsonL3T)
     r6.SetForwardingPipelineConfig(p4info=L3T_helper.p4info,
                                     bmv2_json_file_path=jsonL3T)
-    print("Installed L3 TUNNEL - P4 Program using SetForwardingPipelineConfig on r2, r3, r5 and r6")
+    print("Installed L3T  - P4 Program using SetForwardingPipelineConfig on r2, r3, r5 and r6")
     
 # Function to write the default actions on all tables from all switches
 def writeDefaultActions(L2_helper, L3M_helper, L3MF_helper, L3T_helper,
@@ -272,82 +272,76 @@ def writeStaticRules(L3M_helper, L3MF_helper, L3T_helper, r1,r2,r3,r4,r5,r6):
 def writeTunnelSelectionRules(L3M_helper, L3MF_helper, r1, r4):
     table = "MyIngress.tunnelLookup"
     action = "MyIngress.addMSLP"
-    match = { "meta.tunnel" : "%s" }  # TODO: Confirmar se isto se pode fazer aqui
-    params = { "labels" : "%016x"}  # TODO: confirmar isto tbm
+    match = "meta.tunnel"
+    l = "labels"
     
-    writeTableEntry(L3M_helper,  r1, table, match % "0", action, params % 0x1020202030204010) 
-    writeTableEntry(L3M_helper,  r1, table, match % "1", action, params % 0x1030602050204010)
-    writeTableEntry(L3MF_helper, r4, table, match % "0", action, params % 0x4030301020101010)
-    writeTableEntry(L3MF_helper, r4, table, match % "1", action, params % 0x4020501060101010)
+    writeTableEntry(L3M_helper,  r1, table, {match: "0"}, action, {l: 0x1020202030204010})
+    writeTableEntry(L3M_helper,  r1, table, {match: "1"}, action, {l: 0x1030602050204010})
+    writeTableEntry(L3MF_helper, r4, table, {match: "0"}, action, {l: 0x4030301020101010})
+    writeTableEntry(L3MF_helper, r4, table, {match: "1"}, action, {l: 0x4020501060101010})
 
 # Function to write the static ipv4 forwarding rules
 def writeIPv4ForwardingRules(L3M_helper, L3MF_helper, r1, r4):
     table = "MyIngress.ipv4Lpm"
     action = "MyIngress.forward"
-    match = { "hdr.ipv4.dstAddr" : "%s" } # TODO: Confirmar se isto se pode fazer aqui
-    params = { 
-        "egressPort" : "%s",
-        "nextHopMac" : "%012x"
-    }  # TODO: confirmar isto tbm
+    match = "hdr.ipv4.dstAddr"
+    port = "egressPort"
+    mac = "nextHopMac"
     
-    writeTableEntry(L3M_helper,  r1, table, match % "10.0.1.1/32", action, params % ("1", 0xaa0000000001))
-    writeTableEntry(L3M_helper,  r1, table, match % "10.0.1.2/32", action, params % ("1", 0xaa0000000002))
-    writeTableEntry(L3M_helper,  r1, table, match % "10.0.1.3/32", action, params % ("1", 0xaa0000000003))
-    writeTableEntry(L3MF_helper, r4, table, match % "10.0.2.1/32", action, params % ("1", 0xaa0000000004))
+    writeTableEntry(L3M_helper,  r1, table, {match : "10.0.1.1/32"}, action, {port : "1", mac : 0xaa0000000001})
+    writeTableEntry(L3M_helper,  r1, table, {match : "10.0.1.2/32"}, action, {port : "1", mac : 0xaa0000000002})
+    writeTableEntry(L3M_helper,  r1, table, {match : "10.0.1.3/32"}, action, {port : "1", mac : 0xaa0000000003})
+    writeTableEntry(L3MF_helper, r4, table, {match : "10.0.2.1/32"}, action, {port : "1", mac : 0xaa0000000004})
 
 # Function to write the static label forwarding rules
 def writeLabelForwardingRules(L3M_helper, L3MF_helper, L3T_helper, r1,r2,r3,r4,r5,r6):
     table = "MyIngress.labelLookup"
     frwdTunnel = "MyIngress.forwardTunnel"
     removeMSLP = "MyIngress.removeMSLP"
-    match = { "hdr.labels[0].label" : "%04x" } # TODO: Confirmar se isto se pode fazer aqui
-    params = { 
-        "egressPort" : "%s",
-        "nextHopMac" : "%012x"
-    }  # TODO: confirmar isto tbm
+    match = "hdr.labels[0].label"
+    port = "egressPort"
+    mac = "nextHopMac"
 
-    writeTableEntry(L3M_helper, r1, table, match % 0x1010, removeMSLP, None)
-    writeTableEntry(L3M_helper, r1, table, match % 0x1020, frwdTunnel, params % ("2", 0xaa0000000201))
-    writeTableEntry(L3M_helper, r1, table, match % 0x1030, frwdTunnel, params % ("3", 0xaa0000000601))
+    writeTableEntry(L3M_helper, r1, table, {match: 0x1010}, removeMSLP, None)
+    writeTableEntry(L3M_helper, r1, table, {match: 0x1020}, frwdTunnel, {port: "2", mac: 0xaa0000000201})
+    writeTableEntry(L3M_helper, r1, table, {match: 0x1030}, frwdTunnel, {port: "3", mac: 0xaa0000000601})
 
-    writeTableEntry(L3MF_helper, r4, table, match % 0x4010, removeMSLP, None)
-    writeTableEntry(L3MF_helper, r4, table, match % 0x4020, frwdTunnel, params % ("2", 0xaa0000000502))
-    writeTableEntry(L3MF_helper, r4, table, match % 0x4030, frwdTunnel, params % ("3", 0xaa0000000302))
+    writeTableEntry(L3MF_helper, r4, table, {match: 0x4010}, removeMSLP, None)
+    writeTableEntry(L3MF_helper, r4, table, {match: 0x4020}, frwdTunnel, {port: "2", mac: 0xaa0000000502})
+    writeTableEntry(L3MF_helper, r4, table, {match: 0x4030}, frwdTunnel, {port: "3", mac: 0xaa0000000302})
 
-    writeTableEntry(L3T_helper, r2, table, match % 0x2010, frwdTunnel, params % ("1", 0xaa0000000102))
-    writeTableEntry(L3T_helper, r2, table, match % 0x2020, frwdTunnel, params % ("2", 0xaa0000000301))
-    writeTableEntry(L3T_helper, r3, table, match % 0x3010, frwdTunnel, params % ("1", 0xaa0000000202))
-    writeTableEntry(L3T_helper, r3, table, match % 0x3020, frwdTunnel, params % ("2", 0xaa0000000403))
-    writeTableEntry(L3T_helper, r5, table, match % 0x5010, frwdTunnel, params % ("1", 0xaa0000000602))
-    writeTableEntry(L3T_helper, r5, table, match % 0x5020, frwdTunnel, params % ("2", 0xaa0000000402))
-    writeTableEntry(L3T_helper, r6, table, match % 0x6010, frwdTunnel, params % ("1", 0xaa0000000103))
-    writeTableEntry(L3T_helper, r6, table, match % 0x6020, frwdTunnel, params % ("2", 0xaa0000000501))
+    writeTableEntry(L3T_helper, r2, table, {match: 0x2010}, frwdTunnel, {port: "1", mac: 0xaa0000000102})
+    writeTableEntry(L3T_helper, r2, table, {match: 0x2020}, frwdTunnel, {port: "2", mac: 0xaa0000000301})
+    writeTableEntry(L3T_helper, r3, table, {match: 0x3010}, frwdTunnel, {port: "1", mac: 0xaa0000000202})
+    writeTableEntry(L3T_helper, r3, table, {match: 0x3020}, frwdTunnel, {port: "2", mac: 0xaa0000000403})
+    writeTableEntry(L3T_helper, r5, table, {match: 0x5010}, frwdTunnel, {port: "1", mac: 0xaa0000000602})
+    writeTableEntry(L3T_helper, r5, table, {match: 0x5020}, frwdTunnel, {port: "2", mac: 0xaa0000000402})
+    writeTableEntry(L3T_helper, r6, table, {match: 0x6010}, frwdTunnel, {port: "1", mac: 0xaa0000000103})
+    writeTableEntry(L3T_helper, r6, table, {match: 0x6020}, frwdTunnel, {port: "2", mac: 0xaa0000000501})
 
 # Function to write the static internal macs rules
 def writeMacRules(L3M_helper, L3MF_helper, L3T_helper, r1,r2,r3,r4,r5,r6):
     table = "MyIngress.internalMacLookup"
     action = "MyIngress.rewriteMacs"
-    match = { "standard_metadata.egress_spec" : "%s" } # TODO: Confirmar se isto se pode fazer aqui
-    params = { 
-        "srcMac" : "%012x"
-    }  # TODO: confirmar isto tbm
+    match = "standard_metadata.egress_spec"
+    mac = "srcMac"
 
-    writeTableEntry(L3M_helper, r1, table, match % "1", action, params % 0xaa0000000101)
-    writeTableEntry(L3M_helper, r1, table, match % "2", action, params % 0xaa0000000102)
-    writeTableEntry(L3M_helper, r1, table, match % "3", action, params % 0xaa0000000103)
+    writeTableEntry(L3M_helper, r1, table, {match: "1"}, action, {mac: 0xaa0000000101})
+    writeTableEntry(L3M_helper, r1, table, {match: "2"}, action, {mac: 0xaa0000000102})
+    writeTableEntry(L3M_helper, r1, table, {match: "3"}, action, {mac: 0xaa0000000103})
 
-    writeTableEntry(L3MF_helper, r4, table, match % "1", action, params % 0xaa0000000401)
-    writeTableEntry(L3MF_helper, r4, table, match % "2", action, params % 0xaa0000000402)
-    writeTableEntry(L3MF_helper, r4, table, match % "3", action, params % 0xaa0000000403)
-
-    writeTableEntry(L3T_helper, r2, table, match % "1", action, params % 0xaa0000000201)
-    writeTableEntry(L3T_helper, r2, table, match % "2", action, params % 0xaa0000000202)
-    writeTableEntry(L3T_helper, r3, table, match % "1", action, params % 0xaa0000000301)
-    writeTableEntry(L3T_helper, r3, table, match % "2", action, params % 0xaa0000000302)
-    writeTableEntry(L3T_helper, r5, table, match % "1", action, params % 0xaa0000000501)
-    writeTableEntry(L3T_helper, r5, table, match % "2", action, params % 0xaa0000000502)
-    writeTableEntry(L3T_helper, r6, table, match % "1", action, params % 0xaa0000000601)
-    writeTableEntry(L3T_helper, r6, table, match % "2", action, params % 0xaa0000000602)
+    writeTableEntry(L3MF_helper,r4, table, {match: "1"}, action, {mac: 0xaa0000000401})
+    writeTableEntry(L3MF_helper,r4, table, {match: "2"}, action, {mac: 0xaa0000000402})
+    writeTableEntry(L3MF_helper,r4, table, {match: "3"}, action, {mac: 0xaa0000000403})
+    
+    writeTableEntry(L3T_helper, r2, table, {match: "1"}, action, {mac: 0xaa0000000201})
+    writeTableEntry(L3T_helper, r2, table, {match: "2"}, action, {mac: 0xaa0000000202})
+    writeTableEntry(L3T_helper, r3, table, {match: "1"}, action, {mac: 0xaa0000000301})
+    writeTableEntry(L3T_helper, r3, table, {match: "2"}, action, {mac: 0xaa0000000302})
+    writeTableEntry(L3T_helper, r5, table, {match: "1"}, action, {mac: 0xaa0000000501})
+    writeTableEntry(L3T_helper, r5, table, {match: "2"}, action, {mac: 0xaa0000000502})
+    writeTableEntry(L3T_helper, r6, table, {match: "1"}, action, {mac: 0xaa0000000601})
+    writeTableEntry(L3T_helper, r6, table, {match: "2"}, action, {mac: 0xaa0000000602})
 
 # Function to write the static firewall rules
 def writeFirewallRules(L3MF_helper, r4):
@@ -355,19 +349,17 @@ def writeFirewallRules(L3MF_helper, r4):
     tcpTable = "MyIngress.allowedPortsTCP"
     udpTable = "MyIngress.allowedPortsUDP"
     action = "MyIngress.setDirection"
-    matchDir = { "standard_metadata.egress_spec" : "%s" } # TODO: Confirmar se isto se pode fazer aqui
-    matchTcp = { "hdr.tcp.dstPort" : "%s" } # TODO: Confirmar se isto se pode fazer aqui
-    matchUdp = { "hdr.tcp.dstPort" : "%s" } # TODO: Confirmar se isto se pode fazer aqui
-    params = { 
-        "dir" : "%d"
-    }  # TODO: confirmar isto tbm
+    matchDir = "standard_metadata.egress_spec"
+    matchTcp = "hdr.tcp.dstPort"
+    matchUdp = "hdr.tcp.dstPort"
+    d = "dir"
 
-    writeTableEntry(L3MF_helper, r4, dirTable, matchDir % "1", action, params % 1)
-    writeTableEntry(L3MF_helper, r4, dirTable, matchDir % "2", action, params % 0)
-    writeTableEntry(L3MF_helper, r4, dirTable, matchDir % "3", action, params % 0)
+    writeTableEntry(L3MF_helper, r4, dirTable, {matchDir: "1"}, action, {d: 1})
+    writeTableEntry(L3MF_helper, r4, dirTable, {matchDir: "2"}, action, {d: 0})
+    writeTableEntry(L3MF_helper, r4, dirTable, {matchDir: "3"}, action, {d: 0})
 
-    writeTableEntry(L3MF_helper, r4, tcpTable, matchTcp % "81", "NoAction", None)
-    writeTableEntry(L3MF_helper, r4, udpTable, matchUdp % "53", "NoAction", None)
+    writeTableEntry(L3MF_helper, r4, tcpTable, {matchTcp: "81"}, "NoAction", None)
+    writeTableEntry(L3MF_helper, r4, udpTable, {matchUdp: "53"}, "NoAction", None)
 
 # Function to write an entry to a table of a switch
 def writeTableEntry(helper, sw, table, match, action, params):

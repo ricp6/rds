@@ -1,0 +1,285 @@
+pkg_info {
+  arch: "v1model"
+}
+tables {
+  preamble {
+    id: 47604142
+    name: "MyIngress.ipv4Lpm"
+    alias: "ipv4Lpm"
+  }
+  match_fields {
+    id: 1
+    name: "hdr.ipv4.dstAddr"
+    bitwidth: 32
+    match_type: LPM
+  }
+  action_refs {
+    id: 29683729
+  }
+  action_refs {
+    id: 21257015
+  }
+  size: 16
+}
+tables {
+  preamble {
+    id: 50323762
+    name: "MyIngress.internalMacLookup"
+    alias: "internalMacLookup"
+  }
+  match_fields {
+    id: 1
+    name: "standard_metadata.egress_spec"
+    bitwidth: 9
+    match_type: EXACT
+  }
+  action_refs {
+    id: 26407428
+  }
+  action_refs {
+    id: 25652968
+  }
+  size: 16
+}
+tables {
+  preamble {
+    id: 39414161
+    name: "MyIngress.labelLookup"
+    alias: "labelLookup"
+  }
+  match_fields {
+    id: 1
+    name: "hdr.labels[0].label"
+    bitwidth: 16
+    match_type: EXACT
+  }
+  action_refs {
+    id: 20445750
+  }
+  action_refs {
+    id: 19975822
+  }
+  action_refs {
+    id: 25652968
+  }
+  size: 16
+}
+tables {
+  preamble {
+    id: 42051966
+    name: "MyIngress.tunnelLookup"
+    alias: "tunnelLookup"
+  }
+  match_fields {
+    id: 1
+    name: "meta.tunnel"
+    bitwidth: 8
+    match_type: EXACT
+  }
+  action_refs {
+    id: 22200191
+  }
+  action_refs {
+    id: 25652968
+  }
+  size: 16
+}
+tables {
+  preamble {
+    id: 41823037
+    name: "MyIngress.checkDirection"
+    alias: "checkDirection"
+  }
+  match_fields {
+    id: 1
+    name: "standard_metadata.egress_spec"
+    bitwidth: 9
+    match_type: EXACT
+  }
+  action_refs {
+    id: 27114974
+  }
+  action_refs {
+    id: 21257015
+  }
+  size: 16
+}
+tables {
+  preamble {
+    id: 46724738
+    name: "MyIngress.allowedPortsTCP"
+    alias: "allowedPortsTCP"
+  }
+  match_fields {
+    id: 1
+    name: "hdr.tcp.dstPort"
+    bitwidth: 16
+    match_type: EXACT
+  }
+  action_refs {
+    id: 21257015
+  }
+  size: 16
+}
+tables {
+  preamble {
+    id: 39012839
+    name: "MyIngress.allowedPortsUDP"
+    alias: "allowedPortsUDP"
+  }
+  match_fields {
+    id: 1
+    name: "hdr.udp.dstPort"
+    bitwidth: 16
+    match_type: EXACT
+  }
+  action_refs {
+    id: 21257015
+  }
+  size: 16
+}
+actions {
+  preamble {
+    id: 21257015
+    name: "NoAction"
+    alias: "NoAction"
+    annotations: "@noWarn(\"unused\")"
+  }
+}
+actions {
+  preamble {
+    id: 25652968
+    name: "MyIngress.drop"
+    alias: "drop"
+  }
+}
+actions {
+  preamble {
+    id: 29683729
+    name: "MyIngress.forward"
+    alias: "forward"
+  }
+  params {
+    id: 1
+    name: "egressPort"
+    bitwidth: 9
+  }
+  params {
+    id: 2
+    name: "nextHopMac"
+    bitwidth: 48
+  }
+}
+actions {
+  preamble {
+    id: 26407428
+    name: "MyIngress.rewriteMacs"
+    alias: "rewriteMacs"
+  }
+  params {
+    id: 1
+    name: "srcMac"
+    bitwidth: 48
+  }
+}
+actions {
+  preamble {
+    id: 20445750
+    name: "MyIngress.forwardTunnel"
+    alias: "forwardTunnel"
+  }
+  params {
+    id: 1
+    name: "egressPort"
+    bitwidth: 9
+  }
+  params {
+    id: 2
+    name: "nextHopMac"
+    bitwidth: 48
+  }
+}
+actions {
+  preamble {
+    id: 19975822
+    name: "MyIngress.removeMSLP"
+    alias: "removeMSLP"
+  }
+}
+actions {
+  preamble {
+    id: 22200191
+    name: "MyIngress.addMSLP"
+    alias: "addMSLP"
+  }
+  params {
+    id: 1
+    name: "labels"
+    bitwidth: 64
+  }
+}
+actions {
+  preamble {
+    id: 19368343
+    name: "MyIngress.selectTunnel"
+    alias: "selectTunnel"
+  }
+}
+actions {
+  preamble {
+    id: 25892681
+    name: "MyIngress.compute_hashes"
+    alias: "compute_hashes"
+  }
+}
+actions {
+  preamble {
+    id: 27114974
+    name: "MyIngress.setDirection"
+    alias: "setDirection"
+  }
+  params {
+    id: 1
+    name: "dir"
+    bitwidth: 1
+  }
+}
+actions {
+  preamble {
+    id: 30582443
+    name: "MyEgress.popLabel"
+    alias: "popLabel"
+  }
+}
+registers {
+  preamble {
+    id: 372442416
+    name: "MyIngress.bloom_filter_1"
+    alias: "bloom_filter_1"
+  }
+  type_spec {
+    bitstring {
+      bit {
+        bitwidth: 1
+      }
+    }
+  }
+  size: 4096
+}
+registers {
+  preamble {
+    id: 384163989
+    name: "MyIngress.bloom_filter_2"
+    alias: "bloom_filter_2"
+  }
+  type_spec {
+    bitstring {
+      bit {
+        bitwidth: 1
+      }
+    }
+  }
+  size: 4096
+}
+type_info {
+}

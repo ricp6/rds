@@ -1,0 +1,88 @@
+pkg_info {
+  arch: "v1model"
+}
+tables {
+  preamble {
+    id: 39414161
+    name: "MyIngress.labelLookup"
+    alias: "labelLookup"
+  }
+  match_fields {
+    id: 1
+    name: "hdr.labels[0].label"
+    bitwidth: 16
+    match_type: EXACT
+  }
+  action_refs {
+    id: 20445750
+  }
+  action_refs {
+    id: 25652968
+  }
+  size: 2
+}
+tables {
+  preamble {
+    id: 50323762
+    name: "MyIngress.internalMacLookup"
+    alias: "internalMacLookup"
+  }
+  match_fields {
+    id: 1
+    name: "standard_metadata.egress_spec"
+    bitwidth: 9
+    match_type: EXACT
+  }
+  action_refs {
+    id: 26407428
+  }
+  action_refs {
+    id: 25652968
+  }
+  size: 2
+}
+actions {
+  preamble {
+    id: 25652968
+    name: "MyIngress.drop"
+    alias: "drop"
+  }
+}
+actions {
+  preamble {
+    id: 20445750
+    name: "MyIngress.forwardTunnel"
+    alias: "forwardTunnel"
+  }
+  params {
+    id: 1
+    name: "egressPort"
+    bitwidth: 9
+  }
+  params {
+    id: 2
+    name: "nextHopMac"
+    bitwidth: 48
+  }
+}
+actions {
+  preamble {
+    id: 26407428
+    name: "MyIngress.rewriteMacs"
+    alias: "rewriteMacs"
+  }
+  params {
+    id: 1
+    name: "srcMac"
+    bitwidth: 48
+  }
+}
+actions {
+  preamble {
+    id: 30582443
+    name: "MyEgress.popLabel"
+    alias: "popLabel"
+  }
+}
+type_info {
+}

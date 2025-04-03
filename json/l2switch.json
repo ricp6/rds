@@ -3,7 +3,10 @@
     {
       "name" : "scalars_0",
       "id" : 0,
-      "fields" : []
+      "fields" : [
+        ["metadata.ingress_port", 9, false],
+        ["_padding_0", 7, false]
+      ]
     },
     {
       "name" : "standard_metadata",
@@ -36,6 +39,14 @@
         ["srcAddr", 48, false],
         ["etherType", 16, false]
       ]
+    },
+    {
+      "name" : "cpu_t",
+      "id" : 3,
+      "fields" : [
+        ["srcAddr", 48, false],
+        ["ingress_port", 16, false]
+      ]
     }
   ],
   "headers" : [
@@ -54,9 +65,16 @@
       "pi_omit" : true
     },
     {
-      "name" : "ethernet",
+      "name" : "eth",
       "id" : 2,
       "header_type" : "ethernet_t",
+      "metadata" : false,
+      "pi_omit" : true
+    },
+    {
+      "name" : "cpu",
+      "id" : 3,
+      "header_type" : "cpu_t",
       "metadata" : false,
       "pi_omit" : true
     }
@@ -65,7 +83,18 @@
   "header_union_types" : [],
   "header_unions" : [],
   "header_union_stacks" : [],
-  "field_lists" : [],
+  "field_lists" : [
+    {
+      "id" : 1,
+      "name" : "field_list0",
+      "elements" : [
+        {
+          "type" : "field",
+          "value" : ["scalars", "metadata.ingress_port"]
+        }
+      ]
+    }
+  ],
   "errors" : [
     ["NoError", 0],
     ["PacketTooShort", 1],
@@ -90,7 +119,7 @@
               "parameters" : [
                 {
                   "type" : "regular",
-                  "value" : "ethernet"
+                  "value" : "eth"
                 }
               ],
               "op" : "extract"
@@ -116,11 +145,11 @@
       "id" : 0,
       "source_info" : {
         "filename" : "p4/l2switch.p4",
-        "line" : 118,
+        "line" : 152,
         "column" : 8,
         "source_fragment" : "MyDeparser"
       },
-      "order" : ["ethernet"],
+      "order" : ["eth", "cpu"],
       "primitives" : []
     }
   ],
@@ -137,8 +166,59 @@
       "primitives" : []
     },
     {
-      "name" : "MyIngress.setEgress",
+      "name" : "NoAction",
       "id" : 1,
+      "runtime_data" : [],
+      "primitives" : []
+    },
+    {
+      "name" : "MyIngress.learnMac",
+      "id" : 2,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "metadata.ingress_port"]
+            },
+            {
+              "type" : "field",
+              "value" : ["standard_metadata", "ingress_port"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4/l2switch.p4",
+            "line" : 74,
+            "column" : 8,
+            "source_fragment" : "meta.ingress_port = standard_metadata.ingress_port"
+          }
+        },
+        {
+          "op" : "clone_ingress_pkt_to_egress",
+          "parameters" : [
+            {
+              "type" : "hexstr",
+              "value" : "0x00000064"
+            },
+            {
+              "type" : "hexstr",
+              "value" : "0x1"
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4/l2switch.p4",
+            "line" : 75,
+            "column" : 8,
+            "source_fragment" : "clone_preserving_field_list(CloneType.I2E, 100, 0)"
+          }
+        }
+      ]
+    },
+    {
+      "name" : "MyIngress.forward",
+      "id" : 3,
       "runtime_data" : [
         {
           "name" : "egressPort",
@@ -160,7 +240,7 @@
           ],
           "source_info" : {
             "filename" : "p4/l2switch.p4",
-            "line" : 63,
+            "line" : 89,
             "column" : 8,
             "source_fragment" : "standard_metadata.egress_spec = egressPort"
           }
@@ -168,8 +248,8 @@
       ]
     },
     {
-      "name" : "l2switch79",
-      "id" : 2,
+      "name" : "l2switch106",
+      "id" : 4,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -186,7 +266,7 @@
           ],
           "source_info" : {
             "filename" : "p4/l2switch.p4",
-            "line" : 79,
+            "line" : 106,
             "column" : 16,
             "source_fragment" : "standard_metadata.mcast_grp = 1"
           }
@@ -194,8 +274,8 @@
       ]
     },
     {
-      "name" : "l2switch82",
-      "id" : 3,
+      "name" : "l2switch109",
+      "id" : 5,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -208,7 +288,7 @@
           ],
           "source_info" : {
             "filename" : "p4/l2switch.p4",
-            "line" : 82,
+            "line" : 109,
             "column" : 12,
             "source_fragment" : "mark_to_drop(standard_metadata)"
           }
@@ -217,7 +297,7 @@
     },
     {
       "name" : "MyEgress.drop",
-      "id" : 4,
+      "id" : 6,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -230,9 +310,116 @@
           ],
           "source_info" : {
             "filename" : "p4/l2switch.p4",
-            "line" : 96,
+            "line" : 122,
             "column" : 8,
             "source_fragment" : "mark_to_drop(standard_metadata)"
+          }
+        }
+      ]
+    },
+    {
+      "name" : "l2switch127",
+      "id" : 7,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "add_header",
+          "parameters" : [
+            {
+              "type" : "header",
+              "value" : "cpu"
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4/l2switch.p4",
+            "line" : 127,
+            "column" : 12,
+            "source_fragment" : "hdr.cpu.setValid()"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["cpu", "srcAddr"]
+            },
+            {
+              "type" : "field",
+              "value" : ["eth", "srcAddr"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4/l2switch.p4",
+            "line" : 128,
+            "column" : 12,
+            "source_fragment" : "hdr.cpu.srcAddr = hdr.eth.srcAddr"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["cpu", "ingress_port"]
+            },
+            {
+              "type" : "expression",
+              "value" : {
+                "type" : "expression",
+                "value" : {
+                  "op" : "&",
+                  "left" : {
+                    "type" : "field",
+                    "value" : ["scalars", "metadata.ingress_port"]
+                  },
+                  "right" : {
+                    "type" : "hexstr",
+                    "value" : "0xffff"
+                  }
+                }
+              }
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4/l2switch.p4",
+            "line" : 129,
+            "column" : 12,
+            "source_fragment" : "hdr.cpu.ingress_port = (bit<16>)meta.ingress_port"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["eth", "etherType"]
+            },
+            {
+              "type" : "hexstr",
+              "value" : "0x1234"
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4/l2switch.p4",
+            "line" : 4,
+            "column" : 36,
+            "source_fragment" : "0x1234; ..."
+          }
+        },
+        {
+          "op" : "truncate",
+          "parameters" : [
+            {
+              "type" : "hexstr",
+              "value" : "0x00000016"
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4/l2switch.p4",
+            "line" : 132,
+            "column" : 12,
+            "source_fragment" : "truncate((bit<32>)22)"
           }
         }
       ]
@@ -244,55 +431,92 @@
       "id" : 0,
       "source_info" : {
         "filename" : "p4/l2switch.p4",
-        "line" : 58,
+        "line" : 68,
         "column" : 8,
         "source_fragment" : "MyIngress"
       },
       "init_table" : "node_2",
       "tables" : [
         {
-          "name" : "MyIngress.macLookup",
+          "name" : "MyIngress.sMacLookup",
           "id" : 0,
           "source_info" : {
             "filename" : "p4/l2switch.p4",
-            "line" : 66,
+            "line" : 78,
             "column" : 10,
-            "source_fragment" : "macLookup"
+            "source_fragment" : "sMacLookup"
           },
           "key" : [
             {
               "match_type" : "exact",
-              "name" : "hdr.ethernet.dstAddr",
-              "target" : ["ethernet", "dstAddr"],
+              "name" : "hdr.eth.srcAddr",
+              "target" : ["eth", "srcAddr"],
               "mask" : null
             }
           ],
           "match_type" : "exact",
           "type" : "simple",
-          "max_size" : 1024,
+          "max_size" : 256,
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [1, 0],
-          "actions" : ["MyIngress.setEgress", "NoAction"],
-          "base_default_next" : null,
+          "action_ids" : [2, 0],
+          "actions" : ["MyIngress.learnMac", "NoAction"],
+          "base_default_next" : "MyIngress.dMacLookup",
           "next_tables" : {
-            "__HIT__" : null,
-            "__MISS__" : "tbl_l2switch79"
+            "MyIngress.learnMac" : "MyIngress.dMacLookup",
+            "NoAction" : "MyIngress.dMacLookup"
           },
           "default_entry" : {
-            "action_id" : 0,
+            "action_id" : 2,
             "action_const" : false,
             "action_data" : [],
             "action_entry_const" : false
           }
         },
         {
-          "name" : "tbl_l2switch79",
+          "name" : "MyIngress.dMacLookup",
           "id" : 1,
           "source_info" : {
             "filename" : "p4/l2switch.p4",
-            "line" : 79,
+            "line" : 92,
+            "column" : 10,
+            "source_fragment" : "dMacLookup"
+          },
+          "key" : [
+            {
+              "match_type" : "exact",
+              "name" : "hdr.eth.dstAddr",
+              "target" : ["eth", "dstAddr"],
+              "mask" : null
+            }
+          ],
+          "match_type" : "exact",
+          "type" : "simple",
+          "max_size" : 256,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [3, 1],
+          "actions" : ["MyIngress.forward", "NoAction"],
+          "base_default_next" : null,
+          "next_tables" : {
+            "__HIT__" : null,
+            "__MISS__" : "tbl_l2switch106"
+          },
+          "default_entry" : {
+            "action_id" : 1,
+            "action_const" : false,
+            "action_data" : [],
+            "action_entry_const" : false
+          }
+        },
+        {
+          "name" : "tbl_l2switch106",
+          "id" : 2,
+          "source_info" : {
+            "filename" : "p4/l2switch.p4",
+            "line" : 106,
             "column" : 44,
             "source_fragment" : "="
           },
@@ -303,25 +527,25 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [2],
-          "actions" : ["l2switch79"],
+          "action_ids" : [4],
+          "actions" : ["l2switch106"],
           "base_default_next" : null,
           "next_tables" : {
-            "l2switch79" : null
+            "l2switch106" : null
           },
           "default_entry" : {
-            "action_id" : 2,
+            "action_id" : 4,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
           }
         },
         {
-          "name" : "tbl_l2switch82",
-          "id" : 2,
+          "name" : "tbl_l2switch109",
+          "id" : 3,
           "source_info" : {
             "filename" : "p4/l2switch.p4",
-            "line" : 82,
+            "line" : 109,
             "column" : 12,
             "source_fragment" : "mark_to_drop(standard_metadata)"
           },
@@ -332,14 +556,14 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [3],
-          "actions" : ["l2switch82"],
+          "action_ids" : [5],
+          "actions" : ["l2switch109"],
           "base_default_next" : null,
           "next_tables" : {
-            "l2switch82" : null
+            "l2switch109" : null
           },
           "default_entry" : {
-            "action_id" : 3,
+            "action_id" : 5,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
@@ -353,9 +577,9 @@
           "id" : 0,
           "source_info" : {
             "filename" : "p4/l2switch.p4",
-            "line" : 77,
+            "line" : 103,
             "column" : 11,
-            "source_fragment" : "hdr.ethernet.isValid()"
+            "source_fragment" : "hdr.eth.isValid()"
           },
           "expression" : {
             "type" : "expression",
@@ -364,12 +588,12 @@
               "left" : null,
               "right" : {
                 "type" : "field",
-                "value" : ["ethernet", "$valid$"]
+                "value" : ["eth", "$valid$"]
               }
             }
           },
-          "true_next" : "MyIngress.macLookup",
-          "false_next" : "tbl_l2switch82"
+          "true_next" : "MyIngress.sMacLookup",
+          "false_next" : "tbl_l2switch109"
         }
       ]
     },
@@ -378,18 +602,47 @@
       "id" : 1,
       "source_info" : {
         "filename" : "p4/l2switch.p4",
-        "line" : 91,
+        "line" : 118,
         "column" : 8,
         "source_fragment" : "MyEgress"
       },
-      "init_table" : "node_8",
+      "init_table" : "node_9",
       "tables" : [
         {
-          "name" : "tbl_drop",
-          "id" : 3,
+          "name" : "tbl_l2switch127",
+          "id" : 4,
           "source_info" : {
             "filename" : "p4/l2switch.p4",
-            "line" : 102,
+            "line" : 127,
+            "column" : 12,
+            "source_fragment" : "hdr.cpu.setValid(); ..."
+          },
+          "key" : [],
+          "match_type" : "exact",
+          "type" : "simple",
+          "max_size" : 1024,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [7],
+          "actions" : ["l2switch127"],
+          "base_default_next" : "node_11",
+          "next_tables" : {
+            "l2switch127" : "node_11"
+          },
+          "default_entry" : {
+            "action_id" : 7,
+            "action_const" : true,
+            "action_data" : [],
+            "action_entry_const" : true
+          }
+        },
+        {
+          "name" : "tbl_drop",
+          "id" : 5,
+          "source_info" : {
+            "filename" : "p4/l2switch.p4",
+            "line" : 136,
             "column" : 12,
             "source_fragment" : "drop()"
           },
@@ -400,14 +653,14 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [4],
+          "action_ids" : [6],
           "actions" : ["MyEgress.drop"],
           "base_default_next" : null,
           "next_tables" : {
             "MyEgress.drop" : null
           },
           "default_entry" : {
-            "action_id" : 4,
+            "action_id" : 6,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
@@ -417,11 +670,37 @@
       "action_profiles" : [],
       "conditionals" : [
         {
-          "name" : "node_8",
+          "name" : "node_9",
           "id" : 1,
           "source_info" : {
             "filename" : "p4/l2switch.p4",
-            "line" : 101,
+            "line" : 126,
+            "column" : 11,
+            "source_fragment" : "standard_metadata.instance_type == 1"
+          },
+          "expression" : {
+            "type" : "expression",
+            "value" : {
+              "op" : "==",
+              "left" : {
+                "type" : "field",
+                "value" : ["standard_metadata", "instance_type"]
+              },
+              "right" : {
+                "type" : "hexstr",
+                "value" : "0x00000001"
+              }
+            }
+          },
+          "true_next" : "tbl_l2switch127",
+          "false_next" : "node_11"
+        },
+        {
+          "name" : "node_11",
+          "id" : 2,
+          "source_info" : {
+            "filename" : "p4/l2switch.p4",
+            "line" : 135,
             "column" : 12,
             "source_fragment" : "standard_metadata.egress_port == standard_metadata.ingress_port"
           },
