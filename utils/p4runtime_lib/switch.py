@@ -85,7 +85,7 @@ class SwitchConnection(object):
         else:
             self.client_stub.SetForwardingPipelineConfig(request)
 
-    def WriteTableEntry(self, table_entry, dry_run=False):
+    def WriteTableEntry(self, table_entry, dry_run=False, modify=False):
         request = p4runtime_pb2.WriteRequest()
         request.device_id = self.device_id
         request.election_id.low = 1
@@ -93,7 +93,10 @@ class SwitchConnection(object):
         if table_entry.is_default_action:
             update.type = p4runtime_pb2.Update.MODIFY
         else:
-            update.type = p4runtime_pb2.Update.INSERT
+            if modify:
+                update.type = p4runtime_pb2.Update.MODIFY
+            else:
+                update.type = p4runtime_pb2.Update.INSERT
         update.entity.table_entry.CopyFrom(table_entry)
         if dry_run:
             print("P4Runtime Write:", request)
