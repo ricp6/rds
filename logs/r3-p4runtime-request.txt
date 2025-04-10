@@ -1,10 +1,10 @@
 
-[2025-04-03 22:28:37.264] /p4.v1.P4Runtime/SetForwardingPipelineConfig
+[2025-04-10 10:40:18.181] /p4.v1.P4Runtime/SetForwardingPipelineConfig
 ---
 Message too long (24225 bytes)! Skipping log...
 ---
 
-[2025-04-03 22:28:37.284] /p4.v1.P4Runtime/Write
+[2025-04-10 10:40:18.201] /p4.v1.P4Runtime/Write
 ---
 device_id: 4
 election_id {
@@ -26,7 +26,7 @@ updates {
 }
 ---
 
-[2025-04-03 22:28:37.285] /p4.v1.P4Runtime/Write
+[2025-04-10 10:40:18.201] /p4.v1.P4Runtime/Write
 ---
 device_id: 4
 election_id {
@@ -48,7 +48,7 @@ updates {
 }
 ---
 
-[2025-04-03 22:28:37.293] /p4.v1.P4Runtime/Write
+[2025-04-10 10:40:18.205] /p4.v1.P4Runtime/Write
 ---
 device_id: 4
 election_id {
@@ -63,6 +63,138 @@ updates {
         replicas {
           egress_port: 510
           instance: 1
+        }
+      }
+    }
+  }
+}
+---
+
+[2025-04-10 10:40:18.215] /p4.v1.P4Runtime/Write
+---
+device_id: 4
+election_id {
+  low: 1
+}
+updates {
+  type: INSERT
+  entity {
+    table_entry {
+      table_id: 39414161
+      match {
+        field_id: 1
+        exact {
+          value: "0\020"
+        }
+      }
+      action {
+        action {
+          action_id: 20445750
+          params {
+            param_id: 1
+            value: "\000\001"
+          }
+          params {
+            param_id: 2
+            value: "\252\000\000\000\002\002"
+          }
+        }
+      }
+    }
+  }
+}
+---
+
+[2025-04-10 10:40:18.216] /p4.v1.P4Runtime/Write
+---
+device_id: 4
+election_id {
+  low: 1
+}
+updates {
+  type: INSERT
+  entity {
+    table_entry {
+      table_id: 39414161
+      match {
+        field_id: 1
+        exact {
+          value: "0 "
+        }
+      }
+      action {
+        action {
+          action_id: 20445750
+          params {
+            param_id: 1
+            value: "\000\002"
+          }
+          params {
+            param_id: 2
+            value: "\252\000\000\000\004\003"
+          }
+        }
+      }
+    }
+  }
+}
+---
+
+[2025-04-10 10:40:18.230] /p4.v1.P4Runtime/Write
+---
+device_id: 4
+election_id {
+  low: 1
+}
+updates {
+  type: INSERT
+  entity {
+    table_entry {
+      table_id: 50323762
+      match {
+        field_id: 1
+        exact {
+          value: "\000\001"
+        }
+      }
+      action {
+        action {
+          action_id: 26407428
+          params {
+            param_id: 1
+            value: "\252\000\000\000\003\001"
+          }
+        }
+      }
+    }
+  }
+}
+---
+
+[2025-04-10 10:40:18.230] /p4.v1.P4Runtime/Write
+---
+device_id: 4
+election_id {
+  low: 1
+}
+updates {
+  type: INSERT
+  entity {
+    table_entry {
+      table_id: 50323762
+      match {
+        field_id: 1
+        exact {
+          value: "\000\002"
+        }
+      }
+      action {
+        action {
+          action_id: 26407428
+          params {
+            param_id: 1
+            value: "\252\000\000\000\003\002"
+          }
         }
       }
     }

@@ -1,10 +1,10 @@
 
-[2025-04-03 22:28:37.109] /p4.v1.P4Runtime/SetForwardingPipelineConfig
+[2025-04-10 10:40:18.166] /p4.v1.P4Runtime/SetForwardingPipelineConfig
 ---
 Message too long (168508 bytes)! Skipping log...
 ---
 
-[2025-04-03 22:28:37.279] /p4.v1.P4Runtime/Write
+[2025-04-10 10:40:18.197] /p4.v1.P4Runtime/Write
 ---
 device_id: 5
 election_id {
@@ -26,7 +26,7 @@ updates {
 }
 ---
 
-[2025-04-03 22:28:37.280] /p4.v1.P4Runtime/Write
+[2025-04-10 10:40:18.197] /p4.v1.P4Runtime/Write
 ---
 device_id: 5
 election_id {
@@ -48,7 +48,7 @@ updates {
 }
 ---
 
-[2025-04-03 22:28:37.281] /p4.v1.P4Runtime/Write
+[2025-04-10 10:40:18.198] /p4.v1.P4Runtime/Write
 ---
 device_id: 5
 election_id {
@@ -70,7 +70,7 @@ updates {
 }
 ---
 
-[2025-04-03 22:28:37.281] /p4.v1.P4Runtime/Write
+[2025-04-10 10:40:18.198] /p4.v1.P4Runtime/Write
 ---
 device_id: 5
 election_id {
@@ -92,7 +92,7 @@ updates {
 }
 ---
 
-[2025-04-03 22:28:37.282] /p4.v1.P4Runtime/Write
+[2025-04-10 10:40:18.198] /p4.v1.P4Runtime/Write
 ---
 device_id: 5
 election_id {
@@ -114,7 +114,7 @@ updates {
 }
 ---
 
-[2025-04-03 22:28:37.282] /p4.v1.P4Runtime/Write
+[2025-04-10 10:40:18.199] /p4.v1.P4Runtime/Write
 ---
 device_id: 5
 election_id {
@@ -136,7 +136,7 @@ updates {
 }
 ---
 
-[2025-04-03 22:28:37.283] /p4.v1.P4Runtime/Write
+[2025-04-10 10:40:18.199] /p4.v1.P4Runtime/Write
 ---
 device_id: 5
 election_id {
@@ -158,7 +158,7 @@ updates {
 }
 ---
 
-[2025-04-03 22:28:37.293] /p4.v1.P4Runtime/Write
+[2025-04-10 10:40:18.206] /p4.v1.P4Runtime/Write
 ---
 device_id: 5
 election_id {
@@ -173,6 +173,441 @@ updates {
         replicas {
           egress_port: 510
           instance: 1
+        }
+      }
+    }
+  }
+}
+---
+
+[2025-04-10 10:40:18.208] /p4.v1.P4Runtime/Write
+---
+device_id: 5
+election_id {
+  low: 1
+}
+updates {
+  type: INSERT
+  entity {
+    table_entry {
+      table_id: 42051966
+      match {
+        field_id: 1
+        exact {
+          value: "\000"
+        }
+      }
+      action {
+        action {
+          action_id: 22200191
+          params {
+            param_id: 1
+            value: "@00\020 \020\020\020"
+          }
+        }
+      }
+    }
+  }
+}
+---
+
+[2025-04-10 10:40:18.209] /p4.v1.P4Runtime/Write
+---
+device_id: 5
+election_id {
+  low: 1
+}
+updates {
+  type: INSERT
+  entity {
+    table_entry {
+      table_id: 42051966
+      match {
+        field_id: 1
+        exact {
+          value: "\001"
+        }
+      }
+      action {
+        action {
+          action_id: 22200191
+          params {
+            param_id: 1
+            value: "@ P\020`\020\020\020"
+          }
+        }
+      }
+    }
+  }
+}
+---
+
+[2025-04-10 10:40:18.211] /p4.v1.P4Runtime/Write
+---
+device_id: 5
+election_id {
+  low: 1
+}
+updates {
+  type: INSERT
+  entity {
+    table_entry {
+      table_id: 47604142
+      match {
+        field_id: 1
+        lpm {
+          value: "\n\000\002\001"
+          prefix_len: 32
+        }
+      }
+      action {
+        action {
+          action_id: 29683729
+          params {
+            param_id: 1
+            value: "\000\001"
+          }
+          params {
+            param_id: 2
+            value: "\252\000\000\000\000\004"
+          }
+        }
+      }
+    }
+  }
+}
+---
+
+[2025-04-10 10:40:18.213] /p4.v1.P4Runtime/Write
+---
+device_id: 5
+election_id {
+  low: 1
+}
+updates {
+  type: INSERT
+  entity {
+    table_entry {
+      table_id: 39414161
+      match {
+        field_id: 1
+        exact {
+          value: "@\020"
+        }
+      }
+      action {
+        action {
+          action_id: 19975822
+        }
+      }
+    }
+  }
+}
+---
+
+[2025-04-10 10:40:18.213] /p4.v1.P4Runtime/Write
+---
+device_id: 5
+election_id {
+  low: 1
+}
+updates {
+  type: INSERT
+  entity {
+    table_entry {
+      table_id: 39414161
+      match {
+        field_id: 1
+        exact {
+          value: "@ "
+        }
+      }
+      action {
+        action {
+          action_id: 20445750
+          params {
+            param_id: 1
+            value: "\000\002"
+          }
+          params {
+            param_id: 2
+            value: "\252\000\000\000\005\002"
+          }
+        }
+      }
+    }
+  }
+}
+---
+
+[2025-04-10 10:40:18.214] /p4.v1.P4Runtime/Write
+---
+device_id: 5
+election_id {
+  low: 1
+}
+updates {
+  type: INSERT
+  entity {
+    table_entry {
+      table_id: 39414161
+      match {
+        field_id: 1
+        exact {
+          value: "@0"
+        }
+      }
+      action {
+        action {
+          action_id: 20445750
+          params {
+            param_id: 1
+            value: "\000\003"
+          }
+          params {
+            param_id: 2
+            value: "\252\000\000\000\003\002"
+          }
+        }
+      }
+    }
+  }
+}
+---
+
+[2025-04-10 10:40:18.224] /p4.v1.P4Runtime/Write
+---
+device_id: 5
+election_id {
+  low: 1
+}
+updates {
+  type: INSERT
+  entity {
+    table_entry {
+      table_id: 50323762
+      match {
+        field_id: 1
+        exact {
+          value: "\000\001"
+        }
+      }
+      action {
+        action {
+          action_id: 26407428
+          params {
+            param_id: 1
+            value: "\252\000\000\000\004\001"
+          }
+        }
+      }
+    }
+  }
+}
+---
+
+[2025-04-10 10:40:18.226] /p4.v1.P4Runtime/Write
+---
+device_id: 5
+election_id {
+  low: 1
+}
+updates {
+  type: INSERT
+  entity {
+    table_entry {
+      table_id: 50323762
+      match {
+        field_id: 1
+        exact {
+          value: "\000\002"
+        }
+      }
+      action {
+        action {
+          action_id: 26407428
+          params {
+            param_id: 1
+            value: "\252\000\000\000\004\002"
+          }
+        }
+      }
+    }
+  }
+}
+---
+
+[2025-04-10 10:40:18.227] /p4.v1.P4Runtime/Write
+---
+device_id: 5
+election_id {
+  low: 1
+}
+updates {
+  type: INSERT
+  entity {
+    table_entry {
+      table_id: 50323762
+      match {
+        field_id: 1
+        exact {
+          value: "\000\003"
+        }
+      }
+      action {
+        action {
+          action_id: 26407428
+          params {
+            param_id: 1
+            value: "\252\000\000\000\004\003"
+          }
+        }
+      }
+    }
+  }
+}
+---
+
+[2025-04-10 10:40:18.236] /p4.v1.P4Runtime/Write
+---
+device_id: 5
+election_id {
+  low: 1
+}
+updates {
+  type: INSERT
+  entity {
+    table_entry {
+      table_id: 41823037
+      match {
+        field_id: 1
+        exact {
+          value: "\000\001"
+        }
+      }
+      action {
+        action {
+          action_id: 27114974
+          params {
+            param_id: 1
+            value: "\001"
+          }
+        }
+      }
+    }
+  }
+}
+---
+
+[2025-04-10 10:40:18.238] /p4.v1.P4Runtime/Write
+---
+device_id: 5
+election_id {
+  low: 1
+}
+updates {
+  type: INSERT
+  entity {
+    table_entry {
+      table_id: 41823037
+      match {
+        field_id: 1
+        exact {
+          value: "\000\002"
+        }
+      }
+      action {
+        action {
+          action_id: 27114974
+          params {
+            param_id: 1
+            value: "\000"
+          }
+        }
+      }
+    }
+  }
+}
+---
+
+[2025-04-10 10:40:18.239] /p4.v1.P4Runtime/Write
+---
+device_id: 5
+election_id {
+  low: 1
+}
+updates {
+  type: INSERT
+  entity {
+    table_entry {
+      table_id: 41823037
+      match {
+        field_id: 1
+        exact {
+          value: "\000\003"
+        }
+      }
+      action {
+        action {
+          action_id: 27114974
+          params {
+            param_id: 1
+            value: "\000"
+          }
+        }
+      }
+    }
+  }
+}
+---
+
+[2025-04-10 10:40:18.239] /p4.v1.P4Runtime/Write
+---
+device_id: 5
+election_id {
+  low: 1
+}
+updates {
+  type: INSERT
+  entity {
+    table_entry {
+      table_id: 46724738
+      match {
+        field_id: 1
+        exact {
+          value: "\000Q"
+        }
+      }
+      action {
+        action {
+          action_id: 21257015
+        }
+      }
+    }
+  }
+}
+---
+
+[2025-04-10 10:40:18.240] /p4.v1.P4Runtime/Write
+---
+device_id: 5
+election_id {
+  low: 1
+}
+updates {
+  type: INSERT
+  entity {
+    table_entry {
+      table_id: 39012839
+      match {
+        field_id: 1
+        exact {
+          value: "\0005"
+        }
+      }
+      action {
+        action {
+          action_id: 21257015
         }
       }
     }

@@ -73,7 +73,7 @@ tables {
   match_fields {
     id: 1
     name: "meta.tunnel"
-    bitwidth: 8
+    bitwidth: 2
     match_type: EXACT
   }
   action_refs {
