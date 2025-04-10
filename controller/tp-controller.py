@@ -348,14 +348,18 @@ def writeFirewallRules(L3MF_helper, r4):
     tcpTable = "MyIngress.allowedPortsTCP"
     udpTable = "MyIngress.allowedPortsUDP"
     action = "MyIngress.setDirection"
-    matchDir = "standard_metadata.egress_spec"
+    matchIngress = "meta.ingress_port"
+    matchEgress = "standard_metadata.egress_spec"
     matchTcp = "hdr.tcp.dstPort"
     matchUdp = "hdr.udp.dstPort"
     d = "dir"
 
-    writeTableEntry(L3MF_helper, r4, dirTable, {matchDir: 0x01}, action, {d: 1})
-    writeTableEntry(L3MF_helper, r4, dirTable, {matchDir: 0x02}, action, {d: 0})
-    writeTableEntry(L3MF_helper, r4, dirTable, {matchDir: 0x03}, action, {d: 0})
+    writeTableEntry(L3MF_helper, r4, dirTable, {matchIngress: 0x01, matchEgress: 0x02}, action, {d: 0})
+    writeTableEntry(L3MF_helper, r4, dirTable, {matchIngress: 0x01, matchEgress: 0x03}, action, {d: 0})
+    writeTableEntry(L3MF_helper, r4, dirTable, {matchIngress: 0x02, matchEgress: 0x01}, action, {d: 1})
+    writeTableEntry(L3MF_helper, r4, dirTable, {matchIngress: 0x02, matchEgress: 0x03}, action, {d: 0})
+    writeTableEntry(L3MF_helper, r4, dirTable, {matchIngress: 0x03, matchEgress: 0x01}, action, {d: 1})
+    writeTableEntry(L3MF_helper, r4, dirTable, {matchIngress: 0x03, matchEgress: 0x02}, action, {d: 0})
 
     writeTableEntry(L3MF_helper, r4, tcpTable, {matchTcp: 0x51}, "NoAction", None) # decimal 81 » 0x51
     writeTableEntry(L3MF_helper, r4, udpTable, {matchUdp: 0x35}, "NoAction", None) # decimal 53 » 0x35

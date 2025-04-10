@@ -1,10 +1,10 @@
 
-[2025-04-10 10:40:18.157] /p4.v1.P4Runtime/SetForwardingPipelineConfig
+[2025-04-10 14:06:24.296] /p4.v1.P4Runtime/SetForwardingPipelineConfig
 ---
 Message too long (23493 bytes)! Skipping log...
 ---
 
-[2025-04-10 10:40:18.191] /p4.v1.P4Runtime/Write
+[2025-04-10 14:06:24.357] /p4.v1.P4Runtime/Write
 ---
 device_id: 1
 election_id {
@@ -26,7 +26,7 @@ updates {
 }
 ---
 
-[2025-04-10 10:40:18.192] /p4.v1.P4Runtime/Write
+[2025-04-10 14:06:24.359] /p4.v1.P4Runtime/Write
 ---
 device_id: 1
 election_id {
@@ -48,7 +48,7 @@ updates {
 }
 ---
 
-[2025-04-10 10:40:18.203] /p4.v1.P4Runtime/Write
+[2025-04-10 14:06:24.395] /p4.v1.P4Runtime/Write
 ---
 device_id: 1
 election_id {
@@ -82,7 +82,7 @@ updates {
 }
 ---
 
-[2025-04-10 10:40:18.204] /p4.v1.P4Runtime/Write
+[2025-04-10 14:06:24.396] /p4.v1.P4Runtime/Write
 ---
 device_id: 1
 election_id {
@@ -104,7 +104,7 @@ updates {
 }
 ---
 
-[2025-04-10 10:42:23.897] /p4.v1.P4Runtime/Write
+[2025-04-10 14:07:06.814] /p4.v1.P4Runtime/Write
 ---
 device_id: 1
 election_id {
@@ -131,7 +131,7 @@ updates {
 }
 ---
 
-[2025-04-10 10:42:23.899] /p4.v1.P4Runtime/Write
+[2025-04-10 14:07:06.816] /p4.v1.P4Runtime/Write
 ---
 device_id: 1
 election_id {
@@ -154,64 +154,6 @@ updates {
           params {
             param_id: 1
             value: "\000\001"
-          }
-        }
-      }
-    }
-  }
-}
----
-
-[2025-04-10 10:42:31.362] /p4.v1.P4Runtime/Write
----
-device_id: 1
-election_id {
-  low: 1
-}
-updates {
-  type: INSERT
-  entity {
-    table_entry {
-      table_id: 39157715
-      match {
-        field_id: 1
-        exact {
-          value: "\252\000\000\000\001\001"
-        }
-      }
-      action {
-        action {
-          action_id: 21257015
-        }
-      }
-    }
-  }
-}
----
-
-[2025-04-10 10:42:31.364] /p4.v1.P4Runtime/Write
----
-device_id: 1
-election_id {
-  low: 1
-}
-updates {
-  type: INSERT
-  entity {
-    table_entry {
-      table_id: 46852981
-      match {
-        field_id: 1
-        exact {
-          value: "\252\000\000\000\001\001"
-        }
-      }
-      action {
-        action {
-          action_id: 29683729
-          params {
-            param_id: 1
-            value: "\000\004"
           }
         }
       }

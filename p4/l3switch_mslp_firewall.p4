@@ -92,6 +92,8 @@ header icmp_t {
 }
 
 struct metadata {
+    @field_list(0) // preserved on recirculate_preserving_field_list
+    bit<9>    ingress_port;
     macAddr_t nextHopMac;
     bit<8>    tcp_opt_size;
     bit<2>    tunnel;
@@ -339,6 +341,7 @@ control MyIngress(inout headers hdr,
 
     table checkDirection {
         key = {
+            meta.ingress_port: exact;
             standard_metadata.egress_spec: exact;
         }
         actions = { 
@@ -368,6 +371,11 @@ control MyIngress(inout headers hdr,
     }
 
     apply {
+        // If it is the original packet, save the ingess port
+        if(standard_metadata.instance_type == 0){
+            meta.ingress_port = standard_metadata.ingress_port;
+        }
+
         activateFirewall = 0;
         if(hdr.mslp.isValid()) { // If encapsulated
             switch(labelLookup.apply().action_run) {
