@@ -306,14 +306,16 @@ control MyIngress(inout headers hdr,
         default_action = drop;
     }
 
-    action selectTunnel(bit<16> dstPort) {
+    action selectTunnel(bit<16> srcPort, bit<16> dstPort) {
         hash(
             meta.tunnel,
             HashAlgorithm.crc32,
             (bit<1>)0,
             {
                 hdr.ipv4.protocol,
+                hdr.ipv4.srcAddr,
                 hdr.ipv4.dstAddr,
+                srcPort,
                 dstPort
             },
             (bit<1>)1
@@ -388,9 +390,10 @@ control MyIngress(inout headers hdr,
                 activateFirewall = 1;
 
             } else { // Send through a tunnel
-                if(hdr.tcp.isValid())       selectTunnel(hdr.tcp.dstPort);
-                else if(hdr.udp.isValid())  selectTunnel(hdr.udp.dstPort);
-                else                        selectTunnel(0x0000);
+                if(hdr.tcp.isValid())       selectTunnel(hdr.tcp.srcPort, hdr.tcp.dstPort);
+                else if(hdr.udp.isValid())  selectTunnel(hdr.udp.srcPort, hdr.udp.dstPort);
+                else if(hdr.icmp.isValid()) selectTunnel(hdr.icmp.identifier, hdr.icmp.sequence);
+                else                        selectTunnel(0x0110, 0x1001); // arbitrary values
 
                 // Create MSLP header and recirculate the packet with MSLP header
                 if(tunnelLookup.apply().hit) {

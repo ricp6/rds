@@ -3,6 +3,7 @@
 import argparse
 import os
 import sys
+import threading
 from time import sleep
 from scapy.all import Ether, Packet, BitField, raw
 
@@ -365,7 +366,7 @@ def writeFirewallRules(L3MF_helper, r4):
     writeTableEntry(L3MF_helper, r4, udpTable, {matchUdp: 0x35}, "NoAction", None) # decimal 53 » 0x35
 
 # Function to write an entry to a table of a switch
-def writeTableEntry(helper, sw, table, match, action, params):
+def writeTableEntry(helper, sw, table, match, action, params, dryrun=False, modify=False):
     table_entry = helper.buildTableEntry(
         table_name = table,
         match_fields = match,
@@ -373,8 +374,33 @@ def writeTableEntry(helper, sw, table, match, action, params):
         action_name = action,
         action_params = params,
         priority = 0)
-    sw.WriteTableEntry(table_entry)
+    sw.WriteTableEntry(table_entry, dryrun, modify)
     print("Installed %s rule for %s on %s" % (action, table, sw.name))
+
+# Function to dynamicly change the tunnel selection rules from time to time
+def changeTunnelRules(L3M_helper, L3MF_helper, r1, r4, odd):
+
+    table = "MyIngress.tunnelLookup"
+    action = "MyIngress.addMSLP"
+    match = "meta.tunnel"
+    l = "labels"
+        
+    while(True):
+        sleep(30) # wait 30 seconds
+
+        if odd:
+            writeTableEntry(L3M_helper,  r1, table, {match: 0x0}, action, {l: 0x1020202030204010}, modify=True)
+            writeTableEntry(L3M_helper,  r1, table, {match: 0x1}, action, {l: 0x1030602050204010}, modify=True)
+            writeTableEntry(L3MF_helper, r4, table, {match: 0x0}, action, {l: 0x4030301020101010}, modify=True)
+            writeTableEntry(L3MF_helper, r4, table, {match: 0x1}, action, {l: 0x4020501060101010}, modify=True)
+        else:
+                                                    # inverted matching tunnel
+            writeTableEntry(L3M_helper,  r1, table, {match: 0x1}, action, {l: 0x1020202030204010}, modify=True)
+            writeTableEntry(L3M_helper,  r1, table, {match: 0x0}, action, {l: 0x1030602050204010}, modify=True)
+            writeTableEntry(L3MF_helper, r4, table, {match: 0x1}, action, {l: 0x4030301020101010}, modify=True)
+            writeTableEntry(L3MF_helper, r4, table, {match: 0x0}, action, {l: 0x4020501060101010}, modify=True)
+        
+        odd = not odd
 
 
 
@@ -414,6 +440,10 @@ def main(p4infoL2_file_path, p4infoL3M_file_path, p4infoL3MF_file_path, p4infoL3
 
         # Add the static rules to the L3 Switches
         writeStaticRules(L3M_helper, L3MF_helper, L3T_helper, r1,r2,r3,r4,r5,r6)
+
+        # Thread to keep changing the tunnel rules
+        t = threading.Thread(target=changeTunnelRules, args=(L3M_helper, L3MF_helper, r1, r4, False,), daemon=True)
+        t.start()
 
         # readTableRules(p4info_helper, s1)
         # A good approach is to read the current table entries from the switch and populate

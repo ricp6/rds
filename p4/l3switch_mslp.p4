@@ -12,8 +12,9 @@ typedef bit<32> ip4Addr_t;
 const bit<16> TYPE_IPV4 = 0x0800;
 const bit<16> TYPE_MSLP = 0x88B5;
 
-const bit<8> TYPE_TCP = 0x06;
-const bit<8> TYPE_UDP = 0x11;
+const bit<8> TYPE_ICMP = 0x01;
+const bit<8> TYPE_TCP  = 0x06;
+const bit<8> TYPE_UDP  = 0x11;
 
 
 header ethernet_t {
@@ -44,6 +45,16 @@ header ipv4_t {
     bit<16>   hdrChecksum;
     ip4Addr_t srcAddr;
     ip4Addr_t dstAddr;
+}
+
+header icmp_t {
+    bit<8>   typ;
+    bit<8>   code;
+    bit<16>  hdrChecksum;
+    bit<16>  identifier;
+    bit<16>  sequence;
+    bit<64>  timestamp;
+    bit<384> payload;  // Added variable-length payload field
 }
 
 header tcp_t {
@@ -89,6 +100,7 @@ struct headers {
     mslp_t      mslp;
     label_t[4]  labels; // in the sides, the packet comes with 1 or 4 labels
     ipv4_t      ipv4;
+    icmp_t      icmp;
     tcp_t       tcp;
     tcp_opt_t   tcp_opt;
     udp_t       udp;
@@ -139,10 +151,16 @@ parser MyParser(packet_in packet,
     state parse_ipv4 {
         packet.extract(hdr.ipv4);
         transition select(hdr.ipv4.protocol) {
+            TYPE_ICMP: parse_icmp;
             TYPE_TCP: parse_tcp;
             TYPE_UDP: parse_udp;
             default: accept;
         }
+    }
+        
+    state parse_icmp {
+        packet.extract(hdr.icmp);
+        transition accept;
     }
 
     state parse_tcp {
@@ -277,14 +295,16 @@ control MyIngress(inout headers hdr,
         default_action = drop;
     }
     
-    action selectTunnel(bit<16> dstPort) {
+    action selectTunnel(bit<16> srcPort, bit<16> dstPort) {
         hash(
             meta.tunnel,
             HashAlgorithm.crc32,
             (bit<1>)0,
             {
                 hdr.ipv4.protocol,
+                hdr.ipv4.srcAddr,
                 hdr.ipv4.dstAddr,
+                srcPort,
                 dstPort
             },
             (bit<1>)1
@@ -309,9 +329,10 @@ control MyIngress(inout headers hdr,
                 internalMacLookup.apply();
 
             } else { // Send through a tunnel
-                if(hdr.tcp.isValid())       selectTunnel(hdr.tcp.dstPort);
-                else if(hdr.udp.isValid())  selectTunnel(hdr.udp.dstPort);
-                else                        selectTunnel(0x0000);
+                if(hdr.tcp.isValid())       selectTunnel(hdr.tcp.srcPort, hdr.tcp.dstPort);
+                else if(hdr.udp.isValid())  selectTunnel(hdr.udp.srcPort, hdr.udp.dstPort);
+                else if(hdr.icmp.isValid()) selectTunnel(hdr.icmp.identifier, hdr.icmp.sequence);
+                else                        selectTunnel(0x0110, 0x1001); // arbitrary values
 
                 // Create MSLP header and recirculate the packet with MSLP header
                 if(tunnelLookup.apply().hit) {
@@ -379,6 +400,7 @@ control MyDeparser(packet_out packet, in headers hdr) {
         packet.emit(hdr.mslp);
         packet.emit(hdr.labels);
         packet.emit(hdr.ipv4);
+        packet.emit(hdr.icmp);
         packet.emit(hdr.tcp);
         packet.emit(hdr.tcp_opt);
         packet.emit(hdr.udp);

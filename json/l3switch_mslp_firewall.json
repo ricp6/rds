@@ -8,53 +8,60 @@
         ["tmp_0", 32, false],
         ["tmp_1", 8, false],
         ["tmp_2", 32, false],
-        ["tmp_3", 16, false],
-        ["tmp_4", 8, false],
-        ["tmp_5", 32, false],
-        ["tmp_6", 16, false],
-        ["tmp_7", 8, false],
-        ["tmp_8", 32, false],
-        ["tmp_9", 16, false],
+        ["tmp_3", 32, false],
+        ["tmp_4", 16, false],
+        ["tmp_5", 8, false],
+        ["tmp_6", 32, false],
+        ["tmp_7", 32, false],
+        ["tmp_8", 16, false],
+        ["tmp_9", 8, false],
         ["tmp_10", 32, false],
         ["tmp_11", 32, false],
         ["tmp_12", 16, false],
-        ["tmp_13", 16, false],
-        ["tmp_14", 8, false],
+        ["tmp_13", 8, false],
+        ["tmp_14", 32, false],
         ["tmp_15", 32, false],
-        ["tmp_16", 32, false],
-        ["tmp_17", 16, false],
-        ["tmp_18", 16, false],
-        ["tmp_19", 8, false],
-        ["tmp_20", 32, false],
-        ["tmp_21", 32, false],
-        ["tmp_22", 16, false],
-        ["tmp_23", 16, false],
-        ["tmp_24", 8, false],
-        ["tmp_25", 32, false],
-        ["tmp_26", 32, false],
-        ["tmp_27", 16, false],
-        ["tmp_28", 16, false],
-        ["tmp_29", 8, false],
-        ["tmp_30", 32, false],
-        ["tmp_31", 32, false],
-        ["tmp_32", 16, false],
-        ["tmp_33", 16, false],
-        ["tmp_34", 8, false],
-        ["tmp_35", 32, false],
-        ["tmp_36", 32, false],
-        ["tmp_37", 16, false],
-        ["tmp_38", 16, false],
-        ["tmp_39", 8, false],
-        ["tmp_40", 32, false],
-        ["tmp_41", 32, false],
-        ["tmp_42", 16, false],
-        ["tmp_43", 16, false],
-        ["tmp_44", 8, false],
-        ["tmp_45", 32, false],
-        ["tmp_46", 32, false],
-        ["tmp_47", 16, false],
-        ["tmp_48", 16, false],
-        ["tmp_49", 8, false],
+        ["tmp_16", 16, false],
+        ["tmp_17", 32, false],
+        ["tmp_18", 32, false],
+        ["tmp_19", 16, false],
+        ["tmp_20", 16, false],
+        ["tmp_21", 8, false],
+        ["tmp_22", 32, false],
+        ["tmp_23", 32, false],
+        ["tmp_24", 16, false],
+        ["tmp_25", 16, false],
+        ["tmp_26", 8, false],
+        ["tmp_27", 32, false],
+        ["tmp_28", 32, false],
+        ["tmp_29", 16, false],
+        ["tmp_30", 16, false],
+        ["tmp_31", 8, false],
+        ["tmp_32", 32, false],
+        ["tmp_33", 32, false],
+        ["tmp_34", 16, false],
+        ["tmp_35", 16, false],
+        ["tmp_36", 8, false],
+        ["tmp_37", 32, false],
+        ["tmp_38", 32, false],
+        ["tmp_39", 16, false],
+        ["tmp_40", 16, false],
+        ["tmp_41", 8, false],
+        ["tmp_42", 32, false],
+        ["tmp_43", 32, false],
+        ["tmp_44", 16, false],
+        ["tmp_45", 16, false],
+        ["tmp_46", 8, false],
+        ["tmp_47", 32, false],
+        ["tmp_48", 32, false],
+        ["tmp_49", 16, false],
+        ["tmp_50", 16, false],
+        ["tmp_51", 8, false],
+        ["tmp_52", 32, false],
+        ["tmp_53", 32, false],
+        ["tmp_54", 16, false],
+        ["tmp_55", 16, false],
+        ["tmp_56", 8, false],
         ["reg_pos", 32, false],
         ["reg_pos_0", 32, false],
         ["reg_val", 1, false],
@@ -776,7 +783,7 @@
       "id" : 0,
       "source_info" : {
         "filename" : "p4/l3switch_mslp_firewall.p4",
-        "line" : 520,
+        "line" : 522,
         "column" : 8,
         "source_fragment" : "MyDeparser"
       },
@@ -829,6 +836,10 @@
         {
           "type" : "field",
           "value" : ["scalars", "tmp_3"]
+        },
+        {
+          "type" : "field",
+          "value" : ["scalars", "tmp_4"]
         }
       ]
     },
@@ -839,15 +850,19 @@
       "input" : [
         {
           "type" : "field",
-          "value" : ["scalars", "tmp_4"]
-        },
-        {
-          "type" : "field",
           "value" : ["scalars", "tmp_5"]
         },
         {
           "type" : "field",
           "value" : ["scalars", "tmp_6"]
+        },
+        {
+          "type" : "field",
+          "value" : ["scalars", "tmp_7"]
+        },
+        {
+          "type" : "field",
+          "value" : ["scalars", "tmp_8"]
         }
       ]
     },
@@ -858,23 +873,8 @@
       "input" : [
         {
           "type" : "field",
-          "value" : ["scalars", "tmp_7"]
-        },
-        {
-          "type" : "field",
-          "value" : ["scalars", "tmp_8"]
-        },
-        {
-          "type" : "field",
           "value" : ["scalars", "tmp_9"]
-        }
-      ]
-    },
-    {
-      "name" : "calc_2",
-      "id" : 3,
-      "algo" : "crc16",
-      "input" : [
+        },
         {
           "type" : "field",
           "value" : ["scalars", "tmp_10"]
@@ -886,7 +886,14 @@
         {
           "type" : "field",
           "value" : ["scalars", "tmp_12"]
-        },
+        }
+      ]
+    },
+    {
+      "name" : "calc_2",
+      "id" : 3,
+      "algo" : "crc32",
+      "input" : [
         {
           "type" : "field",
           "value" : ["scalars", "tmp_13"]
@@ -894,14 +901,7 @@
         {
           "type" : "field",
           "value" : ["scalars", "tmp_14"]
-        }
-      ]
-    },
-    {
-      "name" : "calc_3",
-      "id" : 4,
-      "algo" : "crc32",
-      "input" : [
+        },
         {
           "type" : "field",
           "value" : ["scalars", "tmp_15"]
@@ -909,7 +909,14 @@
         {
           "type" : "field",
           "value" : ["scalars", "tmp_16"]
-        },
+        }
+      ]
+    },
+    {
+      "name" : "calc_3",
+      "id" : 4,
+      "algo" : "crc16",
+      "input" : [
         {
           "type" : "field",
           "value" : ["scalars", "tmp_17"]
@@ -921,14 +928,7 @@
         {
           "type" : "field",
           "value" : ["scalars", "tmp_19"]
-        }
-      ]
-    },
-    {
-      "name" : "calc_4",
-      "id" : 5,
-      "algo" : "crc16",
-      "input" : [
+        },
         {
           "type" : "field",
           "value" : ["scalars", "tmp_20"]
@@ -936,7 +936,14 @@
         {
           "type" : "field",
           "value" : ["scalars", "tmp_21"]
-        },
+        }
+      ]
+    },
+    {
+      "name" : "calc_4",
+      "id" : 5,
+      "algo" : "crc32",
+      "input" : [
         {
           "type" : "field",
           "value" : ["scalars", "tmp_22"]
@@ -948,14 +955,7 @@
         {
           "type" : "field",
           "value" : ["scalars", "tmp_24"]
-        }
-      ]
-    },
-    {
-      "name" : "calc_5",
-      "id" : 6,
-      "algo" : "crc32",
-      "input" : [
+        },
         {
           "type" : "field",
           "value" : ["scalars", "tmp_25"]
@@ -963,7 +963,14 @@
         {
           "type" : "field",
           "value" : ["scalars", "tmp_26"]
-        },
+        }
+      ]
+    },
+    {
+      "name" : "calc_5",
+      "id" : 6,
+      "algo" : "crc16",
+      "input" : [
         {
           "type" : "field",
           "value" : ["scalars", "tmp_27"]
@@ -975,14 +982,7 @@
         {
           "type" : "field",
           "value" : ["scalars", "tmp_29"]
-        }
-      ]
-    },
-    {
-      "name" : "calc_6",
-      "id" : 7,
-      "algo" : "crc16",
-      "input" : [
+        },
         {
           "type" : "field",
           "value" : ["scalars", "tmp_30"]
@@ -990,7 +990,14 @@
         {
           "type" : "field",
           "value" : ["scalars", "tmp_31"]
-        },
+        }
+      ]
+    },
+    {
+      "name" : "calc_6",
+      "id" : 7,
+      "algo" : "crc32",
+      "input" : [
         {
           "type" : "field",
           "value" : ["scalars", "tmp_32"]
@@ -1002,14 +1009,7 @@
         {
           "type" : "field",
           "value" : ["scalars", "tmp_34"]
-        }
-      ]
-    },
-    {
-      "name" : "calc_7",
-      "id" : 8,
-      "algo" : "crc32",
-      "input" : [
+        },
         {
           "type" : "field",
           "value" : ["scalars", "tmp_35"]
@@ -1017,7 +1017,14 @@
         {
           "type" : "field",
           "value" : ["scalars", "tmp_36"]
-        },
+        }
+      ]
+    },
+    {
+      "name" : "calc_7",
+      "id" : 8,
+      "algo" : "crc16",
+      "input" : [
         {
           "type" : "field",
           "value" : ["scalars", "tmp_37"]
@@ -1029,14 +1036,7 @@
         {
           "type" : "field",
           "value" : ["scalars", "tmp_39"]
-        }
-      ]
-    },
-    {
-      "name" : "calc_8",
-      "id" : 9,
-      "algo" : "crc16",
-      "input" : [
+        },
         {
           "type" : "field",
           "value" : ["scalars", "tmp_40"]
@@ -1044,7 +1044,14 @@
         {
           "type" : "field",
           "value" : ["scalars", "tmp_41"]
-        },
+        }
+      ]
+    },
+    {
+      "name" : "calc_8",
+      "id" : 9,
+      "algo" : "crc32",
+      "input" : [
         {
           "type" : "field",
           "value" : ["scalars", "tmp_42"]
@@ -1056,14 +1063,7 @@
         {
           "type" : "field",
           "value" : ["scalars", "tmp_44"]
-        }
-      ]
-    },
-    {
-      "name" : "calc_9",
-      "id" : 10,
-      "algo" : "crc32",
-      "input" : [
+        },
         {
           "type" : "field",
           "value" : ["scalars", "tmp_45"]
@@ -1071,7 +1071,14 @@
         {
           "type" : "field",
           "value" : ["scalars", "tmp_46"]
-        },
+        }
+      ]
+    },
+    {
+      "name" : "calc_9",
+      "id" : 10,
+      "algo" : "crc16",
+      "input" : [
         {
           "type" : "field",
           "value" : ["scalars", "tmp_47"]
@@ -1083,15 +1090,50 @@
         {
           "type" : "field",
           "value" : ["scalars", "tmp_49"]
+        },
+        {
+          "type" : "field",
+          "value" : ["scalars", "tmp_50"]
+        },
+        {
+          "type" : "field",
+          "value" : ["scalars", "tmp_51"]
         }
       ]
     },
     {
       "name" : "calc_10",
       "id" : 11,
+      "algo" : "crc32",
+      "input" : [
+        {
+          "type" : "field",
+          "value" : ["scalars", "tmp_52"]
+        },
+        {
+          "type" : "field",
+          "value" : ["scalars", "tmp_53"]
+        },
+        {
+          "type" : "field",
+          "value" : ["scalars", "tmp_54"]
+        },
+        {
+          "type" : "field",
+          "value" : ["scalars", "tmp_55"]
+        },
+        {
+          "type" : "field",
+          "value" : ["scalars", "tmp_56"]
+        }
+      ]
+    },
+    {
+      "name" : "calc_11",
+      "id" : 12,
       "source_info" : {
         "filename" : "p4/l3switch_mslp_firewall.p4",
-        "line" : 499,
+        "line" : 501,
         "column" : 8,
         "source_fragment" : "update_checksum( ..."
       },
@@ -2144,14 +2186,14 @@
             },
             {
               "type" : "field",
-              "value" : ["ipv4", "dstAddr"]
+              "value" : ["ipv4", "srcAddr"]
             }
           ],
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
             "line" : 316,
             "column" : 16,
-            "source_fragment" : "hdr.ipv4.dstAddr"
+            "source_fragment" : "hdr.ipv4.srcAddr"
           }
         },
         {
@@ -2163,12 +2205,31 @@
             },
             {
               "type" : "field",
-              "value" : ["tcp", "dstPort"]
+              "value" : ["ipv4", "dstAddr"]
             }
           ],
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
             "line" : 317,
+            "column" : 16,
+            "source_fragment" : "hdr.ipv4.dstAddr"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "tmp_4"]
+            },
+            {
+              "type" : "field",
+              "value" : ["tcp", "dstPort"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4/l3switch_mslp_firewall.p4",
+            "line" : 318,
             "column" : 16,
             "source_fragment" : "dstPort"
           }
@@ -2212,7 +2273,7 @@
           "parameters" : [
             {
               "type" : "field",
-              "value" : ["scalars", "tmp_4"]
+              "value" : ["scalars", "tmp_5"]
             },
             {
               "type" : "field",
@@ -2231,7 +2292,26 @@
           "parameters" : [
             {
               "type" : "field",
-              "value" : ["scalars", "tmp_5"]
+              "value" : ["scalars", "tmp_6"]
+            },
+            {
+              "type" : "field",
+              "value" : ["ipv4", "srcAddr"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4/l3switch_mslp_firewall.p4",
+            "line" : 316,
+            "column" : 16,
+            "source_fragment" : "hdr.ipv4.srcAddr"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "tmp_7"]
             },
             {
               "type" : "field",
@@ -2240,7 +2320,7 @@
           ],
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 316,
+            "line" : 317,
             "column" : 16,
             "source_fragment" : "hdr.ipv4.dstAddr"
           }
@@ -2250,7 +2330,7 @@
           "parameters" : [
             {
               "type" : "field",
-              "value" : ["scalars", "tmp_6"]
+              "value" : ["scalars", "tmp_8"]
             },
             {
               "type" : "field",
@@ -2259,7 +2339,7 @@
           ],
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 317,
+            "line" : 318,
             "column" : 16,
             "source_fragment" : "dstPort"
           }
@@ -2303,7 +2383,7 @@
           "parameters" : [
             {
               "type" : "field",
-              "value" : ["scalars", "tmp_7"]
+              "value" : ["scalars", "tmp_9"]
             },
             {
               "type" : "field",
@@ -2322,7 +2402,26 @@
           "parameters" : [
             {
               "type" : "field",
-              "value" : ["scalars", "tmp_8"]
+              "value" : ["scalars", "tmp_10"]
+            },
+            {
+              "type" : "field",
+              "value" : ["ipv4", "srcAddr"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4/l3switch_mslp_firewall.p4",
+            "line" : 316,
+            "column" : 16,
+            "source_fragment" : "hdr.ipv4.srcAddr"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "tmp_11"]
             },
             {
               "type" : "field",
@@ -2331,7 +2430,7 @@
           ],
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 316,
+            "line" : 317,
             "column" : 16,
             "source_fragment" : "hdr.ipv4.dstAddr"
           }
@@ -2341,16 +2440,16 @@
           "parameters" : [
             {
               "type" : "field",
-              "value" : ["scalars", "tmp_9"]
+              "value" : ["scalars", "tmp_12"]
             },
             {
-              "type" : "hexstr",
-              "value" : "0x0000"
+              "type" : "field",
+              "value" : ["icmp", "identifier"]
             }
           ],
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 317,
+            "line" : 318,
             "column" : 16,
             "source_fragment" : "dstPort"
           }
@@ -2385,67 +2484,10 @@
       ]
     },
     {
-      "name" : "MyIngress.compute_hashes",
+      "name" : "MyIngress.selectTunnel",
       "id" : 20,
       "runtime_data" : [],
       "primitives" : [
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["scalars", "tmp_10"]
-            },
-            {
-              "type" : "field",
-              "value" : ["ipv4", "srcAddr"]
-            }
-          ],
-          "source_info" : {
-            "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 327,
-            "column" : 14,
-            "source_fragment" : "ipAddr1"
-          }
-        },
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["scalars", "tmp_11"]
-            },
-            {
-              "type" : "field",
-              "value" : ["ipv4", "dstAddr"]
-            }
-          ],
-          "source_info" : {
-            "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 327,
-            "column" : 23,
-            "source_fragment" : "ipAddr2"
-          }
-        },
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["scalars", "tmp_12"]
-            },
-            {
-              "type" : "field",
-              "value" : ["udp", "srcPort"]
-            }
-          ],
-          "source_info" : {
-            "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 327,
-            "column" : 32,
-            "source_fragment" : "port1"
-          }
-        },
         {
           "op" : "assign",
           "parameters" : [
@@ -2455,14 +2497,14 @@
             },
             {
               "type" : "field",
-              "value" : ["udp", "dstPort"]
+              "value" : ["ipv4", "protocol"]
             }
           ],
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 327,
-            "column" : 39,
-            "source_fragment" : "port2"
+            "line" : 315,
+            "column" : 16,
+            "source_fragment" : "hdr.ipv4.protocol"
           }
         },
         {
@@ -2474,41 +2516,14 @@
             },
             {
               "type" : "field",
-              "value" : ["ipv4", "protocol"]
+              "value" : ["ipv4", "srcAddr"]
             }
           ],
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 327,
-            "column" : 46,
-            "source_fragment" : "hdr.ipv4.protocol"
-          }
-        },
-        {
-          "op" : "modify_field_with_hash_based_offset",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["scalars", "reg_pos"]
-            },
-            {
-              "type" : "hexstr",
-              "value" : "0x00000000"
-            },
-            {
-              "type" : "calculation",
-              "value" : "calc_2"
-            },
-            {
-              "type" : "hexstr",
-              "value" : "0x00001000"
-            }
-          ],
-          "source_info" : {
-            "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 325,
-            "column" : 8,
-            "source_fragment" : "hash( ..."
+            "line" : 316,
+            "column" : 16,
+            "source_fragment" : "hdr.ipv4.srcAddr"
           }
         },
         {
@@ -2520,14 +2535,14 @@
             },
             {
               "type" : "field",
-              "value" : ["ipv4", "srcAddr"]
+              "value" : ["ipv4", "dstAddr"]
             }
           ],
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 333,
-            "column" : 14,
-            "source_fragment" : "ipAddr1"
+            "line" : 317,
+            "column" : 16,
+            "source_fragment" : "hdr.ipv4.dstAddr"
           }
         },
         {
@@ -2538,72 +2553,15 @@
               "value" : ["scalars", "tmp_16"]
             },
             {
-              "type" : "field",
-              "value" : ["ipv4", "dstAddr"]
+              "type" : "hexstr",
+              "value" : "0x0000"
             }
           ],
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 333,
-            "column" : 23,
-            "source_fragment" : "ipAddr2"
-          }
-        },
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["scalars", "tmp_17"]
-            },
-            {
-              "type" : "field",
-              "value" : ["udp", "srcPort"]
-            }
-          ],
-          "source_info" : {
-            "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 333,
-            "column" : 32,
-            "source_fragment" : "port1"
-          }
-        },
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["scalars", "tmp_18"]
-            },
-            {
-              "type" : "field",
-              "value" : ["udp", "dstPort"]
-            }
-          ],
-          "source_info" : {
-            "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 333,
-            "column" : 39,
-            "source_fragment" : "port2"
-          }
-        },
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["scalars", "tmp_19"]
-            },
-            {
-              "type" : "field",
-              "value" : ["ipv4", "protocol"]
-            }
-          ],
-          "source_info" : {
-            "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 333,
-            "column" : 46,
-            "source_fragment" : "hdr.ipv4.protocol"
+            "line" : 318,
+            "column" : 16,
+            "source_fragment" : "dstPort"
           }
         },
         {
@@ -2611,24 +2569,24 @@
           "parameters" : [
             {
               "type" : "field",
-              "value" : ["scalars", "reg_pos_0"]
+              "value" : ["scalars", "metadata.tunnel"]
             },
             {
               "type" : "hexstr",
-              "value" : "0x00000000"
+              "value" : "0x00"
             },
             {
               "type" : "calculation",
-              "value" : "calc_3"
+              "value" : "calc_2"
             },
             {
               "type" : "hexstr",
-              "value" : "0x00001000"
+              "value" : "0x01"
             }
           ],
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 331,
+            "line" : 310,
             "column" : 8,
             "source_fragment" : "hash( ..."
           }
@@ -2645,7 +2603,26 @@
           "parameters" : [
             {
               "type" : "field",
-              "value" : ["scalars", "tmp_20"]
+              "value" : ["scalars", "tmp_17"]
+            },
+            {
+              "type" : "field",
+              "value" : ["ipv4", "srcAddr"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4/l3switch_mslp_firewall.p4",
+            "line" : 328,
+            "column" : 14,
+            "source_fragment" : "ipAddr1"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "tmp_18"]
             },
             {
               "type" : "field",
@@ -2654,9 +2631,47 @@
           ],
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 327,
-            "column" : 14,
-            "source_fragment" : "ipAddr1"
+            "line" : 328,
+            "column" : 23,
+            "source_fragment" : "ipAddr2"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "tmp_19"]
+            },
+            {
+              "type" : "field",
+              "value" : ["udp", "srcPort"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4/l3switch_mslp_firewall.p4",
+            "line" : 328,
+            "column" : 32,
+            "source_fragment" : "port1"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "tmp_20"]
+            },
+            {
+              "type" : "field",
+              "value" : ["udp", "dstPort"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4/l3switch_mslp_firewall.p4",
+            "line" : 328,
+            "column" : 39,
+            "source_fragment" : "port2"
           }
         },
         {
@@ -2668,14 +2683,41 @@
             },
             {
               "type" : "field",
-              "value" : ["ipv4", "srcAddr"]
+              "value" : ["ipv4", "protocol"]
             }
           ],
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 327,
-            "column" : 23,
-            "source_fragment" : "ipAddr2"
+            "line" : 328,
+            "column" : 46,
+            "source_fragment" : "hdr.ipv4.protocol"
+          }
+        },
+        {
+          "op" : "modify_field_with_hash_based_offset",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "reg_pos"]
+            },
+            {
+              "type" : "hexstr",
+              "value" : "0x00000000"
+            },
+            {
+              "type" : "calculation",
+              "value" : "calc_3"
+            },
+            {
+              "type" : "hexstr",
+              "value" : "0x00001000"
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4/l3switch_mslp_firewall.p4",
+            "line" : 326,
+            "column" : 8,
+            "source_fragment" : "hash( ..."
           }
         },
         {
@@ -2687,14 +2729,14 @@
             },
             {
               "type" : "field",
-              "value" : ["udp", "dstPort"]
+              "value" : ["ipv4", "srcAddr"]
             }
           ],
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 327,
-            "column" : 32,
-            "source_fragment" : "port1"
+            "line" : 334,
+            "column" : 14,
+            "source_fragment" : "ipAddr1"
           }
         },
         {
@@ -2706,14 +2748,14 @@
             },
             {
               "type" : "field",
-              "value" : ["udp", "srcPort"]
+              "value" : ["ipv4", "dstAddr"]
             }
           ],
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 327,
-            "column" : 39,
-            "source_fragment" : "port2"
+            "line" : 334,
+            "column" : 23,
+            "source_fragment" : "ipAddr2"
           }
         },
         {
@@ -2725,12 +2767,50 @@
             },
             {
               "type" : "field",
+              "value" : ["udp", "srcPort"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4/l3switch_mslp_firewall.p4",
+            "line" : 334,
+            "column" : 32,
+            "source_fragment" : "port1"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "tmp_25"]
+            },
+            {
+              "type" : "field",
+              "value" : ["udp", "dstPort"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4/l3switch_mslp_firewall.p4",
+            "line" : 334,
+            "column" : 39,
+            "source_fragment" : "port2"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "tmp_26"]
+            },
+            {
+              "type" : "field",
               "value" : ["ipv4", "protocol"]
             }
           ],
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 327,
+            "line" : 334,
             "column" : 46,
             "source_fragment" : "hdr.ipv4.protocol"
           }
@@ -2740,7 +2820,7 @@
           "parameters" : [
             {
               "type" : "field",
-              "value" : ["scalars", "reg_pos"]
+              "value" : ["scalars", "reg_pos_0"]
             },
             {
               "type" : "hexstr",
@@ -2757,129 +2837,7 @@
           ],
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 325,
-            "column" : 8,
-            "source_fragment" : "hash( ..."
-          }
-        },
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["scalars", "tmp_25"]
-            },
-            {
-              "type" : "field",
-              "value" : ["ipv4", "dstAddr"]
-            }
-          ],
-          "source_info" : {
-            "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 333,
-            "column" : 14,
-            "source_fragment" : "ipAddr1"
-          }
-        },
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["scalars", "tmp_26"]
-            },
-            {
-              "type" : "field",
-              "value" : ["ipv4", "srcAddr"]
-            }
-          ],
-          "source_info" : {
-            "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 333,
-            "column" : 23,
-            "source_fragment" : "ipAddr2"
-          }
-        },
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["scalars", "tmp_27"]
-            },
-            {
-              "type" : "field",
-              "value" : ["udp", "dstPort"]
-            }
-          ],
-          "source_info" : {
-            "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 333,
-            "column" : 32,
-            "source_fragment" : "port1"
-          }
-        },
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["scalars", "tmp_28"]
-            },
-            {
-              "type" : "field",
-              "value" : ["udp", "srcPort"]
-            }
-          ],
-          "source_info" : {
-            "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 333,
-            "column" : 39,
-            "source_fragment" : "port2"
-          }
-        },
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["scalars", "tmp_29"]
-            },
-            {
-              "type" : "field",
-              "value" : ["ipv4", "protocol"]
-            }
-          ],
-          "source_info" : {
-            "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 333,
-            "column" : 46,
-            "source_fragment" : "hdr.ipv4.protocol"
-          }
-        },
-        {
-          "op" : "modify_field_with_hash_based_offset",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["scalars", "reg_pos_0"]
-            },
-            {
-              "type" : "hexstr",
-              "value" : "0x00000000"
-            },
-            {
-              "type" : "calculation",
-              "value" : "calc_5"
-            },
-            {
-              "type" : "hexstr",
-              "value" : "0x00001000"
-            }
-          ],
-          "source_info" : {
-            "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 331,
+            "line" : 332,
             "column" : 8,
             "source_fragment" : "hash( ..."
           }
@@ -2896,7 +2854,26 @@
           "parameters" : [
             {
               "type" : "field",
-              "value" : ["scalars", "tmp_30"]
+              "value" : ["scalars", "tmp_27"]
+            },
+            {
+              "type" : "field",
+              "value" : ["ipv4", "dstAddr"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4/l3switch_mslp_firewall.p4",
+            "line" : 328,
+            "column" : 14,
+            "source_fragment" : "ipAddr1"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "tmp_28"]
             },
             {
               "type" : "field",
@@ -2905,9 +2882,47 @@
           ],
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 327,
-            "column" : 14,
-            "source_fragment" : "ipAddr1"
+            "line" : 328,
+            "column" : 23,
+            "source_fragment" : "ipAddr2"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "tmp_29"]
+            },
+            {
+              "type" : "field",
+              "value" : ["udp", "dstPort"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4/l3switch_mslp_firewall.p4",
+            "line" : 328,
+            "column" : 32,
+            "source_fragment" : "port1"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "tmp_30"]
+            },
+            {
+              "type" : "field",
+              "value" : ["udp", "srcPort"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4/l3switch_mslp_firewall.p4",
+            "line" : 328,
+            "column" : 39,
+            "source_fragment" : "port2"
           }
         },
         {
@@ -2919,14 +2934,41 @@
             },
             {
               "type" : "field",
-              "value" : ["ipv4", "dstAddr"]
+              "value" : ["ipv4", "protocol"]
             }
           ],
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 327,
-            "column" : 23,
-            "source_fragment" : "ipAddr2"
+            "line" : 328,
+            "column" : 46,
+            "source_fragment" : "hdr.ipv4.protocol"
+          }
+        },
+        {
+          "op" : "modify_field_with_hash_based_offset",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "reg_pos"]
+            },
+            {
+              "type" : "hexstr",
+              "value" : "0x00000000"
+            },
+            {
+              "type" : "calculation",
+              "value" : "calc_5"
+            },
+            {
+              "type" : "hexstr",
+              "value" : "0x00001000"
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4/l3switch_mslp_firewall.p4",
+            "line" : 326,
+            "column" : 8,
+            "source_fragment" : "hash( ..."
           }
         },
         {
@@ -2938,14 +2980,14 @@
             },
             {
               "type" : "field",
-              "value" : ["tcp", "srcPort"]
+              "value" : ["ipv4", "dstAddr"]
             }
           ],
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 327,
-            "column" : 32,
-            "source_fragment" : "port1"
+            "line" : 334,
+            "column" : 14,
+            "source_fragment" : "ipAddr1"
           }
         },
         {
@@ -2957,14 +2999,14 @@
             },
             {
               "type" : "field",
-              "value" : ["tcp", "dstPort"]
+              "value" : ["ipv4", "srcAddr"]
             }
           ],
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 327,
-            "column" : 39,
-            "source_fragment" : "port2"
+            "line" : 334,
+            "column" : 23,
+            "source_fragment" : "ipAddr2"
           }
         },
         {
@@ -2976,12 +3018,50 @@
             },
             {
               "type" : "field",
+              "value" : ["udp", "dstPort"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4/l3switch_mslp_firewall.p4",
+            "line" : 334,
+            "column" : 32,
+            "source_fragment" : "port1"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "tmp_35"]
+            },
+            {
+              "type" : "field",
+              "value" : ["udp", "srcPort"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4/l3switch_mslp_firewall.p4",
+            "line" : 334,
+            "column" : 39,
+            "source_fragment" : "port2"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "tmp_36"]
+            },
+            {
+              "type" : "field",
               "value" : ["ipv4", "protocol"]
             }
           ],
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 327,
+            "line" : 334,
             "column" : 46,
             "source_fragment" : "hdr.ipv4.protocol"
           }
@@ -2991,7 +3071,7 @@
           "parameters" : [
             {
               "type" : "field",
-              "value" : ["scalars", "reg_pos"]
+              "value" : ["scalars", "reg_pos_0"]
             },
             {
               "type" : "hexstr",
@@ -3008,129 +3088,7 @@
           ],
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 325,
-            "column" : 8,
-            "source_fragment" : "hash( ..."
-          }
-        },
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["scalars", "tmp_35"]
-            },
-            {
-              "type" : "field",
-              "value" : ["ipv4", "srcAddr"]
-            }
-          ],
-          "source_info" : {
-            "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 333,
-            "column" : 14,
-            "source_fragment" : "ipAddr1"
-          }
-        },
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["scalars", "tmp_36"]
-            },
-            {
-              "type" : "field",
-              "value" : ["ipv4", "dstAddr"]
-            }
-          ],
-          "source_info" : {
-            "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 333,
-            "column" : 23,
-            "source_fragment" : "ipAddr2"
-          }
-        },
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["scalars", "tmp_37"]
-            },
-            {
-              "type" : "field",
-              "value" : ["tcp", "srcPort"]
-            }
-          ],
-          "source_info" : {
-            "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 333,
-            "column" : 32,
-            "source_fragment" : "port1"
-          }
-        },
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["scalars", "tmp_38"]
-            },
-            {
-              "type" : "field",
-              "value" : ["tcp", "dstPort"]
-            }
-          ],
-          "source_info" : {
-            "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 333,
-            "column" : 39,
-            "source_fragment" : "port2"
-          }
-        },
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["scalars", "tmp_39"]
-            },
-            {
-              "type" : "field",
-              "value" : ["ipv4", "protocol"]
-            }
-          ],
-          "source_info" : {
-            "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 333,
-            "column" : 46,
-            "source_fragment" : "hdr.ipv4.protocol"
-          }
-        },
-        {
-          "op" : "modify_field_with_hash_based_offset",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["scalars", "reg_pos_0"]
-            },
-            {
-              "type" : "hexstr",
-              "value" : "0x00000000"
-            },
-            {
-              "type" : "calculation",
-              "value" : "calc_7"
-            },
-            {
-              "type" : "hexstr",
-              "value" : "0x00001000"
-            }
-          ],
-          "source_info" : {
-            "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 331,
+            "line" : 332,
             "column" : 8,
             "source_fragment" : "hash( ..."
           }
@@ -3147,7 +3105,26 @@
           "parameters" : [
             {
               "type" : "field",
-              "value" : ["scalars", "tmp_40"]
+              "value" : ["scalars", "tmp_37"]
+            },
+            {
+              "type" : "field",
+              "value" : ["ipv4", "srcAddr"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4/l3switch_mslp_firewall.p4",
+            "line" : 328,
+            "column" : 14,
+            "source_fragment" : "ipAddr1"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "tmp_38"]
             },
             {
               "type" : "field",
@@ -3156,9 +3133,47 @@
           ],
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 327,
-            "column" : 14,
-            "source_fragment" : "ipAddr1"
+            "line" : 328,
+            "column" : 23,
+            "source_fragment" : "ipAddr2"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "tmp_39"]
+            },
+            {
+              "type" : "field",
+              "value" : ["tcp", "srcPort"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4/l3switch_mslp_firewall.p4",
+            "line" : 328,
+            "column" : 32,
+            "source_fragment" : "port1"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "tmp_40"]
+            },
+            {
+              "type" : "field",
+              "value" : ["tcp", "dstPort"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4/l3switch_mslp_firewall.p4",
+            "line" : 328,
+            "column" : 39,
+            "source_fragment" : "port2"
           }
         },
         {
@@ -3170,69 +3185,12 @@
             },
             {
               "type" : "field",
-              "value" : ["ipv4", "srcAddr"]
-            }
-          ],
-          "source_info" : {
-            "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 327,
-            "column" : 23,
-            "source_fragment" : "ipAddr2"
-          }
-        },
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["scalars", "tmp_42"]
-            },
-            {
-              "type" : "field",
-              "value" : ["tcp", "dstPort"]
-            }
-          ],
-          "source_info" : {
-            "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 327,
-            "column" : 32,
-            "source_fragment" : "port1"
-          }
-        },
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["scalars", "tmp_43"]
-            },
-            {
-              "type" : "field",
-              "value" : ["tcp", "srcPort"]
-            }
-          ],
-          "source_info" : {
-            "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 327,
-            "column" : 39,
-            "source_fragment" : "port2"
-          }
-        },
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["scalars", "tmp_44"]
-            },
-            {
-              "type" : "field",
               "value" : ["ipv4", "protocol"]
             }
           ],
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 327,
+            "line" : 328,
             "column" : 46,
             "source_fragment" : "hdr.ipv4.protocol"
           }
@@ -3250,7 +3208,7 @@
             },
             {
               "type" : "calculation",
-              "value" : "calc_8"
+              "value" : "calc_7"
             },
             {
               "type" : "hexstr",
@@ -3259,9 +3217,66 @@
           ],
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 325,
+            "line" : 326,
             "column" : 8,
             "source_fragment" : "hash( ..."
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "tmp_42"]
+            },
+            {
+              "type" : "field",
+              "value" : ["ipv4", "srcAddr"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4/l3switch_mslp_firewall.p4",
+            "line" : 334,
+            "column" : 14,
+            "source_fragment" : "ipAddr1"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "tmp_43"]
+            },
+            {
+              "type" : "field",
+              "value" : ["ipv4", "dstAddr"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4/l3switch_mslp_firewall.p4",
+            "line" : 334,
+            "column" : 23,
+            "source_fragment" : "ipAddr2"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "tmp_44"]
+            },
+            {
+              "type" : "field",
+              "value" : ["tcp", "srcPort"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4/l3switch_mslp_firewall.p4",
+            "line" : 334,
+            "column" : 32,
+            "source_fragment" : "port1"
           }
         },
         {
@@ -3273,14 +3288,14 @@
             },
             {
               "type" : "field",
-              "value" : ["ipv4", "dstAddr"]
+              "value" : ["tcp", "dstPort"]
             }
           ],
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 333,
-            "column" : 14,
-            "source_fragment" : "ipAddr1"
+            "line" : 334,
+            "column" : 39,
+            "source_fragment" : "port2"
           }
         },
         {
@@ -3292,69 +3307,12 @@
             },
             {
               "type" : "field",
-              "value" : ["ipv4", "srcAddr"]
-            }
-          ],
-          "source_info" : {
-            "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 333,
-            "column" : 23,
-            "source_fragment" : "ipAddr2"
-          }
-        },
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["scalars", "tmp_47"]
-            },
-            {
-              "type" : "field",
-              "value" : ["tcp", "dstPort"]
-            }
-          ],
-          "source_info" : {
-            "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 333,
-            "column" : 32,
-            "source_fragment" : "port1"
-          }
-        },
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["scalars", "tmp_48"]
-            },
-            {
-              "type" : "field",
-              "value" : ["tcp", "srcPort"]
-            }
-          ],
-          "source_info" : {
-            "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 333,
-            "column" : 39,
-            "source_fragment" : "port2"
-          }
-        },
-        {
-          "op" : "assign",
-          "parameters" : [
-            {
-              "type" : "field",
-              "value" : ["scalars", "tmp_49"]
-            },
-            {
-              "type" : "field",
               "value" : ["ipv4", "protocol"]
             }
           ],
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 333,
+            "line" : 334,
             "column" : 46,
             "source_fragment" : "hdr.ipv4.protocol"
           }
@@ -3372,6 +3330,135 @@
             },
             {
               "type" : "calculation",
+              "value" : "calc_8"
+            },
+            {
+              "type" : "hexstr",
+              "value" : "0x00001000"
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4/l3switch_mslp_firewall.p4",
+            "line" : 332,
+            "column" : 8,
+            "source_fragment" : "hash( ..."
+          }
+        }
+      ]
+    },
+    {
+      "name" : "MyIngress.compute_hashes",
+      "id" : 24,
+      "runtime_data" : [],
+      "primitives" : [
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "tmp_47"]
+            },
+            {
+              "type" : "field",
+              "value" : ["ipv4", "dstAddr"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4/l3switch_mslp_firewall.p4",
+            "line" : 328,
+            "column" : 14,
+            "source_fragment" : "ipAddr1"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "tmp_48"]
+            },
+            {
+              "type" : "field",
+              "value" : ["ipv4", "srcAddr"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4/l3switch_mslp_firewall.p4",
+            "line" : 328,
+            "column" : 23,
+            "source_fragment" : "ipAddr2"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "tmp_49"]
+            },
+            {
+              "type" : "field",
+              "value" : ["tcp", "dstPort"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4/l3switch_mslp_firewall.p4",
+            "line" : 328,
+            "column" : 32,
+            "source_fragment" : "port1"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "tmp_50"]
+            },
+            {
+              "type" : "field",
+              "value" : ["tcp", "srcPort"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4/l3switch_mslp_firewall.p4",
+            "line" : 328,
+            "column" : 39,
+            "source_fragment" : "port2"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "tmp_51"]
+            },
+            {
+              "type" : "field",
+              "value" : ["ipv4", "protocol"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4/l3switch_mslp_firewall.p4",
+            "line" : 328,
+            "column" : 46,
+            "source_fragment" : "hdr.ipv4.protocol"
+          }
+        },
+        {
+          "op" : "modify_field_with_hash_based_offset",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "reg_pos"]
+            },
+            {
+              "type" : "hexstr",
+              "value" : "0x00000000"
+            },
+            {
+              "type" : "calculation",
               "value" : "calc_9"
             },
             {
@@ -3381,7 +3468,129 @@
           ],
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 331,
+            "line" : 326,
+            "column" : 8,
+            "source_fragment" : "hash( ..."
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "tmp_52"]
+            },
+            {
+              "type" : "field",
+              "value" : ["ipv4", "dstAddr"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4/l3switch_mslp_firewall.p4",
+            "line" : 334,
+            "column" : 14,
+            "source_fragment" : "ipAddr1"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "tmp_53"]
+            },
+            {
+              "type" : "field",
+              "value" : ["ipv4", "srcAddr"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4/l3switch_mslp_firewall.p4",
+            "line" : 334,
+            "column" : 23,
+            "source_fragment" : "ipAddr2"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "tmp_54"]
+            },
+            {
+              "type" : "field",
+              "value" : ["tcp", "dstPort"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4/l3switch_mslp_firewall.p4",
+            "line" : 334,
+            "column" : 32,
+            "source_fragment" : "port1"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "tmp_55"]
+            },
+            {
+              "type" : "field",
+              "value" : ["tcp", "srcPort"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4/l3switch_mslp_firewall.p4",
+            "line" : 334,
+            "column" : 39,
+            "source_fragment" : "port2"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "tmp_56"]
+            },
+            {
+              "type" : "field",
+              "value" : ["ipv4", "protocol"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4/l3switch_mslp_firewall.p4",
+            "line" : 334,
+            "column" : 46,
+            "source_fragment" : "hdr.ipv4.protocol"
+          }
+        },
+        {
+          "op" : "modify_field_with_hash_based_offset",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "reg_pos_0"]
+            },
+            {
+              "type" : "hexstr",
+              "value" : "0x00000000"
+            },
+            {
+              "type" : "calculation",
+              "value" : "calc_10"
+            },
+            {
+              "type" : "hexstr",
+              "value" : "0x00001000"
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4/l3switch_mslp_firewall.p4",
+            "line" : 332,
             "column" : 8,
             "source_fragment" : "hash( ..."
           }
@@ -3390,7 +3599,7 @@
     },
     {
       "name" : "MyIngress.setDirection",
-      "id" : 24,
+      "id" : 25,
       "runtime_data" : [
         {
           "name" : "dir",
@@ -3412,7 +3621,7 @@
           ],
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 339,
+            "line" : 340,
             "column" : 8,
             "source_fragment" : "direction = dir"
           }
@@ -3420,8 +3629,8 @@
       ]
     },
     {
-      "name" : "l3switch_mslp_firewall376",
-      "id" : 25,
+      "name" : "l3switch_mslp_firewall377",
+      "id" : 26,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -3438,7 +3647,7 @@
           ],
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 376,
+            "line" : 377,
             "column" : 12,
             "source_fragment" : "meta.ingress_port = standard_metadata.ingress_port"
           }
@@ -3446,8 +3655,8 @@
       ]
     },
     {
-      "name" : "l3switch_mslp_firewall382",
-      "id" : 26,
+      "name" : "l3switch_mslp_firewall383",
+      "id" : 27,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -3464,7 +3673,7 @@
           ],
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 382,
+            "line" : 383,
             "column" : 30,
             "source_fragment" : "meta.setRecirculate = 1"
           }
@@ -3472,8 +3681,8 @@
       ]
     },
     {
-      "name" : "l3switch_mslp_firewall383",
-      "id" : 27,
+      "name" : "l3switch_mslp_firewall384",
+      "id" : 28,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -3490,7 +3699,7 @@
           ],
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 383,
+            "line" : 384,
             "column" : 33,
             "source_fragment" : "activateFirewall = 1"
           }
@@ -3499,7 +3708,7 @@
     },
     {
       "name" : "l3switch_mslp_firewall270",
-      "id" : 28,
+      "id" : 29,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -3524,8 +3733,8 @@
       ]
     },
     {
-      "name" : "l3switch_mslp_firewall388",
-      "id" : 29,
+      "name" : "l3switch_mslp_firewall389",
+      "id" : 30,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -3542,7 +3751,7 @@
           ],
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 388,
+            "line" : 389,
             "column" : 16,
             "source_fragment" : "activateFirewall = 1"
           }
@@ -3550,8 +3759,8 @@
       ]
     },
     {
-      "name" : "l3switch_mslp_firewall397",
-      "id" : 30,
+      "name" : "l3switch_mslp_firewall399",
+      "id" : 31,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -3568,7 +3777,7 @@
           ],
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 397,
+            "line" : 399,
             "column" : 20,
             "source_fragment" : "meta.setRecirculate = 1"
           }
@@ -3576,8 +3785,8 @@
       ]
     },
     {
-      "name" : "l3switch_mslp_firewall379",
-      "id" : 31,
+      "name" : "l3switch_mslp_firewall380",
+      "id" : 32,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -3594,7 +3803,7 @@
           ],
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 379,
+            "line" : 380,
             "column" : 8,
             "source_fragment" : "activateFirewall = 0"
           }
@@ -3602,64 +3811,64 @@
       ]
     },
     {
-      "name" : "l3switch_mslp_firewall414",
-      "id" : 32,
-      "runtime_data" : [],
-      "primitives" : [
-        {
-          "op" : "register_write",
-          "parameters" : [
-            {
-              "type" : "register_array",
-              "value" : "MyIngress.bloom_filter_1"
-            },
-            {
-              "type" : "field",
-              "value" : ["scalars", "reg_pos"]
-            },
-            {
-              "type" : "hexstr",
-              "value" : "0x01"
-            }
-          ],
-          "source_info" : {
-            "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 414,
-            "column" : 24,
-            "source_fragment" : "bloom_filter_1.write(reg_pos_1, 1)"
-          }
-        },
-        {
-          "op" : "register_write",
-          "parameters" : [
-            {
-              "type" : "register_array",
-              "value" : "MyIngress.bloom_filter_2"
-            },
-            {
-              "type" : "field",
-              "value" : ["scalars", "reg_pos_0"]
-            },
-            {
-              "type" : "hexstr",
-              "value" : "0x01"
-            }
-          ],
-          "source_info" : {
-            "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 415,
-            "column" : 24,
-            "source_fragment" : "bloom_filter_2.write(reg_pos_2, 1)"
-          }
-        }
-      ]
-    },
-    {
-      "name" : "l3switch_mslp_firewall421",
+      "name" : "l3switch_mslp_firewall416",
       "id" : 33,
       "runtime_data" : [],
       "primitives" : [
         {
+          "op" : "register_write",
+          "parameters" : [
+            {
+              "type" : "register_array",
+              "value" : "MyIngress.bloom_filter_1"
+            },
+            {
+              "type" : "field",
+              "value" : ["scalars", "reg_pos"]
+            },
+            {
+              "type" : "hexstr",
+              "value" : "0x01"
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4/l3switch_mslp_firewall.p4",
+            "line" : 416,
+            "column" : 24,
+            "source_fragment" : "bloom_filter_1.write(reg_pos_1, 1)"
+          }
+        },
+        {
+          "op" : "register_write",
+          "parameters" : [
+            {
+              "type" : "register_array",
+              "value" : "MyIngress.bloom_filter_2"
+            },
+            {
+              "type" : "field",
+              "value" : ["scalars", "reg_pos_0"]
+            },
+            {
+              "type" : "hexstr",
+              "value" : "0x01"
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4/l3switch_mslp_firewall.p4",
+            "line" : 417,
+            "column" : 24,
+            "source_fragment" : "bloom_filter_2.write(reg_pos_2, 1)"
+          }
+        }
+      ]
+    },
+    {
+      "name" : "l3switch_mslp_firewall423",
+      "id" : 34,
+      "runtime_data" : [],
+      "primitives" : [
+        {
           "op" : "register_read",
           "parameters" : [
             {
@@ -3677,7 +3886,7 @@
           ],
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 421,
+            "line" : 423,
             "column" : 28,
             "source_fragment" : "bloom_filter_1.read(reg_val_1, reg_pos_1)"
           }
@@ -3700,7 +3909,7 @@
           ],
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 422,
+            "line" : 424,
             "column" : 28,
             "source_fragment" : "bloom_filter_2.read(reg_val_2, reg_pos_2)"
           }
@@ -3708,8 +3917,8 @@
       ]
     },
     {
-      "name" : "l3switch_mslp_firewall434",
-      "id" : 34,
+      "name" : "l3switch_mslp_firewall436",
+      "id" : 35,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -3730,7 +3939,7 @@
           ],
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 434,
+            "line" : 436,
             "column" : 28,
             "source_fragment" : "bloom_filter_1.write(reg_pos_1, 1)"
           }
@@ -3753,7 +3962,7 @@
           ],
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 435,
+            "line" : 437,
             "column" : 28,
             "source_fragment" : "bloom_filter_2.write(reg_pos_2, 1)"
           }
@@ -3761,8 +3970,8 @@
       ]
     },
     {
-      "name" : "l3switch_mslp_firewall443",
-      "id" : 35,
+      "name" : "l3switch_mslp_firewall445",
+      "id" : 36,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -3783,7 +3992,7 @@
           ],
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 443,
+            "line" : 445,
             "column" : 28,
             "source_fragment" : "bloom_filter_1.read(reg_val_1, reg_pos_1)"
           }
@@ -3806,7 +4015,7 @@
           ],
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 444,
+            "line" : 446,
             "column" : 28,
             "source_fragment" : "bloom_filter_2.read(reg_val_2, reg_pos_2)"
           }
@@ -3814,8 +4023,8 @@
       ]
     },
     {
-      "name" : "l3switch_mslp_firewall408",
-      "id" : 36,
+      "name" : "l3switch_mslp_firewall410",
+      "id" : 37,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -3832,7 +4041,7 @@
           ],
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 408,
+            "line" : 410,
             "column" : 12,
             "source_fragment" : "direction = 1"
           }
@@ -3841,7 +4050,7 @@
     },
     {
       "name" : "MyEgress.popLabel",
-      "id" : 37,
+      "id" : 38,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -3858,7 +4067,7 @@
           ],
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 480,
+            "line" : 482,
             "column" : 8,
             "source_fragment" : "hdr.labels.pop_front(1)"
           }
@@ -3866,8 +4075,8 @@
       ]
     },
     {
-      "name" : "l3switch_mslp_firewall485",
-      "id" : 38,
+      "name" : "l3switch_mslp_firewall487",
+      "id" : 39,
       "runtime_data" : [],
       "primitives" : [
         {
@@ -3880,7 +4089,7 @@
           ],
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 485,
+            "line" : 487,
             "column" : 12,
             "source_fragment" : "recirculate_preserving_field_list(0)"
           }
@@ -3901,11 +4110,11 @@
       "init_table" : "node_2",
       "tables" : [
         {
-          "name" : "tbl_l3switch_mslp_firewall376",
+          "name" : "tbl_l3switch_mslp_firewall377",
           "id" : 0,
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 376,
+            "line" : 377,
             "column" : 30,
             "source_fragment" : "="
           },
@@ -3916,25 +4125,25 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [25],
-          "actions" : ["l3switch_mslp_firewall376"],
-          "base_default_next" : "tbl_l3switch_mslp_firewall379",
+          "action_ids" : [26],
+          "actions" : ["l3switch_mslp_firewall377"],
+          "base_default_next" : "tbl_l3switch_mslp_firewall380",
           "next_tables" : {
-            "l3switch_mslp_firewall376" : "tbl_l3switch_mslp_firewall379"
+            "l3switch_mslp_firewall377" : "tbl_l3switch_mslp_firewall380"
           },
           "default_entry" : {
-            "action_id" : 25,
+            "action_id" : 26,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
           }
         },
         {
-          "name" : "tbl_l3switch_mslp_firewall379",
+          "name" : "tbl_l3switch_mslp_firewall380",
           "id" : 1,
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 379,
+            "line" : 380,
             "column" : 25,
             "source_fragment" : "="
           },
@@ -3945,14 +4154,14 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [31],
-          "actions" : ["l3switch_mslp_firewall379"],
+          "action_ids" : [32],
+          "actions" : ["l3switch_mslp_firewall380"],
           "base_default_next" : "node_5",
           "next_tables" : {
-            "l3switch_mslp_firewall379" : "node_5"
+            "l3switch_mslp_firewall380" : "node_5"
           },
           "default_entry" : {
-            "action_id" : 31,
+            "action_id" : 32,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
@@ -3974,14 +4183,14 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [28],
+          "action_ids" : [29],
           "actions" : ["l3switch_mslp_firewall270"],
           "base_default_next" : "MyIngress.labelLookup",
           "next_tables" : {
             "l3switch_mslp_firewall270" : "MyIngress.labelLookup"
           },
           "default_entry" : {
-            "action_id" : 28,
+            "action_id" : 29,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
@@ -4012,11 +4221,11 @@
           "direct_meters" : null,
           "action_ids" : [14, 15, 5],
           "actions" : ["MyIngress.forwardTunnel", "MyIngress.removeMSLP", "MyIngress.drop"],
-          "base_default_next" : "node_21",
+          "base_default_next" : "node_23",
           "next_tables" : {
-            "MyIngress.removeMSLP" : "tbl_l3switch_mslp_firewall382",
-            "MyIngress.forwardTunnel" : "tbl_l3switch_mslp_firewall383",
-            "MyIngress.drop" : "node_21"
+            "MyIngress.removeMSLP" : "tbl_l3switch_mslp_firewall383",
+            "MyIngress.forwardTunnel" : "tbl_l3switch_mslp_firewall384",
+            "MyIngress.drop" : "node_23"
           },
           "default_entry" : {
             "action_id" : 5,
@@ -4026,37 +4235,8 @@
           }
         },
         {
-          "name" : "tbl_l3switch_mslp_firewall382",
-          "id" : 4,
-          "source_info" : {
-            "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 382,
-            "column" : 50,
-            "source_fragment" : "="
-          },
-          "key" : [],
-          "match_type" : "exact",
-          "type" : "simple",
-          "max_size" : 1024,
-          "with_counters" : false,
-          "support_timeout" : false,
-          "direct_meters" : null,
-          "action_ids" : [26],
-          "actions" : ["l3switch_mslp_firewall382"],
-          "base_default_next" : "node_21",
-          "next_tables" : {
-            "l3switch_mslp_firewall382" : "node_21"
-          },
-          "default_entry" : {
-            "action_id" : 26,
-            "action_const" : true,
-            "action_data" : [],
-            "action_entry_const" : true
-          }
-        },
-        {
           "name" : "tbl_l3switch_mslp_firewall383",
-          "id" : 5,
+          "id" : 4,
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
             "line" : 383,
@@ -4072,12 +4252,41 @@
           "direct_meters" : null,
           "action_ids" : [27],
           "actions" : ["l3switch_mslp_firewall383"],
-          "base_default_next" : "node_21",
+          "base_default_next" : "node_23",
           "next_tables" : {
-            "l3switch_mslp_firewall383" : "node_21"
+            "l3switch_mslp_firewall383" : "node_23"
           },
           "default_entry" : {
             "action_id" : 27,
+            "action_const" : true,
+            "action_data" : [],
+            "action_entry_const" : true
+          }
+        },
+        {
+          "name" : "tbl_l3switch_mslp_firewall384",
+          "id" : 5,
+          "source_info" : {
+            "filename" : "p4/l3switch_mslp_firewall.p4",
+            "line" : 384,
+            "column" : 50,
+            "source_fragment" : "="
+          },
+          "key" : [],
+          "match_type" : "exact",
+          "type" : "simple",
+          "max_size" : 1024,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [28],
+          "actions" : ["l3switch_mslp_firewall384"],
+          "base_default_next" : "node_23",
+          "next_tables" : {
+            "l3switch_mslp_firewall384" : "node_23"
+          },
+          "default_entry" : {
+            "action_id" : 28,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
@@ -4110,7 +4319,7 @@
           "actions" : ["MyIngress.forward", "NoAction"],
           "base_default_next" : null,
           "next_tables" : {
-            "__HIT__" : "tbl_l3switch_mslp_firewall388",
+            "__HIT__" : "tbl_l3switch_mslp_firewall389",
             "__MISS__" : "node_13"
           },
           "default_entry" : {
@@ -4121,11 +4330,11 @@
           }
         },
         {
-          "name" : "tbl_l3switch_mslp_firewall388",
+          "name" : "tbl_l3switch_mslp_firewall389",
           "id" : 7,
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 388,
+            "line" : 389,
             "column" : 33,
             "source_fragment" : "="
           },
@@ -4136,14 +4345,14 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [29],
-          "actions" : ["l3switch_mslp_firewall388"],
-          "base_default_next" : "node_21",
+          "action_ids" : [30],
+          "actions" : ["l3switch_mslp_firewall389"],
+          "base_default_next" : "node_23",
           "next_tables" : {
-            "l3switch_mslp_firewall388" : "node_21"
+            "l3switch_mslp_firewall389" : "node_23"
           },
           "default_entry" : {
-            "action_id" : 29,
+            "action_id" : 30,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
@@ -4154,7 +4363,7 @@
           "id" : 8,
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 391,
+            "line" : 392,
             "column" : 38,
             "source_fragment" : "selectTunnel(hdr.tcp.dstPort)"
           },
@@ -4183,7 +4392,7 @@
           "id" : 9,
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 392,
+            "line" : 393,
             "column" : 43,
             "source_fragment" : "selectTunnel(hdr.udp.dstPort)"
           },
@@ -4212,9 +4421,9 @@
           "id" : 10,
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 393,
-            "column" : 21,
-            "source_fragment" : "selectTunnel(0x0000)"
+            "line" : 394,
+            "column" : 44,
+            "source_fragment" : "selectTunnel(hdr.icmp.identifier)"
           },
           "key" : [],
           "match_type" : "exact",
@@ -4237,8 +4446,37 @@
           }
         },
         {
-          "name" : "MyIngress.tunnelLookup",
+          "name" : "tbl_selectTunnel_2",
           "id" : 11,
+          "source_info" : {
+            "filename" : "p4/l3switch_mslp_firewall.p4",
+            "line" : 395,
+            "column" : 21,
+            "source_fragment" : "selectTunnel(0x0000)"
+          },
+          "key" : [],
+          "match_type" : "exact",
+          "type" : "simple",
+          "max_size" : 1024,
+          "with_counters" : false,
+          "support_timeout" : false,
+          "direct_meters" : null,
+          "action_ids" : [20],
+          "actions" : ["MyIngress.selectTunnel"],
+          "base_default_next" : "MyIngress.tunnelLookup",
+          "next_tables" : {
+            "MyIngress.selectTunnel" : "MyIngress.tunnelLookup"
+          },
+          "default_entry" : {
+            "action_id" : 20,
+            "action_const" : true,
+            "action_data" : [],
+            "action_entry_const" : true
+          }
+        },
+        {
+          "name" : "MyIngress.tunnelLookup",
+          "id" : 12,
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
             "line" : 299,
@@ -4263,8 +4501,8 @@
           "actions" : ["MyIngress.addMSLP", "MyIngress.drop"],
           "base_default_next" : null,
           "next_tables" : {
-            "__HIT__" : "tbl_l3switch_mslp_firewall397",
-            "__MISS__" : "node_21"
+            "__HIT__" : "tbl_l3switch_mslp_firewall399",
+            "__MISS__" : "node_23"
           },
           "default_entry" : {
             "action_id" : 6,
@@ -4274,11 +4512,11 @@
           }
         },
         {
-          "name" : "tbl_l3switch_mslp_firewall397",
-          "id" : 12,
+          "name" : "tbl_l3switch_mslp_firewall399",
+          "id" : 13,
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 397,
+            "line" : 399,
             "column" : 40,
             "source_fragment" : "="
           },
@@ -4289,14 +4527,14 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [30],
-          "actions" : ["l3switch_mslp_firewall397"],
-          "base_default_next" : "node_21",
+          "action_ids" : [31],
+          "actions" : ["l3switch_mslp_firewall399"],
+          "base_default_next" : "node_23",
           "next_tables" : {
-            "l3switch_mslp_firewall397" : "node_21"
+            "l3switch_mslp_firewall399" : "node_23"
           },
           "default_entry" : {
-            "action_id" : 30,
+            "action_id" : 31,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
@@ -4304,10 +4542,10 @@
         },
         {
           "name" : "tbl_drop",
-          "id" : 13,
+          "id" : 14,
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 401,
+            "line" : 403,
             "column" : 12,
             "source_fragment" : "drop()"
           },
@@ -4320,9 +4558,9 @@
           "direct_meters" : null,
           "action_ids" : [7],
           "actions" : ["MyIngress.drop"],
-          "base_default_next" : "node_21",
+          "base_default_next" : "node_23",
           "next_tables" : {
-            "MyIngress.drop" : "node_21"
+            "MyIngress.drop" : "node_23"
           },
           "default_entry" : {
             "action_id" : 7,
@@ -4333,7 +4571,7 @@
         },
         {
           "name" : "MyIngress.internalMacLookup",
-          "id" : 14,
+          "id" : 15,
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
             "line" : 242,
@@ -4356,10 +4594,10 @@
           "direct_meters" : null,
           "action_ids" : [13, 4],
           "actions" : ["MyIngress.rewriteMacs", "MyIngress.drop"],
-          "base_default_next" : "tbl_l3switch_mslp_firewall408",
+          "base_default_next" : "tbl_l3switch_mslp_firewall410",
           "next_tables" : {
-            "MyIngress.rewriteMacs" : "tbl_l3switch_mslp_firewall408",
-            "MyIngress.drop" : "tbl_l3switch_mslp_firewall408"
+            "MyIngress.rewriteMacs" : "tbl_l3switch_mslp_firewall410",
+            "MyIngress.drop" : "tbl_l3switch_mslp_firewall410"
           },
           "default_entry" : {
             "action_id" : 4,
@@ -4369,11 +4607,11 @@
           }
         },
         {
-          "name" : "tbl_l3switch_mslp_firewall408",
-          "id" : 15,
+          "name" : "tbl_l3switch_mslp_firewall410",
+          "id" : 16,
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 408,
+            "line" : 410,
             "column" : 22,
             "source_fragment" : "="
           },
@@ -4384,14 +4622,14 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [36],
-          "actions" : ["l3switch_mslp_firewall408"],
+          "action_ids" : [37],
+          "actions" : ["l3switch_mslp_firewall410"],
           "base_default_next" : "MyIngress.checkDirection",
           "next_tables" : {
-            "l3switch_mslp_firewall408" : "MyIngress.checkDirection"
+            "l3switch_mslp_firewall410" : "MyIngress.checkDirection"
           },
           "default_entry" : {
-            "action_id" : 36,
+            "action_id" : 37,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
@@ -4399,10 +4637,10 @@
         },
         {
           "name" : "MyIngress.checkDirection",
-          "id" : 16,
+          "id" : 17,
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 342,
+            "line" : 343,
             "column" : 10,
             "source_fragment" : "checkDirection"
           },
@@ -4426,12 +4664,12 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [24, 1],
+          "action_ids" : [25, 1],
           "actions" : ["MyIngress.setDirection", "NoAction"],
           "base_default_next" : null,
           "next_tables" : {
             "__MISS__" : null,
-            "__HIT__" : "node_25"
+            "__HIT__" : "node_27"
           },
           "default_entry" : {
             "action_id" : 1,
@@ -4442,10 +4680,10 @@
         },
         {
           "name" : "tbl_compute_hashes",
-          "id" : 17,
+          "id" : 18,
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 413,
+            "line" : 415,
             "column" : 24,
             "source_fragment" : "compute_hashes(hdr.ipv4.srcAddr, hdr.ipv4.dstAddr, hdr.udp.srcPort, hdr.udp.dstPort)"
           },
@@ -4456,25 +4694,25 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [20],
+          "action_ids" : [21],
           "actions" : ["MyIngress.compute_hashes"],
-          "base_default_next" : "tbl_l3switch_mslp_firewall414",
+          "base_default_next" : "tbl_l3switch_mslp_firewall416",
           "next_tables" : {
-            "MyIngress.compute_hashes" : "tbl_l3switch_mslp_firewall414"
+            "MyIngress.compute_hashes" : "tbl_l3switch_mslp_firewall416"
           },
           "default_entry" : {
-            "action_id" : 20,
+            "action_id" : 21,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
           }
         },
         {
-          "name" : "tbl_l3switch_mslp_firewall414",
-          "id" : 18,
+          "name" : "tbl_l3switch_mslp_firewall416",
+          "id" : 19,
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 414,
+            "line" : 416,
             "column" : 24,
             "source_fragment" : "bloom_filter_1.write(reg_pos_1, 1); ..."
           },
@@ -4485,14 +4723,14 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [32],
-          "actions" : ["l3switch_mslp_firewall414"],
+          "action_ids" : [33],
+          "actions" : ["l3switch_mslp_firewall416"],
           "base_default_next" : null,
           "next_tables" : {
-            "l3switch_mslp_firewall414" : null
+            "l3switch_mslp_firewall416" : null
           },
           "default_entry" : {
-            "action_id" : 32,
+            "action_id" : 33,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
@@ -4500,10 +4738,10 @@
         },
         {
           "name" : "MyIngress.allowedPortsUDP",
-          "id" : 19,
+          "id" : 20,
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 364,
+            "line" : 365,
             "column" : 10,
             "source_fragment" : "allowedPortsUDP"
           },
@@ -4537,10 +4775,10 @@
         },
         {
           "name" : "tbl_compute_hashes_0",
-          "id" : 20,
+          "id" : 21,
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 420,
+            "line" : 422,
             "column" : 28,
             "source_fragment" : "compute_hashes(hdr.ipv4.dstAddr, hdr.ipv4.srcAddr, hdr.udp.dstPort, hdr.udp.srcPort)"
           },
@@ -4551,25 +4789,25 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [21],
+          "action_ids" : [22],
           "actions" : ["MyIngress.compute_hashes"],
-          "base_default_next" : "tbl_l3switch_mslp_firewall421",
+          "base_default_next" : "tbl_l3switch_mslp_firewall423",
           "next_tables" : {
-            "MyIngress.compute_hashes" : "tbl_l3switch_mslp_firewall421"
+            "MyIngress.compute_hashes" : "tbl_l3switch_mslp_firewall423"
           },
           "default_entry" : {
-            "action_id" : 21,
+            "action_id" : 22,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
           }
         },
         {
-          "name" : "tbl_l3switch_mslp_firewall421",
-          "id" : 21,
+          "name" : "tbl_l3switch_mslp_firewall423",
+          "id" : 22,
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 421,
+            "line" : 423,
             "column" : 28,
             "source_fragment" : "bloom_filter_1.read(reg_val_1, reg_pos_1); ..."
           },
@@ -4580,14 +4818,14 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [33],
-          "actions" : ["l3switch_mslp_firewall421"],
-          "base_default_next" : "node_32",
+          "action_ids" : [34],
+          "actions" : ["l3switch_mslp_firewall423"],
+          "base_default_next" : "node_34",
           "next_tables" : {
-            "l3switch_mslp_firewall421" : "node_32"
+            "l3switch_mslp_firewall423" : "node_34"
           },
           "default_entry" : {
-            "action_id" : 33,
+            "action_id" : 34,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
@@ -4595,10 +4833,10 @@
         },
         {
           "name" : "tbl_drop_0",
-          "id" : 22,
+          "id" : 23,
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 425,
+            "line" : 427,
             "column" : 32,
             "source_fragment" : "drop()"
           },
@@ -4624,10 +4862,10 @@
         },
         {
           "name" : "tbl_compute_hashes_1",
-          "id" : 23,
+          "id" : 24,
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 433,
+            "line" : 435,
             "column" : 28,
             "source_fragment" : "compute_hashes(hdr.ipv4.srcAddr, hdr.ipv4.dstAddr, hdr.tcp.srcPort, hdr.tcp.dstPort)"
           },
@@ -4638,25 +4876,25 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [22],
+          "action_ids" : [23],
           "actions" : ["MyIngress.compute_hashes"],
-          "base_default_next" : "tbl_l3switch_mslp_firewall434",
+          "base_default_next" : "tbl_l3switch_mslp_firewall436",
           "next_tables" : {
-            "MyIngress.compute_hashes" : "tbl_l3switch_mslp_firewall434"
+            "MyIngress.compute_hashes" : "tbl_l3switch_mslp_firewall436"
           },
           "default_entry" : {
-            "action_id" : 22,
+            "action_id" : 23,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
           }
         },
         {
-          "name" : "tbl_l3switch_mslp_firewall434",
-          "id" : 24,
+          "name" : "tbl_l3switch_mslp_firewall436",
+          "id" : 25,
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 434,
+            "line" : 436,
             "column" : 28,
             "source_fragment" : "bloom_filter_1.write(reg_pos_1, 1); ..."
           },
@@ -4667,14 +4905,14 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [34],
-          "actions" : ["l3switch_mslp_firewall434"],
+          "action_ids" : [35],
+          "actions" : ["l3switch_mslp_firewall436"],
           "base_default_next" : null,
           "next_tables" : {
-            "l3switch_mslp_firewall434" : null
+            "l3switch_mslp_firewall436" : null
           },
           "default_entry" : {
-            "action_id" : 34,
+            "action_id" : 35,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
@@ -4682,10 +4920,10 @@
         },
         {
           "name" : "MyIngress.allowedPortsTCP",
-          "id" : 25,
+          "id" : 26,
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 355,
+            "line" : 356,
             "column" : 10,
             "source_fragment" : "allowedPortsTCP"
           },
@@ -4719,10 +4957,10 @@
         },
         {
           "name" : "tbl_compute_hashes_2",
-          "id" : 26,
+          "id" : 27,
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 442,
+            "line" : 444,
             "column" : 28,
             "source_fragment" : "compute_hashes(hdr.ipv4.dstAddr, hdr.ipv4.srcAddr, hdr.tcp.dstPort, hdr.tcp.srcPort)"
           },
@@ -4733,25 +4971,25 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [23],
+          "action_ids" : [24],
           "actions" : ["MyIngress.compute_hashes"],
-          "base_default_next" : "tbl_l3switch_mslp_firewall443",
+          "base_default_next" : "tbl_l3switch_mslp_firewall445",
           "next_tables" : {
-            "MyIngress.compute_hashes" : "tbl_l3switch_mslp_firewall443"
+            "MyIngress.compute_hashes" : "tbl_l3switch_mslp_firewall445"
           },
           "default_entry" : {
-            "action_id" : 23,
+            "action_id" : 24,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
           }
         },
         {
-          "name" : "tbl_l3switch_mslp_firewall443",
-          "id" : 27,
+          "name" : "tbl_l3switch_mslp_firewall445",
+          "id" : 28,
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 443,
+            "line" : 445,
             "column" : 28,
             "source_fragment" : "bloom_filter_1.read(reg_val_1, reg_pos_1); ..."
           },
@@ -4762,14 +5000,14 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [35],
-          "actions" : ["l3switch_mslp_firewall443"],
-          "base_default_next" : "node_42",
+          "action_ids" : [36],
+          "actions" : ["l3switch_mslp_firewall445"],
+          "base_default_next" : "node_44",
           "next_tables" : {
-            "l3switch_mslp_firewall443" : "node_42"
+            "l3switch_mslp_firewall445" : "node_44"
           },
           "default_entry" : {
-            "action_id" : 35,
+            "action_id" : 36,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
@@ -4777,10 +5015,10 @@
         },
         {
           "name" : "tbl_drop_1",
-          "id" : 28,
+          "id" : 29,
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 448,
+            "line" : 450,
             "column" : 32,
             "source_fragment" : "drop()"
           },
@@ -4806,10 +5044,10 @@
         },
         {
           "name" : "tbl_drop_2",
-          "id" : 29,
+          "id" : 30,
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 456,
+            "line" : 458,
             "column" : 28,
             "source_fragment" : "drop()"
           },
@@ -4835,10 +5073,10 @@
         },
         {
           "name" : "tbl_drop_3",
-          "id" : 30,
+          "id" : 31,
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 460,
+            "line" : 462,
             "column" : 28,
             "source_fragment" : "drop()"
           },
@@ -4870,7 +5108,7 @@
           "id" : 0,
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 375,
+            "line" : 376,
             "column" : 11,
             "source_fragment" : "standard_metadata.instance_type == 0"
           },
@@ -4888,15 +5126,15 @@
               }
             }
           },
-          "true_next" : "tbl_l3switch_mslp_firewall376",
-          "false_next" : "tbl_l3switch_mslp_firewall379"
+          "true_next" : "tbl_l3switch_mslp_firewall377",
+          "false_next" : "tbl_l3switch_mslp_firewall380"
         },
         {
           "name" : "node_5",
           "id" : 1,
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 380,
+            "line" : 381,
             "column" : 11,
             "source_fragment" : "hdr.mslp.isValid()"
           },
@@ -4919,7 +5157,7 @@
           "id" : 2,
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 386,
+            "line" : 387,
             "column" : 18,
             "source_fragment" : "hdr.ipv4.isValid()"
           },
@@ -4942,7 +5180,7 @@
           "id" : 3,
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 391,
+            "line" : 392,
             "column" : 19,
             "source_fragment" : "hdr.tcp.isValid()"
           },
@@ -4965,7 +5203,7 @@
           "id" : 4,
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 392,
+            "line" : 393,
             "column" : 24,
             "source_fragment" : "hdr.udp.isValid()"
           },
@@ -4981,14 +5219,37 @@
             }
           },
           "true_next" : "tbl_selectTunnel_0",
-          "false_next" : "tbl_selectTunnel_1"
+          "false_next" : "node_17"
         },
         {
-          "name" : "node_21",
+          "name" : "node_17",
           "id" : 5,
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 405,
+            "line" : 394,
+            "column" : 24,
+            "source_fragment" : "hdr.icmp.isValid()"
+          },
+          "expression" : {
+            "type" : "expression",
+            "value" : {
+              "op" : "d2b",
+              "left" : null,
+              "right" : {
+                "type" : "field",
+                "value" : ["icmp", "$valid$"]
+              }
+            }
+          },
+          "true_next" : "tbl_selectTunnel_1",
+          "false_next" : "tbl_selectTunnel_2"
+        },
+        {
+          "name" : "node_23",
+          "id" : 6,
+          "source_info" : {
+            "filename" : "p4/l3switch_mslp_firewall.p4",
+            "line" : 407,
             "column" : 11,
             "source_fragment" : "activateFirewall == 1"
           },
@@ -5010,11 +5271,11 @@
           "true_next" : "MyIngress.internalMacLookup"
         },
         {
-          "name" : "node_25",
-          "id" : 6,
+          "name" : "node_27",
+          "id" : 7,
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 411,
+            "line" : 413,
             "column" : 19,
             "source_fragment" : "hdr.udp.isValid()"
           },
@@ -5029,15 +5290,15 @@
               }
             }
           },
-          "true_next" : "node_26",
-          "false_next" : "node_34"
+          "true_next" : "node_28",
+          "false_next" : "node_36"
         },
         {
-          "name" : "node_26",
-          "id" : 7,
+          "name" : "node_28",
+          "id" : 8,
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 412,
+            "line" : 414,
             "column" : 23,
             "source_fragment" : "direction == 0"
           },
@@ -5059,11 +5320,11 @@
           "false_next" : "MyIngress.allowedPortsUDP"
         },
         {
-          "name" : "node_32",
-          "id" : 8,
+          "name" : "node_34",
+          "id" : 9,
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 424,
+            "line" : 426,
             "column" : 31,
             "source_fragment" : "reg_val_1 != 1 || reg_val_2 != 1"
           },
@@ -5105,11 +5366,11 @@
           "true_next" : "tbl_drop_0"
         },
         {
-          "name" : "node_34",
-          "id" : 9,
+          "name" : "node_36",
+          "id" : 10,
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 429,
+            "line" : 431,
             "column" : 26,
             "source_fragment" : "hdr.tcp.isValid()"
           },
@@ -5124,15 +5385,15 @@
               }
             }
           },
-          "true_next" : "node_35",
-          "false_next" : "node_44"
+          "true_next" : "node_37",
+          "false_next" : "node_46"
         },
         {
-          "name" : "node_35",
-          "id" : 10,
+          "name" : "node_37",
+          "id" : 11,
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 431,
+            "line" : 433,
             "column" : 23,
             "source_fragment" : "direction == 0"
           },
@@ -5150,15 +5411,15 @@
               }
             }
           },
-          "true_next" : "node_36",
+          "true_next" : "node_38",
           "false_next" : "MyIngress.allowedPortsTCP"
         },
         {
-          "name" : "node_36",
-          "id" : 11,
+          "name" : "node_38",
+          "id" : 12,
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 432,
+            "line" : 434,
             "column" : 27,
             "source_fragment" : "hdr.tcp.syn == 1"
           },
@@ -5180,11 +5441,11 @@
           "true_next" : "tbl_compute_hashes_1"
         },
         {
-          "name" : "node_42",
-          "id" : 12,
+          "name" : "node_44",
+          "id" : 13,
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 447,
+            "line" : 449,
             "column" : 31,
             "source_fragment" : "reg_val_1 != 1 || reg_val_2 != 1"
           },
@@ -5226,11 +5487,11 @@
           "true_next" : "tbl_drop_1"
         },
         {
-          "name" : "node_44",
-          "id" : 13,
+          "name" : "node_46",
+          "id" : 14,
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 452,
+            "line" : 454,
             "column" : 26,
             "source_fragment" : "hdr.icmp.isValid()"
           },
@@ -5246,14 +5507,14 @@
             }
           },
           "false_next" : null,
-          "true_next" : "node_45"
+          "true_next" : "node_47"
         },
         {
-          "name" : "node_45",
-          "id" : 14,
+          "name" : "node_47",
+          "id" : 15,
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 454,
+            "line" : 456,
             "column" : 23,
             "source_fragment" : "direction == 0"
           },
@@ -5271,15 +5532,15 @@
               }
             }
           },
-          "true_next" : "node_46",
-          "false_next" : "node_48"
+          "true_next" : "node_48",
+          "false_next" : "node_50"
         },
         {
-          "name" : "node_46",
-          "id" : 15,
+          "name" : "node_48",
+          "id" : 16,
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 455,
+            "line" : 457,
             "column" : 27,
             "source_fragment" : "hdr.icmp.typ == 0"
           },
@@ -5301,11 +5562,11 @@
           "true_next" : "tbl_drop_2"
         },
         {
-          "name" : "node_48",
-          "id" : 16,
+          "name" : "node_50",
+          "id" : 17,
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 459,
+            "line" : 461,
             "column" : 27,
             "source_fragment" : "hdr.icmp.typ == 8"
           },
@@ -5333,18 +5594,18 @@
       "id" : 1,
       "source_info" : {
         "filename" : "p4/l3switch_mslp_firewall.p4",
-        "line" : 474,
+        "line" : 476,
         "column" : 8,
         "source_fragment" : "MyEgress"
       },
-      "init_table" : "node_52",
+      "init_table" : "node_54",
       "tables" : [
         {
-          "name" : "tbl_l3switch_mslp_firewall485",
-          "id" : 31,
+          "name" : "tbl_l3switch_mslp_firewall487",
+          "id" : 32,
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 485,
+            "line" : 487,
             "column" : 12,
             "source_fragment" : "recirculate_preserving_field_list(0)"
           },
@@ -5355,14 +5616,14 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [38],
-          "actions" : ["l3switch_mslp_firewall485"],
+          "action_ids" : [39],
+          "actions" : ["l3switch_mslp_firewall487"],
           "base_default_next" : null,
           "next_tables" : {
-            "l3switch_mslp_firewall485" : null
+            "l3switch_mslp_firewall487" : null
           },
           "default_entry" : {
-            "action_id" : 38,
+            "action_id" : 39,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
@@ -5370,10 +5631,10 @@
         },
         {
           "name" : "tbl_popLabel",
-          "id" : 32,
+          "id" : 33,
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 487,
+            "line" : 489,
             "column" : 12,
             "source_fragment" : "popLabel()"
           },
@@ -5384,14 +5645,14 @@
           "with_counters" : false,
           "support_timeout" : false,
           "direct_meters" : null,
-          "action_ids" : [37],
+          "action_ids" : [38],
           "actions" : ["MyEgress.popLabel"],
           "base_default_next" : null,
           "next_tables" : {
             "MyEgress.popLabel" : null
           },
           "default_entry" : {
-            "action_id" : 37,
+            "action_id" : 38,
             "action_const" : true,
             "action_data" : [],
             "action_entry_const" : true
@@ -5401,11 +5662,11 @@
       "action_profiles" : [],
       "conditionals" : [
         {
-          "name" : "node_52",
-          "id" : 17,
+          "name" : "node_54",
+          "id" : 18,
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 484,
+            "line" : 486,
             "column" : 11,
             "source_fragment" : "meta.setRecirculate == 1"
           },
@@ -5423,15 +5684,15 @@
               }
             }
           },
-          "true_next" : "tbl_l3switch_mslp_firewall485",
-          "false_next" : "node_54"
+          "true_next" : "tbl_l3switch_mslp_firewall487",
+          "false_next" : "node_56"
         },
         {
-          "name" : "node_54",
-          "id" : 18,
+          "name" : "node_56",
+          "id" : 19,
           "source_info" : {
             "filename" : "p4/l3switch_mslp_firewall.p4",
-            "line" : 486,
+            "line" : 488,
             "column" : 18,
             "source_fragment" : "hdr.mslp.isValid() && hdr.labels[0].isValid()"
           },
@@ -5475,13 +5736,13 @@
       "id" : 0,
       "source_info" : {
         "filename" : "p4/l3switch_mslp_firewall.p4",
-        "line" : 499,
+        "line" : 501,
         "column" : 8,
         "source_fragment" : "update_checksum( ..."
       },
       "target" : ["ipv4", "hdrChecksum"],
       "type" : "generic",
-      "calculation" : "calc_10",
+      "calculation" : "calc_11",
       "verify" : false,
       "update" : true,
       "if_cond" : {

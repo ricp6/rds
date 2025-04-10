@@ -1,10 +1,10 @@
 
-[2025-04-10 14:06:24.296] /p4.v1.P4Runtime/SetForwardingPipelineConfig
+[2025-04-10 16:18:36.527] /p4.v1.P4Runtime/SetForwardingPipelineConfig
 ---
 Message too long (23493 bytes)! Skipping log...
 ---
 
-[2025-04-10 14:06:24.357] /p4.v1.P4Runtime/Write
+[2025-04-10 16:18:36.608] /p4.v1.P4Runtime/Write
 ---
 device_id: 1
 election_id {
@@ -26,7 +26,7 @@ updates {
 }
 ---
 
-[2025-04-10 14:06:24.359] /p4.v1.P4Runtime/Write
+[2025-04-10 16:18:36.611] /p4.v1.P4Runtime/Write
 ---
 device_id: 1
 election_id {
@@ -48,7 +48,7 @@ updates {
 }
 ---
 
-[2025-04-10 14:06:24.395] /p4.v1.P4Runtime/Write
+[2025-04-10 16:18:36.643] /p4.v1.P4Runtime/Write
 ---
 device_id: 1
 election_id {
@@ -82,7 +82,7 @@ updates {
 }
 ---
 
-[2025-04-10 14:06:24.396] /p4.v1.P4Runtime/Write
+[2025-04-10 16:18:36.644] /p4.v1.P4Runtime/Write
 ---
 device_id: 1
 election_id {
@@ -104,7 +104,65 @@ updates {
 }
 ---
 
-[2025-04-10 14:07:06.814] /p4.v1.P4Runtime/Write
+[2025-04-10 16:18:43.871] /p4.v1.P4Runtime/Write
+---
+device_id: 1
+election_id {
+  low: 1
+}
+updates {
+  type: INSERT
+  entity {
+    table_entry {
+      table_id: 39157715
+      match {
+        field_id: 1
+        exact {
+          value: "\252\000\000\000\001\001"
+        }
+      }
+      action {
+        action {
+          action_id: 21257015
+        }
+      }
+    }
+  }
+}
+---
+
+[2025-04-10 16:18:43.874] /p4.v1.P4Runtime/Write
+---
+device_id: 1
+election_id {
+  low: 1
+}
+updates {
+  type: INSERT
+  entity {
+    table_entry {
+      table_id: 46852981
+      match {
+        field_id: 1
+        exact {
+          value: "\252\000\000\000\001\001"
+        }
+      }
+      action {
+        action {
+          action_id: 29683729
+          params {
+            param_id: 1
+            value: "\000\004"
+          }
+        }
+      }
+    }
+  }
+}
+---
+
+[2025-04-10 16:18:43.878] /p4.v1.P4Runtime/Write
 ---
 device_id: 1
 election_id {
@@ -131,7 +189,7 @@ updates {
 }
 ---
 
-[2025-04-10 14:07:06.816] /p4.v1.P4Runtime/Write
+[2025-04-10 16:18:43.879] /p4.v1.P4Runtime/Write
 ---
 device_id: 1
 election_id {
