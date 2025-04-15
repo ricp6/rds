@@ -19,7 +19,7 @@ tables {
   action_refs {
     id: 25652968
   }
-  size: 2
+  size: 16
 }
 tables {
   preamble {
@@ -39,7 +39,7 @@ tables {
   action_refs {
     id: 25652968
   }
-  size: 2
+  size: 16
 }
 actions {
   preamble {

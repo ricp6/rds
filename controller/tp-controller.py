@@ -429,27 +429,23 @@ def main(p4infoL2_file_path, p4infoL3M_file_path, p4infoL3MF_file_path, p4infoL3
         # Write clone engines and their sessionId
         writeCloneEngines(L2_helper, L3M_helper, L3MF_helper, L3T_helper,
                           s1,r1,r2,r3,r4,r5,r6)
-        
+
+        # Write default actions
+        writeDefaultActions(L2_helper, L3M_helper, L3MF_helper, L3T_helper,
+                            s1,r1,r2,r3,r4,r5,r6)
+
+        # Add the static rules to the L3 Switches
+        writeStaticRules(L3M_helper, L3MF_helper, L3T_helper, r1,r2,r3,r4,r5,r6)
+
         # Read all entries of all tables of all routers
         readTableRules(L3T_helper, r2)
 
         # Populate state variables
         # TODO
 
-        # Write default actions
-        writeDefaultActions(L2_helper, L3M_helper, L3MF_helper, L3T_helper,
-                            s1,r1,r2,r3,r4,r5,r6)
-
-        readTableRules(L3T_helper, r2)
-
-        # Add the static rules to the L3 Switches
-        writeStaticRules(L3M_helper, L3MF_helper, L3T_helper, r1,r2,r3,r4,r5,r6)
-
-        readTableRules(L3T_helper, r2)
-
         # Thread to keep changing the tunnel rules
-        t = threading.Thread(target=changeTunnelRules, args=(L3M_helper, L3MF_helper, r1, r4, False,), daemon=True)
-        t.start()
+        #t = threading.Thread(target=changeTunnelRules, args=(L3M_helper, L3MF_helper, r1, r4, False,), daemon=True)
+        #t.start()
 
         for response in s1.stream_msg_resp:
             # Check if the response contains a packet-in message

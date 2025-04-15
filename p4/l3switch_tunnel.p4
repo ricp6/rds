@@ -102,7 +102,7 @@ control MyIngress(inout headers hdr,
             forwardTunnel;
             drop;
         }
-        size = 4;
+        size = 16;
         default_action = drop;
     }
 
@@ -117,7 +117,7 @@ control MyIngress(inout headers hdr,
             rewriteMacs;
             drop;
         }
-        size = 2;
+        size = 16;
         default_action = drop;
     }
      
