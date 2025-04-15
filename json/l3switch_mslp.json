@@ -10,18 +10,22 @@
         ["tmp_2", 32, false],
         ["tmp_3", 32, false],
         ["tmp_4", 16, false],
-        ["tmp_5", 8, false],
-        ["tmp_6", 32, false],
+        ["tmp_5", 16, false],
+        ["tmp_6", 8, false],
         ["tmp_7", 32, false],
-        ["tmp_8", 16, false],
-        ["tmp_9", 8, false],
-        ["tmp_10", 32, false],
-        ["tmp_11", 32, false],
-        ["tmp_12", 16, false],
-        ["tmp_13", 8, false],
-        ["tmp_14", 32, false],
-        ["tmp_15", 32, false],
-        ["tmp_16", 16, false],
+        ["tmp_8", 32, false],
+        ["tmp_9", 16, false],
+        ["tmp_10", 16, false],
+        ["tmp_11", 8, false],
+        ["tmp_12", 32, false],
+        ["tmp_13", 32, false],
+        ["tmp_14", 16, false],
+        ["tmp_15", 16, false],
+        ["tmp_16", 8, false],
+        ["tmp_17", 32, false],
+        ["tmp_18", 32, false],
+        ["tmp_19", 16, false],
+        ["tmp_20", 16, false],
         ["key_0", 16, false],
         ["metadata.nextHopMac", 48, false],
         ["metadata.tcp_opt_size", 8, false],
@@ -732,7 +736,7 @@
       "id" : 0,
       "source_info" : {
         "filename" : "p4/l3switch_mslp.p4",
-        "line" : 396,
+        "line" : 397,
         "column" : 8,
         "source_fragment" : "MyDeparser"
       },
@@ -764,6 +768,10 @@
         {
           "type" : "field",
           "value" : ["scalars", "tmp_4"]
+        },
+        {
+          "type" : "field",
+          "value" : ["scalars", "tmp_5"]
         }
       ]
     },
@@ -772,10 +780,6 @@
       "id" : 1,
       "algo" : "crc32",
       "input" : [
-        {
-          "type" : "field",
-          "value" : ["scalars", "tmp_5"]
-        },
         {
           "type" : "field",
           "value" : ["scalars", "tmp_6"]
@@ -787,6 +791,14 @@
         {
           "type" : "field",
           "value" : ["scalars", "tmp_8"]
+        },
+        {
+          "type" : "field",
+          "value" : ["scalars", "tmp_9"]
+        },
+        {
+          "type" : "field",
+          "value" : ["scalars", "tmp_10"]
         }
       ]
     },
@@ -797,27 +809,12 @@
       "input" : [
         {
           "type" : "field",
-          "value" : ["scalars", "tmp_9"]
-        },
-        {
-          "type" : "field",
-          "value" : ["scalars", "tmp_10"]
-        },
-        {
-          "type" : "field",
           "value" : ["scalars", "tmp_11"]
         },
         {
           "type" : "field",
           "value" : ["scalars", "tmp_12"]
-        }
-      ]
-    },
-    {
-      "name" : "calc_2",
-      "id" : 3,
-      "algo" : "crc32",
-      "input" : [
+        },
         {
           "type" : "field",
           "value" : ["scalars", "tmp_13"]
@@ -829,10 +826,33 @@
         {
           "type" : "field",
           "value" : ["scalars", "tmp_15"]
-        },
+        }
+      ]
+    },
+    {
+      "name" : "calc_2",
+      "id" : 3,
+      "algo" : "crc32",
+      "input" : [
         {
           "type" : "field",
           "value" : ["scalars", "tmp_16"]
+        },
+        {
+          "type" : "field",
+          "value" : ["scalars", "tmp_17"]
+        },
+        {
+          "type" : "field",
+          "value" : ["scalars", "tmp_18"]
+        },
+        {
+          "type" : "field",
+          "value" : ["scalars", "tmp_19"]
+        },
+        {
+          "type" : "field",
+          "value" : ["scalars", "tmp_20"]
         }
       ]
     },
@@ -841,7 +861,7 @@
       "id" : 4,
       "source_info" : {
         "filename" : "p4/l3switch_mslp.p4",
-        "line" : 375,
+        "line" : 376,
         "column" : 8,
         "source_fragment" : "update_checksum( ..."
       },
@@ -1826,12 +1846,31 @@
             },
             {
               "type" : "field",
-              "value" : ["tcp", "dstPort"]
+              "value" : ["tcp", "srcPort"]
             }
           ],
           "source_info" : {
             "filename" : "p4/l3switch_mslp.p4",
             "line" : 307,
+            "column" : 16,
+            "source_fragment" : "srcPort"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "tmp_5"]
+            },
+            {
+              "type" : "field",
+              "value" : ["tcp", "dstPort"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4/l3switch_mslp.p4",
+            "line" : 308,
             "column" : 16,
             "source_fragment" : "dstPort"
           }
@@ -1875,7 +1914,7 @@
           "parameters" : [
             {
               "type" : "field",
-              "value" : ["scalars", "tmp_5"]
+              "value" : ["scalars", "tmp_6"]
             },
             {
               "type" : "field",
@@ -1894,7 +1933,7 @@
           "parameters" : [
             {
               "type" : "field",
-              "value" : ["scalars", "tmp_6"]
+              "value" : ["scalars", "tmp_7"]
             },
             {
               "type" : "field",
@@ -1913,7 +1952,7 @@
           "parameters" : [
             {
               "type" : "field",
-              "value" : ["scalars", "tmp_7"]
+              "value" : ["scalars", "tmp_8"]
             },
             {
               "type" : "field",
@@ -1932,7 +1971,26 @@
           "parameters" : [
             {
               "type" : "field",
-              "value" : ["scalars", "tmp_8"]
+              "value" : ["scalars", "tmp_9"]
+            },
+            {
+              "type" : "field",
+              "value" : ["udp", "srcPort"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4/l3switch_mslp.p4",
+            "line" : 307,
+            "column" : 16,
+            "source_fragment" : "srcPort"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "tmp_10"]
             },
             {
               "type" : "field",
@@ -1941,7 +1999,7 @@
           ],
           "source_info" : {
             "filename" : "p4/l3switch_mslp.p4",
-            "line" : 307,
+            "line" : 308,
             "column" : 16,
             "source_fragment" : "dstPort"
           }
@@ -1985,7 +2043,7 @@
           "parameters" : [
             {
               "type" : "field",
-              "value" : ["scalars", "tmp_9"]
+              "value" : ["scalars", "tmp_11"]
             },
             {
               "type" : "field",
@@ -2004,7 +2062,7 @@
           "parameters" : [
             {
               "type" : "field",
-              "value" : ["scalars", "tmp_10"]
+              "value" : ["scalars", "tmp_12"]
             },
             {
               "type" : "field",
@@ -2023,7 +2081,7 @@
           "parameters" : [
             {
               "type" : "field",
-              "value" : ["scalars", "tmp_11"]
+              "value" : ["scalars", "tmp_13"]
             },
             {
               "type" : "field",
@@ -2042,7 +2100,7 @@
           "parameters" : [
             {
               "type" : "field",
-              "value" : ["scalars", "tmp_12"]
+              "value" : ["scalars", "tmp_14"]
             },
             {
               "type" : "field",
@@ -2052,6 +2110,25 @@
           "source_info" : {
             "filename" : "p4/l3switch_mslp.p4",
             "line" : 307,
+            "column" : 16,
+            "source_fragment" : "srcPort"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "tmp_15"]
+            },
+            {
+              "type" : "field",
+              "value" : ["icmp", "sequence"]
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4/l3switch_mslp.p4",
+            "line" : 308,
             "column" : 16,
             "source_fragment" : "dstPort"
           }
@@ -2095,7 +2172,7 @@
           "parameters" : [
             {
               "type" : "field",
-              "value" : ["scalars", "tmp_13"]
+              "value" : ["scalars", "tmp_16"]
             },
             {
               "type" : "field",
@@ -2114,7 +2191,7 @@
           "parameters" : [
             {
               "type" : "field",
-              "value" : ["scalars", "tmp_14"]
+              "value" : ["scalars", "tmp_17"]
             },
             {
               "type" : "field",
@@ -2133,7 +2210,7 @@
           "parameters" : [
             {
               "type" : "field",
-              "value" : ["scalars", "tmp_15"]
+              "value" : ["scalars", "tmp_18"]
             },
             {
               "type" : "field",
@@ -2152,16 +2229,35 @@
           "parameters" : [
             {
               "type" : "field",
-              "value" : ["scalars", "tmp_16"]
+              "value" : ["scalars", "tmp_19"]
             },
             {
               "type" : "hexstr",
-              "value" : "0x0000"
+              "value" : "0x0110"
             }
           ],
           "source_info" : {
             "filename" : "p4/l3switch_mslp.p4",
             "line" : 307,
+            "column" : 16,
+            "source_fragment" : "srcPort"
+          }
+        },
+        {
+          "op" : "assign",
+          "parameters" : [
+            {
+              "type" : "field",
+              "value" : ["scalars", "tmp_20"]
+            },
+            {
+              "type" : "hexstr",
+              "value" : "0x1001"
+            }
+          ],
+          "source_info" : {
+            "filename" : "p4/l3switch_mslp.p4",
+            "line" : 308,
             "column" : 16,
             "source_fragment" : "dstPort"
           }
@@ -2196,7 +2292,7 @@
       ]
     },
     {
-      "name" : "l3switch_mslp318",
+      "name" : "l3switch_mslp319",
       "id" : 14,
       "runtime_data" : [],
       "primitives" : [
@@ -2214,7 +2310,7 @@
           ],
           "source_info" : {
             "filename" : "p4/l3switch_mslp.p4",
-            "line" : 318,
+            "line" : 319,
             "column" : 20,
             "source_fragment" : "meta.setRecirculate = 1"
           }
@@ -2248,7 +2344,7 @@
       ]
     },
     {
-      "name" : "l3switch_mslp338",
+      "name" : "l3switch_mslp339",
       "id" : 16,
       "runtime_data" : [],
       "primitives" : [
@@ -2266,7 +2362,7 @@
           ],
           "source_info" : {
             "filename" : "p4/l3switch_mslp.p4",
-            "line" : 338,
+            "line" : 339,
             "column" : 20,
             "source_fragment" : "meta.setRecirculate = 1"
           }
@@ -2292,7 +2388,7 @@
           ],
           "source_info" : {
             "filename" : "p4/l3switch_mslp.p4",
-            "line" : 356,
+            "line" : 357,
             "column" : 8,
             "source_fragment" : "hdr.labels.pop_front(1)"
           }
@@ -2300,7 +2396,7 @@
       ]
     },
     {
-      "name" : "l3switch_mslp361",
+      "name" : "l3switch_mslp362",
       "id" : 18,
       "runtime_data" : [],
       "primitives" : [
@@ -2314,7 +2410,7 @@
           ],
           "source_info" : {
             "filename" : "p4/l3switch_mslp.p4",
-            "line" : 361,
+            "line" : 362,
             "column" : 12,
             "source_fragment" : "recirculate_preserving_field_list(0)"
           }
@@ -2390,7 +2486,7 @@
           "actions" : ["MyIngress.forwardTunnel", "MyIngress.removeMSLP", "MyIngress.drop"],
           "base_default_next" : null,
           "next_tables" : {
-            "MyIngress.removeMSLP" : "tbl_l3switch_mslp318",
+            "MyIngress.removeMSLP" : "tbl_l3switch_mslp319",
             "MyIngress.forwardTunnel" : "MyIngress.internalMacLookup",
             "MyIngress.drop" : null
           },
@@ -2402,11 +2498,11 @@
           }
         },
         {
-          "name" : "tbl_l3switch_mslp318",
+          "name" : "tbl_l3switch_mslp319",
           "id" : 2,
           "source_info" : {
             "filename" : "p4/l3switch_mslp.p4",
-            "line" : 318,
+            "line" : 319,
             "column" : 40,
             "source_fragment" : "="
           },
@@ -2418,10 +2514,10 @@
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [14],
-          "actions" : ["l3switch_mslp318"],
+          "actions" : ["l3switch_mslp319"],
           "base_default_next" : null,
           "next_tables" : {
-            "l3switch_mslp318" : null
+            "l3switch_mslp319" : null
           },
           "default_entry" : {
             "action_id" : 14,
@@ -2509,9 +2605,9 @@
           "id" : 5,
           "source_info" : {
             "filename" : "p4/l3switch_mslp.p4",
-            "line" : 331,
+            "line" : 332,
             "column" : 38,
-            "source_fragment" : "selectTunnel(hdr.tcp.dstPort)"
+            "source_fragment" : "selectTunnel(hdr.tcp.srcPort, hdr.tcp.dstPort)"
           },
           "key" : [],
           "match_type" : "exact",
@@ -2538,9 +2634,9 @@
           "id" : 6,
           "source_info" : {
             "filename" : "p4/l3switch_mslp.p4",
-            "line" : 332,
+            "line" : 333,
             "column" : 43,
-            "source_fragment" : "selectTunnel(hdr.udp.dstPort)"
+            "source_fragment" : "selectTunnel(hdr.udp.srcPort, hdr.udp.dstPort)"
           },
           "key" : [],
           "match_type" : "exact",
@@ -2567,9 +2663,9 @@
           "id" : 7,
           "source_info" : {
             "filename" : "p4/l3switch_mslp.p4",
-            "line" : 333,
+            "line" : 334,
             "column" : 44,
-            "source_fragment" : "selectTunnel(hdr.icmp.identifier)"
+            "source_fragment" : "selectTunnel(hdr.icmp.identifier, hdr.icmp.sequence)"
           },
           "key" : [],
           "match_type" : "exact",
@@ -2596,9 +2692,9 @@
           "id" : 8,
           "source_info" : {
             "filename" : "p4/l3switch_mslp.p4",
-            "line" : 334,
+            "line" : 335,
             "column" : 21,
-            "source_fragment" : "selectTunnel(0x0000)"
+            "source_fragment" : "selectTunnel(0x0110, 0x1001)"
           },
           "key" : [],
           "match_type" : "exact",
@@ -2648,7 +2744,7 @@
           "base_default_next" : null,
           "next_tables" : {
             "__MISS__" : null,
-            "__HIT__" : "tbl_l3switch_mslp338"
+            "__HIT__" : "tbl_l3switch_mslp339"
           },
           "default_entry" : {
             "action_id" : 3,
@@ -2658,11 +2754,11 @@
           }
         },
         {
-          "name" : "tbl_l3switch_mslp338",
+          "name" : "tbl_l3switch_mslp339",
           "id" : 10,
           "source_info" : {
             "filename" : "p4/l3switch_mslp.p4",
-            "line" : 338,
+            "line" : 339,
             "column" : 40,
             "source_fragment" : "="
           },
@@ -2674,10 +2770,10 @@
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [16],
-          "actions" : ["l3switch_mslp338"],
+          "actions" : ["l3switch_mslp339"],
           "base_default_next" : null,
           "next_tables" : {
-            "l3switch_mslp338" : null
+            "l3switch_mslp339" : null
           },
           "default_entry" : {
             "action_id" : 16,
@@ -2691,7 +2787,7 @@
           "id" : 11,
           "source_info" : {
             "filename" : "p4/l3switch_mslp.p4",
-            "line" : 342,
+            "line" : 343,
             "column" : 12,
             "source_fragment" : "drop()"
           },
@@ -2723,7 +2819,7 @@
           "id" : 0,
           "source_info" : {
             "filename" : "p4/l3switch_mslp.p4",
-            "line" : 314,
+            "line" : 315,
             "column" : 11,
             "source_fragment" : "hdr.mslp.isValid()"
           },
@@ -2746,7 +2842,7 @@
           "id" : 1,
           "source_info" : {
             "filename" : "p4/l3switch_mslp.p4",
-            "line" : 326,
+            "line" : 327,
             "column" : 18,
             "source_fragment" : "hdr.ipv4.isValid()"
           },
@@ -2769,7 +2865,7 @@
           "id" : 2,
           "source_info" : {
             "filename" : "p4/l3switch_mslp.p4",
-            "line" : 331,
+            "line" : 332,
             "column" : 19,
             "source_fragment" : "hdr.tcp.isValid()"
           },
@@ -2792,7 +2888,7 @@
           "id" : 3,
           "source_info" : {
             "filename" : "p4/l3switch_mslp.p4",
-            "line" : 332,
+            "line" : 333,
             "column" : 24,
             "source_fragment" : "hdr.udp.isValid()"
           },
@@ -2815,7 +2911,7 @@
           "id" : 4,
           "source_info" : {
             "filename" : "p4/l3switch_mslp.p4",
-            "line" : 333,
+            "line" : 334,
             "column" : 24,
             "source_fragment" : "hdr.icmp.isValid()"
           },
@@ -2840,18 +2936,18 @@
       "id" : 1,
       "source_info" : {
         "filename" : "p4/l3switch_mslp.p4",
-        "line" : 351,
+        "line" : 352,
         "column" : 8,
         "source_fragment" : "MyEgress"
       },
       "init_table" : "node_22",
       "tables" : [
         {
-          "name" : "tbl_l3switch_mslp361",
+          "name" : "tbl_l3switch_mslp362",
           "id" : 12,
           "source_info" : {
             "filename" : "p4/l3switch_mslp.p4",
-            "line" : 361,
+            "line" : 362,
             "column" : 12,
             "source_fragment" : "recirculate_preserving_field_list(0)"
           },
@@ -2863,10 +2959,10 @@
           "support_timeout" : false,
           "direct_meters" : null,
           "action_ids" : [18],
-          "actions" : ["l3switch_mslp361"],
+          "actions" : ["l3switch_mslp362"],
           "base_default_next" : null,
           "next_tables" : {
-            "l3switch_mslp361" : null
+            "l3switch_mslp362" : null
           },
           "default_entry" : {
             "action_id" : 18,
@@ -2880,7 +2976,7 @@
           "id" : 13,
           "source_info" : {
             "filename" : "p4/l3switch_mslp.p4",
-            "line" : 363,
+            "line" : 364,
             "column" : 12,
             "source_fragment" : "popLabel()"
           },
@@ -2912,7 +3008,7 @@
           "id" : 5,
           "source_info" : {
             "filename" : "p4/l3switch_mslp.p4",
-            "line" : 360,
+            "line" : 361,
             "column" : 11,
             "source_fragment" : "meta.setRecirculate == 1"
           },
@@ -2930,7 +3026,7 @@
               }
             }
           },
-          "true_next" : "tbl_l3switch_mslp361",
+          "true_next" : "tbl_l3switch_mslp362",
           "false_next" : "node_24"
         },
         {
@@ -2938,7 +3034,7 @@
           "id" : 6,
           "source_info" : {
             "filename" : "p4/l3switch_mslp.p4",
-            "line" : 362,
+            "line" : 363,
             "column" : 18,
             "source_fragment" : "hdr.mslp.isValid() && hdr.labels[0].isValid()"
           },
@@ -2982,7 +3078,7 @@
       "id" : 0,
       "source_info" : {
         "filename" : "p4/l3switch_mslp.p4",
-        "line" : 375,
+        "line" : 376,
         "column" : 8,
         "source_fragment" : "update_checksum( ..."
       },

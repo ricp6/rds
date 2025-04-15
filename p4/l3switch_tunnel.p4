@@ -102,7 +102,7 @@ control MyIngress(inout headers hdr,
             forwardTunnel;
             drop;
         }
-        size = 2;
+        size = 4;
         default_action = drop;
     }
 

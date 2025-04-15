@@ -85,7 +85,7 @@ def writeDefaultTableAction(p4info_helper, sw, table, action):
             default_action = True,
             action_name = action)
     sw.WriteTableEntry(table_entry)
-    print("Installed default entry on %s" % sw.name)
+    #print("Installed default entry on %s" % sw.name)
 
 # Function to write a MAC destination lookup entry to the table
 def writeMacDstLookUp(p4info_helper, sw, mac, port):
@@ -121,14 +121,13 @@ def writeMacSrcLookUp(p4info_helper, sw, mac):
 def writeMcGroup(p4info_helper, sw, sessionId):
     mc_group = p4info_helper.buildMulticastGroupEntry(sessionId, broadcastReplicas)
     sw.WritePREEntry(mc_group)
-    print("Installed Mc Group on %s" % sw.name)
+    #print("Installed Mc Group on %s" % sw.name)
 
 # Function to write a CPU session entry for packet cloning to the CPU port
 def writeCpuSession(p4info_helper, sw, sessionId):
     clone_entry = p4info_helper.buildCloneSessionEntry(sessionId, cpuReplicas)
     sw.WritePREEntry(clone_entry)
-    print("Installed clone session on %s" % sw.name)
-
+    #print("Installed clone session on %s" % sw.name)
 
 
 # Function to instanciate the P4info helpers for all kinds of switches
@@ -191,30 +190,21 @@ def sendMasterAtributionMessage(s1,r1,r2,r3,r4,r5,r6):
     r4.MasterArbitrationUpdate()
     r5.MasterArbitrationUpdate()
     r6.MasterArbitrationUpdate()
+    print("Set master on all")
         
 # Function to install the P4 programs on all switches
 def installP4Programs(L2_helper, L3M_helper, L3MF_helper, L3T_helper, 
                       jsonL2, jsonL3M, jsonL3MF, jsonL3T,
                       s1,r1,r2,r3,r4,r5,r6):
     
-    s1.SetForwardingPipelineConfig(p4info=L2_helper.p4info,
-                                    bmv2_json_file_path=jsonL2)
-    print("Installed L2   - P4 Program using SetForwardingPipelineConfig on s1")
-    r1.SetForwardingPipelineConfig(p4info=L3M_helper.p4info,
-                                    bmv2_json_file_path=jsonL3M)
-    print("Installed L3M  - P4 Program using SetForwardingPipelineConfig on r1")
-    r4.SetForwardingPipelineConfig(p4info=L3MF_helper.p4info,
-                                    bmv2_json_file_path=jsonL3MF)
-    print("Installed L3MF - P4 Program using SetForwardingPipelineConfig on r4")
-    r2.SetForwardingPipelineConfig(p4info=L3T_helper.p4info,
-                                    bmv2_json_file_path=jsonL3T)
-    r3.SetForwardingPipelineConfig(p4info=L3T_helper.p4info,
-                                    bmv2_json_file_path=jsonL3T)
-    r5.SetForwardingPipelineConfig(p4info=L3T_helper.p4info,
-                                    bmv2_json_file_path=jsonL3T)
-    r6.SetForwardingPipelineConfig(p4info=L3T_helper.p4info,
-                                    bmv2_json_file_path=jsonL3T)
-    print("Installed L3T  - P4 Program using SetForwardingPipelineConfig on r2, r3, r5 and r6")
+    s1.SetForwardingPipelineConfig(p4info=L2_helper.p4info,   bmv2_json_file_path=jsonL2)
+    r1.SetForwardingPipelineConfig(p4info=L3M_helper.p4info,  bmv2_json_file_path=jsonL3M)
+    r4.SetForwardingPipelineConfig(p4info=L3MF_helper.p4info, bmv2_json_file_path=jsonL3MF)
+    r2.SetForwardingPipelineConfig(p4info=L3T_helper.p4info,  bmv2_json_file_path=jsonL3T)
+    r3.SetForwardingPipelineConfig(p4info=L3T_helper.p4info,  bmv2_json_file_path=jsonL3T)
+    r5.SetForwardingPipelineConfig(p4info=L3T_helper.p4info,  bmv2_json_file_path=jsonL3T)
+    r6.SetForwardingPipelineConfig(p4info=L3T_helper.p4info,  bmv2_json_file_path=jsonL3T)
+    print("Installed all P4 Programs")
     
 # Function to write the default actions on all tables from all switches
 def writeDefaultActions(L2_helper, L3M_helper, L3MF_helper, L3T_helper,
@@ -245,6 +235,8 @@ def writeDefaultActions(L2_helper, L3M_helper, L3MF_helper, L3T_helper,
     writeDefaultTableAction(L3T_helper, r6, "MyIngress.labelLookup",       "MyIngress.drop")
     writeDefaultTableAction(L3T_helper, r6, "MyIngress.internalMacLookup", "MyIngress.drop")
 
+    print("Installed all default action rules")
+
 # Function to write clone engines and their sessionId
 def writeCloneEngines(L2_helper, L3M_helper, L3MF_helper, L3T_helper,
                       s1,r1,r2,r3,r4,r5,r6):
@@ -259,6 +251,20 @@ def writeCloneEngines(L2_helper, L3M_helper, L3MF_helper, L3T_helper,
     writeCpuSession(L3T_helper,  r5, cpuSessionId)
     writeCpuSession(L3T_helper,  r6, cpuSessionId)
 
+    print("Installed all clone engines and MC groups")
+
+# Function to write an entry to a table of a switch
+def writeTableEntry(helper, sw, table, match, action, params, dryrun=False, modify=False):
+    table_entry = helper.buildTableEntry(
+        table_name = table,
+        match_fields = match,
+        default_action = False,
+        action_name = action,
+        action_params = params,
+        priority = 0)
+    sw.WriteTableEntry(table_entry, dryrun, modify)
+    #print("Installed %s rule for %s on %s" % (action, table, sw.name))
+
 # Function to write the static rules in all tables from all L3 switches
 def writeStaticRules(L3M_helper, L3MF_helper, L3T_helper, r1,r2,r3,r4,r5,r6):
     # Ideia: em vez de passar os switches, fazer dinamico de acordo com o p4 injetado em cada um
@@ -267,6 +273,7 @@ def writeStaticRules(L3M_helper, L3MF_helper, L3T_helper, r1,r2,r3,r4,r5,r6):
     writeLabelForwardingRules(L3M_helper, L3MF_helper, L3T_helper, r1,r2,r3,r4,r5,r6)
     writeMacRules(L3M_helper, L3MF_helper, L3T_helper, r1,r2,r3,r4,r5,r6)
     writeFirewallRules(L3MF_helper, r4)
+    print("Installed all static rules on all routers")
 
 # Function to write the static tunnel selection rules
 def writeTunnelSelectionRules(L3M_helper, L3MF_helper, r1, r4):
@@ -365,18 +372,6 @@ def writeFirewallRules(L3MF_helper, r4):
     writeTableEntry(L3MF_helper, r4, tcpTable, {matchTcp: 0x51}, "NoAction", None) # decimal 81 » 0x51
     writeTableEntry(L3MF_helper, r4, udpTable, {matchUdp: 0x35}, "NoAction", None) # decimal 53 » 0x35
 
-# Function to write an entry to a table of a switch
-def writeTableEntry(helper, sw, table, match, action, params, dryrun=False, modify=False):
-    table_entry = helper.buildTableEntry(
-        table_name = table,
-        match_fields = match,
-        default_action = False,
-        action_name = action,
-        action_params = params,
-        priority = 0)
-    sw.WriteTableEntry(table_entry, dryrun, modify)
-    print("Installed %s rule for %s on %s" % (action, table, sw.name))
-
 # Function to dynamicly change the tunnel selection rules from time to time
 def changeTunnelRules(L3M_helper, L3MF_helper, r1, r4, odd):
 
@@ -401,6 +396,7 @@ def changeTunnelRules(L3M_helper, L3MF_helper, r1, r4, odd):
             writeTableEntry(L3MF_helper, r4, table, {match: 0x0}, action, {l: 0x4020501060101010}, modify=True)
         
         odd = not odd
+        print("Changed tunnel selection rules!")
 
 
 
@@ -429,29 +425,31 @@ def main(p4infoL2_file_path, p4infoL3M_file_path, p4infoL3MF_file_path, p4infoL3
         installP4Programs(L2_helper, L3M_helper, L3MF_helper, L3T_helper, 
                           jsonL2_file_path, jsonL3M_file_path, jsonL3MF_file_path, jsonL3T_file_path,
                           s1,r1,r2,r3,r4,r5,r6)
+                
+        # Write clone engines and their sessionId
+        writeCloneEngines(L2_helper, L3M_helper, L3MF_helper, L3T_helper,
+                          s1,r1,r2,r3,r4,r5,r6)
+        
+        # Read all entries of all tables of all routers
+        readTableRules(L3T_helper, r2)
+
+        # Populate state variables
+        # TODO
 
         # Write default actions
         writeDefaultActions(L2_helper, L3M_helper, L3MF_helper, L3T_helper,
                             s1,r1,r2,r3,r4,r5,r6)
-        
-        # Write clone engines and their sessioId
-        writeCloneEngines(L2_helper, L3M_helper, L3MF_helper, L3T_helper,
-                          s1,r1,r2,r3,r4,r5,r6)
+
+        readTableRules(L3T_helper, r2)
 
         # Add the static rules to the L3 Switches
         writeStaticRules(L3M_helper, L3MF_helper, L3T_helper, r1,r2,r3,r4,r5,r6)
 
+        readTableRules(L3T_helper, r2)
+
         # Thread to keep changing the tunnel rules
         t = threading.Thread(target=changeTunnelRules, args=(L3M_helper, L3MF_helper, r1, r4, False,), daemon=True)
         t.start()
-
-        # readTableRules(p4info_helper, s1)
-        # A good approach is to read the current table entries from the switch and populate
-        # the controller internal structures (e.g., "macList"). This allows the controller to be aware of
-        # the current state of the tables, enabling it to operate accordingly. 
-        # This is especially useful if the controller goes down during runtime and needs
-        # to be restarted, as it ensures the controller can synchronize with the switch 
-        # and avoid unnecessary rule injections or reset the tables if needed.
 
         for response in s1.stream_msg_resp:
             # Check if the response contains a packet-in message
@@ -465,7 +463,7 @@ def main(p4infoL2_file_path, p4infoL3M_file_path, p4infoL3MF_file_path, p4infoL3
                         writeMacSrcLookUp(L2_helper, s1, cpu_header.macAddr)
                         writeMacDstLookUp(L2_helper, s1, cpu_header.macAddr, cpu_header.ingressPort)
                         macList.append(cpu_header.macAddr)
-                    else :
+                    else:
                         print("Rules already set")
             else:
                 print(f"Received non-packet-in message: {response}")
