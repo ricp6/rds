@@ -214,6 +214,8 @@ control MyIngress(inout headers hdr,
     bit<1>  reg_val_1;   bit<1>  reg_val_2;
     bit<1>  direction;   bit<1>  activateFirewall;
 
+    counter(2, CounterType.packets) tunnel_counter;
+
     action drop() {
         mark_to_drop(standard_metadata);
     }
@@ -397,6 +399,11 @@ control MyIngress(inout headers hdr,
 
                 // Create MSLP header and recirculate the packet with MSLP header
                 if(tunnelLookup.apply().hit) {
+                    if(hdr.labels[0].label == 0x4020){
+                        tunnel_counter.count((bit<32>) 0);
+                    }else{
+                        tunnel_counter.count((bit<32>) 1);
+                    }
                     meta.setRecirculate = 1;
                 }
             }
