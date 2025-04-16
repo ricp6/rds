@@ -17,6 +17,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)),'../util
 # Import the necessary P4Runtime libraries
 import p4runtime_lib.bmv2
 import p4runtime_lib.helper
+from p4runtime_lib.convert import decodeNum, decodeIPv4, decodeMac
 from p4runtime_lib.error_utils import printGrpcError
 from p4runtime_lib.switch import ShutdownAllSwitchConnections #, connections
 
@@ -51,10 +52,10 @@ def printGrpcError(e):
     traceback = sys.exc_info()[2]
     print("[%s:%d]" % (traceback.tb_frame.f_code.co_filename, traceback.tb_lineno))
 
-# Function to read the current table rules from the switch and print them
-def readTableRules(p4info_helper, sw):
+# Function to read and print the current table rules from the switch and print them
+def printTableRules(p4info_helper, sw):
     """
-    Reads the table entries from all tables on the switch.
+    Reads the table entries from all tables on the switch and prints them.
 
     :param p4info_helper: the P4Info helper
     :param sw: the switch connection
@@ -266,42 +267,61 @@ def writeTableEntry(helper, sw, table, match, action, params, dryrun=False, modi
     #print("Installed %s rule for %s on %s" % (action, table, sw.name))
 
 # Function to write the static rules in all tables from all L3 switches
-def writeStaticRules(L3M_helper, L3MF_helper, L3T_helper, r1,r2,r3,r4,r5,r6):
-    # Ideia: em vez de passar os switches, fazer dinamico de acordo com o p4 injetado em cada um
-    writeTunnelSelectionRules(L3M_helper, L3MF_helper, r1, r4)
-    writeIPv4ForwardingRules(L3M_helper, L3MF_helper, r1, r4)
-    writeLabelForwardingRules(L3M_helper, L3MF_helper, L3T_helper, r1,r2,r3,r4,r5,r6)
-    writeMacRules(L3M_helper, L3MF_helper, L3T_helper, r1,r2,r3,r4,r5,r6)
-    writeFirewallRules(L3MF_helper, r4)
+def writeStaticRules(L3M_helper, L3MF_helper, L3T_helper, r1,r2,r3,r4,r5,r6, 
+                     ips, labels, iMacs, tLabels, dirs, tcpPorts, udpPorts,
+                     all=False):
+
+    writeTunnelSelectionRules(L3M_helper, L3MF_helper, r1, r4, tLabels)
+    writeIPv4ForwardingRules(L3M_helper, L3MF_helper, r1, r4, ips)
+    if all:
+        writeLabelForwardingRules(L3M_helper, L3MF_helper, L3T_helper, r1,r2,r3,r4,r5,r6, labels)
+        writeMacRules(L3M_helper, L3MF_helper, L3T_helper, r1,r2,r3,r4,r5,r6, iMacs)
+        writeFirewallRules(L3MF_helper, r4, dirs, tcpPorts, udpPorts)
     print("Installed all static rules on all routers")
 
 # Function to write the static tunnel selection rules
-def writeTunnelSelectionRules(L3M_helper, L3MF_helper, r1, r4):
+def writeTunnelSelectionRules(L3M_helper, L3MF_helper, r1, r4, tLabels):
     table = "MyIngress.tunnelLookup"
     action = "MyIngress.addMSLP"
     match = "meta.tunnel"
     l = "labels"
     
-    writeTableEntry(L3M_helper,  r1, table, {match: 0}, action, {l: 0x1020202030204010})
-    writeTableEntry(L3M_helper,  r1, table, {match: 1}, action, {l: 0x1030602050204010})
-    writeTableEntry(L3MF_helper, r4, table, {match: 0}, action, {l: 0x4030301020101010})
-    writeTableEntry(L3MF_helper, r4, table, {match: 1}, action, {l: 0x4020501060101010})
+    if 0x1020202030204010 not in tLabels:
+        writeTableEntry(L3M_helper,  r1, table, {match: 0}, action, {l: 0x1020202030204010})
+        tLabels.append(0x1020202030204010)
+    if 0x1030602050204010 not in tLabels:
+        writeTableEntry(L3M_helper,  r1, table, {match: 1}, action, {l: 0x1030602050204010})
+        tLabels.append(0x1030602050204010)
+    if 0x4020501060101010 not in tLabels:
+        writeTableEntry(L3MF_helper, r4, table, {match: 0}, action, {l: 0x4020501060101010})
+        tLabels.append(0x4020501060101010)
+    if 0x4030301020101010 not in tLabels:
+        writeTableEntry(L3MF_helper, r4, table, {match: 1}, action, {l: 0x4030301020101010})
+        tLabels.append(0x4030301020101010)
 
 # Function to write the static ipv4 forwarding rules
-def writeIPv4ForwardingRules(L3M_helper, L3MF_helper, r1, r4):
+def writeIPv4ForwardingRules(L3M_helper, L3MF_helper, r1, r4, ips):
     table = "MyIngress.ipv4Lpm"
     action = "MyIngress.forward"
     match = "hdr.ipv4.dstAddr"
     port = "egressPort"
     mac = "nextHopMac"
 
-    writeTableEntry(L3M_helper,  r1, table, {match: ("10.0.1.1", 32)}, action, {port: 1, mac: "aa:00:00:00:00:01"})
-    writeTableEntry(L3M_helper,  r1, table, {match: ("10.0.1.2", 32)}, action, {port: 1, mac: "aa:00:00:00:00:02"})
-    writeTableEntry(L3M_helper,  r1, table, {match: ("10.0.1.3", 32)}, action, {port: 1, mac: "aa:00:00:00:00:03"})
-    writeTableEntry(L3MF_helper, r4, table, {match: ("10.0.2.1", 32)}, action, {port: 1, mac: "aa:00:00:00:00:04"})
+    if ("10.0.1.1", 32) not in ips:
+        ips.append(("10.0.1.1", 32))
+        writeTableEntry(L3M_helper,  r1, table, {match: ("10.0.1.1", 32)}, action, {port: 1, mac: "aa:00:00:00:00:01"})
+    if ("10.0.1.2", 32) not in ips:
+        writeTableEntry(L3M_helper,  r1, table, {match: ("10.0.1.2", 32)}, action, {port: 1, mac: "aa:00:00:00:00:02"})
+        ips.append(("10.0.1.2", 32))
+    if ("10.0.1.3", 32) not in ips:
+        writeTableEntry(L3M_helper,  r1, table, {match: ("10.0.1.3", 32)}, action, {port: 1, mac: "aa:00:00:00:00:03"})
+        ips.append(("10.0.1.3", 32))
+    if ("10.0.2.1", 32) not in ips:
+        writeTableEntry(L3MF_helper, r4, table, {match: ("10.0.2.1", 32)}, action, {port: 1, mac: "aa:00:00:00:00:04"})
+        ips.append(("10.0.2.1", 32))
 
 # Function to write the static label forwarding rules
-def writeLabelForwardingRules(L3M_helper, L3MF_helper, L3T_helper, r1,r2,r3,r4,r5,r6):
+def writeLabelForwardingRules(L3M_helper, L3MF_helper, L3T_helper, r1,r2,r3,r4,r5,r6, labels):
     table = "MyIngress.labelLookup"
     frwdTunnel = "MyIngress.forwardTunnel"
     removeMSLP = "MyIngress.removeMSLP"
@@ -309,49 +329,111 @@ def writeLabelForwardingRules(L3M_helper, L3MF_helper, L3T_helper, r1,r2,r3,r4,r
     port = "egressPort"
     mac = "nextHopMac"
 
-    writeTableEntry(L3M_helper, r1, table, {match: 0x1010}, removeMSLP, None)
-    writeTableEntry(L3M_helper, r1, table, {match: 0x1020}, frwdTunnel, {port: 2, mac: "aa:00:00:00:02:01"})
-    writeTableEntry(L3M_helper, r1, table, {match: 0x1030}, frwdTunnel, {port: 3, mac: "aa:00:00:00:06:01"})
+    if 0x1010 not in labels:
+        writeTableEntry(L3M_helper, r1, table, {match: 0x1010}, removeMSLP, None)
+        labels.append(0x1010)
+    if 0x1020 not in labels:
+        writeTableEntry(L3M_helper, r1, table, {match: 0x1020}, frwdTunnel, {port: 2, mac: "aa:00:00:00:02:01"})
+        labels.append(0x1020)
+    if 0x1030 not in labels:
+        writeTableEntry(L3M_helper, r1, table, {match: 0x1030}, frwdTunnel, {port: 3, mac: "aa:00:00:00:06:01"})
+        labels.append(0x1030)
 
-    writeTableEntry(L3MF_helper, r4, table, {match: 0x4010}, removeMSLP, None)
-    writeTableEntry(L3MF_helper, r4, table, {match: 0x4020}, frwdTunnel, {port: 2, mac: "aa:00:00:00:05:02"})
-    writeTableEntry(L3MF_helper, r4, table, {match: 0x4030}, frwdTunnel, {port: 3, mac: "aa:00:00:00:03:02"})
+    if 0x2010 not in labels:
+        writeTableEntry(L3T_helper, r2, table, {match: 0x2010}, frwdTunnel, {port: 1, mac: "aa:00:00:00:01:02"})
+        labels.append(0x2010)
+    if 0x2020 not in labels:
+        writeTableEntry(L3T_helper, r2, table, {match: 0x2020}, frwdTunnel, {port: 2, mac: "aa:00:00:00:03:01"})
+        labels.append(0x2020)
 
-    writeTableEntry(L3T_helper, r2, table, {match: 0x2010}, frwdTunnel, {port: 1, mac: "aa:00:00:00:01:02"})
-    writeTableEntry(L3T_helper, r2, table, {match: 0x2020}, frwdTunnel, {port: 2, mac: "aa:00:00:00:03:01"})
-    writeTableEntry(L3T_helper, r3, table, {match: 0x3010}, frwdTunnel, {port: 1, mac: "aa:00:00:00:02:02"})
-    writeTableEntry(L3T_helper, r3, table, {match: 0x3020}, frwdTunnel, {port: 2, mac: "aa:00:00:00:04:03"})
-    writeTableEntry(L3T_helper, r5, table, {match: 0x5010}, frwdTunnel, {port: 1, mac: "aa:00:00:00:06:02"})
-    writeTableEntry(L3T_helper, r5, table, {match: 0x5020}, frwdTunnel, {port: 2, mac: "aa:00:00:00:04:02"})
-    writeTableEntry(L3T_helper, r6, table, {match: 0x6010}, frwdTunnel, {port: 1, mac: "aa:00:00:00:01:03"})
-    writeTableEntry(L3T_helper, r6, table, {match: 0x6020}, frwdTunnel, {port: 2, mac: "aa:00:00:00:05:01"})
+    if 0x3010 not in labels:
+        writeTableEntry(L3T_helper, r3, table, {match: 0x3010}, frwdTunnel, {port: 1, mac: "aa:00:00:00:02:02"})
+        labels.append(0x3010)
+    if 0x3020 not in labels:
+        writeTableEntry(L3T_helper, r3, table, {match: 0x3020}, frwdTunnel, {port: 2, mac: "aa:00:00:00:04:03"})
+        labels.append(0x3020)
+
+    if 0x4010 not in labels:
+        writeTableEntry(L3MF_helper, r4, table, {match: 0x4010}, removeMSLP, None)
+        labels.append(0x4010)
+    if 0x4020 not in labels:
+        writeTableEntry(L3MF_helper, r4, table, {match: 0x4020}, frwdTunnel, {port: 2, mac: "aa:00:00:00:05:02"})
+        labels.append(0x4020)
+    if 0x4030 not in labels:
+        writeTableEntry(L3MF_helper, r4, table, {match: 0x4030}, frwdTunnel, {port: 3, mac: "aa:00:00:00:03:02"})
+        labels.append(0x4030)
+
+    if 0x5010 not in labels:
+        writeTableEntry(L3T_helper, r5, table, {match: 0x5010}, frwdTunnel, {port: 1, mac: "aa:00:00:00:06:02"})
+        labels.append(0x5010)
+    if 0x5020 not in labels:
+        writeTableEntry(L3T_helper, r5, table, {match: 0x5020}, frwdTunnel, {port: 2, mac: "aa:00:00:00:04:02"})
+        labels.append(0x5020)
+
+    if 0x6010 not in labels:
+        writeTableEntry(L3T_helper, r6, table, {match: 0x6010}, frwdTunnel, {port: 1, mac: "aa:00:00:00:01:03"})
+        labels.append(0x6010)
+    if 0x6020 not in labels:
+        writeTableEntry(L3T_helper, r6, table, {match: 0x6020}, frwdTunnel, {port: 2, mac: "aa:00:00:00:05:01"})
+        labels.append(0x6020)
 
 # Function to write the static internal macs rules
-def writeMacRules(L3M_helper, L3MF_helper, L3T_helper, r1,r2,r3,r4,r5,r6):
+def writeMacRules(L3M_helper, L3MF_helper, L3T_helper, r1,r2,r3,r4,r5,r6, iMacs):
     table = "MyIngress.internalMacLookup"
     action = "MyIngress.rewriteMacs"
     match = "standard_metadata.egress_spec"
     mac = "srcMac"
 
-    writeTableEntry(L3M_helper, r1, table, {match: 1}, action, {mac: "aa:00:00:00:01:01"})
-    writeTableEntry(L3M_helper, r1, table, {match: 2}, action, {mac: "aa:00:00:00:01:02"})
-    writeTableEntry(L3M_helper, r1, table, {match: 3}, action, {mac: "aa:00:00:00:01:03"})
+    if "aa:00:00:00:01:01" not in iMacs:
+        writeTableEntry(L3M_helper, r1, table, {match: 1}, action, {mac: "aa:00:00:00:01:01"})
+        iMacs.append("aa:00:00:00:01:01")
+    if "aa:00:00:00:01:02" not in iMacs:
+        writeTableEntry(L3M_helper, r1, table, {match: 2}, action, {mac: "aa:00:00:00:01:02"})
+        iMacs.append("aa:00:00:00:01:02")
+    if "aa:00:00:00:01:03" not in iMacs:
+        writeTableEntry(L3M_helper, r1, table, {match: 3}, action, {mac: "aa:00:00:00:01:03"})
+        iMacs.append("aa:00:00:00:01:03")
 
-    writeTableEntry(L3MF_helper,r4, table, {match: 1}, action, {mac: "aa:00:00:00:04:01"})
-    writeTableEntry(L3MF_helper,r4, table, {match: 2}, action, {mac: "aa:00:00:00:04:02"})
-    writeTableEntry(L3MF_helper,r4, table, {match: 3}, action, {mac: "aa:00:00:00:04:03"})
-    
-    writeTableEntry(L3T_helper, r2, table, {match: 1}, action, {mac: "aa:00:00:00:02:01"})
-    writeTableEntry(L3T_helper, r2, table, {match: 2}, action, {mac: "aa:00:00:00:02:02"})
-    writeTableEntry(L3T_helper, r3, table, {match: 1}, action, {mac: "aa:00:00:00:03:01"})
-    writeTableEntry(L3T_helper, r3, table, {match: 2}, action, {mac: "aa:00:00:00:03:02"})
-    writeTableEntry(L3T_helper, r5, table, {match: 1}, action, {mac: "aa:00:00:00:05:01"})
-    writeTableEntry(L3T_helper, r5, table, {match: 2}, action, {mac: "aa:00:00:00:05:02"})
-    writeTableEntry(L3T_helper, r6, table, {match: 1}, action, {mac: "aa:00:00:00:06:01"})
-    writeTableEntry(L3T_helper, r6, table, {match: 2}, action, {mac: "aa:00:00:00:06:02"})
+    if "aa:00:00:00:02:01" not in iMacs:
+        writeTableEntry(L3T_helper, r2, table, {match: 1}, action, {mac: "aa:00:00:00:02:01"})
+        iMacs.append("aa:00:00:00:02:01")
+    if "aa:00:00:00:02:02" not in iMacs:
+        writeTableEntry(L3T_helper, r2, table, {match: 2}, action, {mac: "aa:00:00:00:02:02"})
+        iMacs.append("aa:00:00:00:02:02")
+
+    if "aa:00:00:00:03:01" not in iMacs:
+        writeTableEntry(L3T_helper, r3, table, {match: 1}, action, {mac: "aa:00:00:00:03:01"})
+        iMacs.append("aa:00:00:00:03:01")
+    if "aa:00:00:00:03:02" not in iMacs:
+        writeTableEntry(L3T_helper, r3, table, {match: 2}, action, {mac: "aa:00:00:00:03:02"})
+        iMacs.append("aa:00:00:00:03:02")
+
+    if "aa:00:00:00:04:01" not in iMacs:
+        writeTableEntry(L3MF_helper,r4, table, {match: 1}, action, {mac: "aa:00:00:00:04:01"})
+        iMacs.append("aa:00:00:00:04:01")
+    if "aa:00:00:00:04:02" not in iMacs:
+        writeTableEntry(L3MF_helper,r4, table, {match: 2}, action, {mac: "aa:00:00:00:04:02"})
+        iMacs.append("aa:00:00:00:04:02")
+    if "aa:00:00:00:04:03" not in iMacs:
+        writeTableEntry(L3MF_helper,r4, table, {match: 3}, action, {mac: "aa:00:00:00:04:03"})
+        iMacs.append("aa:00:00:00:04:03")
+        
+    if "aa:00:00:00:05:01" not in iMacs:
+        writeTableEntry(L3T_helper, r5, table, {match: 1}, action, {mac: "aa:00:00:00:05:01"})
+        iMacs.append("aa:00:00:00:05:01")
+    if "aa:00:00:00:05:02" not in iMacs:
+        writeTableEntry(L3T_helper, r5, table, {match: 2}, action, {mac: "aa:00:00:00:05:02"})
+        iMacs.append("aa:00:00:00:05:02")
+        
+    if "aa:00:00:00:06:01" not in iMacs:
+        writeTableEntry(L3T_helper, r6, table, {match: 1}, action, {mac: "aa:00:00:00:06:01"})
+        iMacs.append("aa:00:00:00:06:01")
+    if "aa:00:00:00:06:02" not in iMacs:
+        writeTableEntry(L3T_helper, r6, table, {match: 2}, action, {mac: "aa:00:00:00:06:02"})
+        iMacs.append("aa:00:00:00:06:02")
 
 # Function to write the static firewall rules
-def writeFirewallRules(L3MF_helper, r4):
+def writeFirewallRules(L3MF_helper, r4, dirs, tcpPorts, udpPorts):
     dirTable = "MyIngress.checkDirection"
     tcpTable = "MyIngress.allowedPortsTCP"
     udpTable = "MyIngress.allowedPortsUDP"
@@ -362,15 +444,31 @@ def writeFirewallRules(L3MF_helper, r4):
     matchUdp = "hdr.udp.dstPort"
     d = "dir"
 
-    writeTableEntry(L3MF_helper, r4, dirTable, {matchIngress: 1, matchEgress: 2}, action, {d: 0})
-    writeTableEntry(L3MF_helper, r4, dirTable, {matchIngress: 1, matchEgress: 3}, action, {d: 0})
-    writeTableEntry(L3MF_helper, r4, dirTable, {matchIngress: 2, matchEgress: 1}, action, {d: 1})
-    writeTableEntry(L3MF_helper, r4, dirTable, {matchIngress: 2, matchEgress: 3}, action, {d: 0})
-    writeTableEntry(L3MF_helper, r4, dirTable, {matchIngress: 3, matchEgress: 1}, action, {d: 1})
-    writeTableEntry(L3MF_helper, r4, dirTable, {matchIngress: 3, matchEgress: 2}, action, {d: 0})
+    if (1,2) not in dirs:
+        writeTableEntry(L3MF_helper, r4, dirTable, {matchIngress: 1, matchEgress: 2}, action, {d: 0})
+        dirs.append((1,2))
+    if (1,3) not in dirs:
+        writeTableEntry(L3MF_helper, r4, dirTable, {matchIngress: 1, matchEgress: 3}, action, {d: 0})
+        dirs.append((1,3))
+    if (2,1) not in dirs:
+        writeTableEntry(L3MF_helper, r4, dirTable, {matchIngress: 2, matchEgress: 1}, action, {d: 1})
+        dirs.append((2,1))
+    if (2,3) not in dirs:
+        writeTableEntry(L3MF_helper, r4, dirTable, {matchIngress: 2, matchEgress: 3}, action, {d: 0})
+        dirs.append((2,3))
+    if (3,1) not in dirs:
+        writeTableEntry(L3MF_helper, r4, dirTable, {matchIngress: 3, matchEgress: 1}, action, {d: 1})
+        dirs.append((3,1))
+    if (3,2) not in dirs:
+        writeTableEntry(L3MF_helper, r4, dirTable, {matchIngress: 3, matchEgress: 2}, action, {d: 0})
+        dirs.append((3,2))
 
-    writeTableEntry(L3MF_helper, r4, tcpTable, {matchTcp: 81}, "NoAction", None) # decimal 81 » 0x51
-    writeTableEntry(L3MF_helper, r4, udpTable, {matchUdp: 53}, "NoAction", None) # decimal 53 » 0x35
+    if 81 not in tcpPorts:
+        writeTableEntry(L3MF_helper, r4, tcpTable, {matchTcp: 81}, "NoAction", None)
+        tcpPorts.append(81)
+    if 53 not in udpPorts:
+        writeTableEntry(L3MF_helper, r4, udpTable, {matchUdp: 53}, "NoAction", None)
+        udpPorts.append(53)
 
 # Function to dynamicly change the tunnel selection rules from time to time
 def changeTunnelRules(L3M_helper, L3MF_helper, r1, r4, odd):
@@ -386,17 +484,158 @@ def changeTunnelRules(L3M_helper, L3MF_helper, r1, r4, odd):
         if odd:
             writeTableEntry(L3M_helper,  r1, table, {match: 0}, action, {l: 0x1020202030204010}, modify=True)
             writeTableEntry(L3M_helper,  r1, table, {match: 1}, action, {l: 0x1030602050204010}, modify=True)
-            writeTableEntry(L3MF_helper, r4, table, {match: 0}, action, {l: 0x4030301020101010}, modify=True)
-            writeTableEntry(L3MF_helper, r4, table, {match: 1}, action, {l: 0x4020501060101010}, modify=True)
+            writeTableEntry(L3MF_helper, r4, table, {match: 0}, action, {l: 0x4020501060101010}, modify=True)
+            writeTableEntry(L3MF_helper, r4, table, {match: 1}, action, {l: 0x4030301020101010}, modify=True)
         else:
                                                     # inverted matching tunnel
             writeTableEntry(L3M_helper,  r1, table, {match: 1}, action, {l: 0x1020202030204010}, modify=True)
             writeTableEntry(L3M_helper,  r1, table, {match: 0}, action, {l: 0x1030602050204010}, modify=True)
-            writeTableEntry(L3MF_helper, r4, table, {match: 1}, action, {l: 0x4030301020101010}, modify=True)
-            writeTableEntry(L3MF_helper, r4, table, {match: 0}, action, {l: 0x4020501060101010}, modify=True)
+            writeTableEntry(L3MF_helper, r4, table, {match: 1}, action, {l: 0x4020501060101010}, modify=True)
+            writeTableEntry(L3MF_helper, r4, table, {match: 0}, action, {l: 0x4030301020101010}, modify=True)
         
         odd = not odd
         print("Changed tunnel selection rules!")
+
+# Function to read the current table rules from the switch and store the known values
+def readTableRules(L2_helper, L3M_helper, L3MF_helper, L3T_helper, s1,r1,r2,r3,r4,r5,r6,
+                   ips, macs, labels, iMacs, tLabels, dirs, tcpPorts, udpPorts):
+    
+    readSwitch(L2_helper, s1, macs)
+    readTunnelRouter(L3T_helper, (r2,r3,r5,r6), labels, iMacs)
+    readMslpRouter(L3M_helper, (r1,), ips, iMacs, labels, tLabels)
+    readMslpFirewallRouter(L3MF_helper, (r4,), ips, iMacs, labels, tLabels, dirs, tcpPorts, udpPorts)
+
+# Function to read the current table rules from the switch and print them
+def readSwitch(helper, s1, macList):
+    """
+    Reads the table entries from all tables on the switch and populates 
+    the correct state variable if needed.
+
+    :param helper: the P4Info helper
+    :param s1: the switch connection
+    :param mac_list: variable to store the macs known by s1
+    """
+    for response in s1.ReadTableEntries():
+        for entity in response.entities:
+            entry = entity.table_entry
+            table_name = helper.get_tables_name(entry.table_id)
+
+            if table_name == "MyIngress.sMacLookup":
+                mac = decodeMac(helper.get_match_field_value(entry.match[0]))
+                if mac not in macList:
+                    macList.append(mac)
+
+# Function to read the current table rules from the tunnel routers and store the known values
+def readTunnelRouter(helper, routers, labelList, iMacList):
+    """
+    Reads the table entries from all tables on the switch and populates 
+    the correct state variable if needed.
+
+    :param helper: the P4Info helper
+    :param routers: the switches connections
+    """
+    for r in routers:
+        for response in r.ReadTableEntries():
+            for entity in response.entities:
+                entry = entity.table_entry
+                table_name = helper.get_tables_name(entry.table_id)
+
+                if table_name == "MyIngress.labelLookup":
+                    label = decodeNum(helper.get_match_field_value(entry.match[0]))
+                    if label not in labelList:
+                        labelList.append(label)
+
+                elif table_name == "MyIngress.internalMacLookup":
+                    imac = decodeMac(entry.action.action.params[0].value)
+                    if imac not in iMacList:
+                        iMacList.append(imac)
+
+# Function to read the current table rules from the tunnel routers and store the known values
+def readMslpRouter(helper, routers, ips, iMacs, labels, tLabels):
+    """
+    Reads the table entries from all tables on the switch and populates 
+    the correct state variable if needed.
+
+    :param helper: the P4Info helper
+    :param routers: the switch connections
+    """
+    for r in routers:
+        for response in r.ReadTableEntries():
+            for entity in response.entities:
+                entry = entity.table_entry
+                table_name = helper.get_tables_name(entry.table_id)
+
+                if table_name == "MyIngress.ipv4Lpm":
+                    ip = decodeIPv4(helper.get_match_field_value(entry.match[0]))
+                    if ip not in ips:
+                        ips.append(ip)
+
+                elif table_name == "MyIngress.labelLookup":
+                    label = decodeNum(helper.get_match_field_value(entry.match[0]))
+                    if label not in labels:
+                        labels.append(label)
+
+                elif table_name == "MyIngress.internalMacLookup":
+                    imac = decodeMac(entry.action.action.params[0].value)
+                    if imac not in iMacs:
+                        iMacs.append(imac)
+
+                elif table_name == "MyIngress.tunnelLookup":
+                    tLabels = decodeNum(entry.action.action.params[0].value)
+                    if tLabels not in tLabels:
+                        tLabels.append(tLabels)
+
+# Function to read the current table rules from the tunnel routers and store the known values
+def readMslpFirewallRouter(helper, routers, ips, iMacs, labels,
+                           tLabels, dirs, tcpPorts, udpPorts):
+    """
+    Reads the table entries from all tables on the switch and populates 
+    the correct state variable if needed.
+
+    :param helper: the P4Info helper
+    :param routers: the switch connections
+    """
+    for r in routers:
+        for response in r.ReadTableEntries():
+            for entity in response.entities:
+                entry = entity.table_entry
+                table_name = helper.get_tables_name(entry.table_id)
+
+                if table_name == "MyIngress.ipv4Lpm":
+                    ip = decodeIPv4(helper.get_match_field_value(entry.match[0]))
+                    if ip not in ips:
+                        ips.append(ip)
+
+                elif table_name == "MyIngress.labelLookup":
+                    label = decodeNum(helper.get_match_field_value(entry.match[0]))
+                    if label not in labels:
+                        labels.append(label)
+
+                elif table_name == "MyIngress.internalMacLookup":
+                    imac = decodeMac(entry.action.action.params[0].value)
+                    if imac not in iMacs:
+                        iMacs.append(imac)
+
+                elif table_name == "MyIngress.tunnelLookup":
+                    tLabels = decodeNum(entry.action.action.params[0].value)
+                    if tLabels not in tLabels:
+                        tLabels.append(tLabels)
+
+                elif table_name == "MyIngress.checkDirection":
+                    p = entry.action.action.params
+                    dir = (decodeNum(p[0].value), decodeNum(p[1].value))
+                    if dir not in dirs:
+                        dirs.append(dir)
+
+                elif table_name == "MyIngress.allowedPortsTCP":
+                    port = decodeNum(helper.get_match_field_value(entry.match[0]))
+                    if port not in tcpPorts:
+                        tcpPorts.append(port)
+
+                elif table_name == "MyIngress.allowedPortsUDP":
+                    port = decodeNum(helper.get_match_field_value(entry.match[0]))
+                    if port not in udpPorts:
+                        udpPorts.append(port)
 
 
 
@@ -404,8 +643,15 @@ def changeTunnelRules(L3M_helper, L3MF_helper, r1, r4, odd):
 def main(p4infoL2_file_path, p4infoL3M_file_path, p4infoL3MF_file_path, p4infoL3T_file_path, 
          jsonL2_file_path, jsonL3M_file_path, jsonL3MF_file_path, jsonL3T_file_path):
 
-    # Variables to store the state of the switche's tables
-    macList = []
+    # Variables to store the state of the tables
+    ips = []
+    macs = []
+    labels = []
+    iMacs = [] 
+    tLabels = []
+    dirs = []
+    tcpPorts = []
+    udpPorts = []
 
     # Instantiate P4Runtime helpers from the p4info files
     L2_helper, L3M_helper, L3MF_helper, L3T_helper = getP4Helpers(p4infoL2_file_path, 
@@ -433,34 +679,66 @@ def main(p4infoL2_file_path, p4infoL3M_file_path, p4infoL3MF_file_path, p4infoL3
         # Write default actions
         writeDefaultActions(L2_helper, L3M_helper, L3MF_helper, L3T_helper,
                             s1,r1,r2,r3,r4,r5,r6)
+        
+        printTableRules(L3M_helper, r1)
+
+        # Read all entries of all tables of all routers and populate state variables
+        readTableRules(L2_helper, L3M_helper, L3MF_helper, L3T_helper, s1,r1,r2,r3,r4,r5,r6,
+                       ips, macs, labels, iMacs, tLabels, dirs, tcpPorts, udpPorts)
+        
+        # Check if lists are empty
+        print("ips: ", ips)
+        print("imacs: ", iMacs)
+        
+        # Add the static rules to the L3 Switches
+        writeStaticRules(L3M_helper, L3MF_helper, L3T_helper, r1,r2,r3,r4,r5,r6,
+                         ips, labels, iMacs, tLabels, dirs, tcpPorts, udpPorts) # only half of them
+        
+        # Check if the correct lists are filled
+        print("ips (must be filled): ", ips)
+        print("imacs: ", iMacs)
 
         # Add the static rules to the L3 Switches
-        writeStaticRules(L3M_helper, L3MF_helper, L3T_helper, r1,r2,r3,r4,r5,r6)
+        writeStaticRules(L3M_helper, L3MF_helper, L3T_helper, r1,r2,r3,r4,r5,r6,
+                         ips, labels, iMacs, tLabels, dirs, tcpPorts, udpPorts,
+                         all=True) # write the other static rules left
 
-        # Read all entries of all tables of all routers
-        readTableRules(L3T_helper, r2)
+        # Check if all lists are filled
+        print("ips (must be the same): ", ips)
+        print("imacs (must be filled): ", iMacs)
+        print("tunnel labels: ", tLabels)
+        print("labels: ", labels)
+        print("dirs: ", dirs)
+        print("tcp: ", tcpPorts)
+        print("udp: ", udpPorts)
 
-        # Populate state variables
-        # TODO
+        # Show all rules set in the tables
+        #printTableRules(L2_helper,   s1) # s1 is empty at the beginning
+        printTableRules(L3M_helper,  r1)
+        #printTableRules(L3T_helper,  r2)
+        #printTableRules(L3T_helper,  r3)
+        #printTableRules(L3MF_helper, r4)
+        #printTableRules(L3T_helper,  r5)
+        #printTableRules(L3T_helper,  r6)
 
         # Thread to keep changing the tunnel rules
-        #t = threading.Thread(target=changeTunnelRules, args=(L3M_helper, L3MF_helper, r1, r4, False,), daemon=True)
-        #t.start()
+        t = threading.Thread(target=changeTunnelRules, args=(L3M_helper, L3MF_helper, r1, r4, False,), daemon=True)
+        t.start()
 
         for response in s1.stream_msg_resp:
             # Check if the response contains a packet-in message
             if response.packet:
-                print("Received packet-in message:")
+                #print("Received packet-in message:")
                 packet = Ether(raw(response.packet.payload))
                 if packet.type == 0x1234:
                     cpu_header = CpuHeader(bytes(packet.load))
-                    print("mac: %012X ingress_port: %s " % (cpu_header.macAddr, cpu_header.ingressPort))
-                    if cpu_header.macAddr not in macList:
+                    #print("mac: %012X ingress_port: %s " % (cpu_header.macAddr, cpu_header.ingressPort))
+                    if cpu_header.macAddr not in macs:
                         writeMacSrcLookUp(L2_helper, s1, cpu_header.macAddr)
                         writeMacDstLookUp(L2_helper, s1, cpu_header.macAddr, cpu_header.ingressPort)
-                        macList.append(cpu_header.macAddr)
-                    else:
-                        print("Rules already set")
+                        macs.append(cpu_header.macAddr)
+                    #else:
+                        #print("Rules already set")
             else:
                 print(f"Received non-packet-in message: {response}")
 
