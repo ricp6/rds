@@ -282,10 +282,10 @@ def writeTunnelSelectionRules(L3M_helper, L3MF_helper, r1, r4):
     match = "meta.tunnel"
     l = "labels"
     
-    writeTableEntry(L3M_helper,  r1, table, {match: 0x0}, action, {l: 0x1020202030204010})
-    writeTableEntry(L3M_helper,  r1, table, {match: 0x1}, action, {l: 0x1030602050204010})
-    writeTableEntry(L3MF_helper, r4, table, {match: 0x0}, action, {l: 0x4030301020101010})
-    writeTableEntry(L3MF_helper, r4, table, {match: 0x1}, action, {l: 0x4020501060101010})
+    writeTableEntry(L3M_helper,  r1, table, {match: 0}, action, {l: 0x1020202030204010})
+    writeTableEntry(L3M_helper,  r1, table, {match: 1}, action, {l: 0x1030602050204010})
+    writeTableEntry(L3MF_helper, r4, table, {match: 0}, action, {l: 0x4030301020101010})
+    writeTableEntry(L3MF_helper, r4, table, {match: 1}, action, {l: 0x4020501060101010})
 
 # Function to write the static ipv4 forwarding rules
 def writeIPv4ForwardingRules(L3M_helper, L3MF_helper, r1, r4):
@@ -294,11 +294,11 @@ def writeIPv4ForwardingRules(L3M_helper, L3MF_helper, r1, r4):
     match = "hdr.ipv4.dstAddr"
     port = "egressPort"
     mac = "nextHopMac"
-                                            #10»0a, 10.0.0.1»0a000001
-    writeTableEntry(L3M_helper,  r1, table, {match : (0x0a000101, 32)}, action, {port : 0x0001, mac : 0xaa0000000001})
-    writeTableEntry(L3M_helper,  r1, table, {match : (0x0a000102, 32)}, action, {port : 0x0001, mac : 0xaa0000000002})
-    writeTableEntry(L3M_helper,  r1, table, {match : (0x0a000103, 32)}, action, {port : 0x0001, mac : 0xaa0000000003})
-    writeTableEntry(L3MF_helper, r4, table, {match : (0x0a000201, 32)}, action, {port : 0x0001, mac : 0xaa0000000004})
+
+    writeTableEntry(L3M_helper,  r1, table, {match: ("10.0.1.1", 32)}, action, {port: 1, mac: "aa:00:00:00:00:01"})
+    writeTableEntry(L3M_helper,  r1, table, {match: ("10.0.1.2", 32)}, action, {port: 1, mac: "aa:00:00:00:00:02"})
+    writeTableEntry(L3M_helper,  r1, table, {match: ("10.0.1.3", 32)}, action, {port: 1, mac: "aa:00:00:00:00:03"})
+    writeTableEntry(L3MF_helper, r4, table, {match: ("10.0.2.1", 32)}, action, {port: 1, mac: "aa:00:00:00:00:04"})
 
 # Function to write the static label forwarding rules
 def writeLabelForwardingRules(L3M_helper, L3MF_helper, L3T_helper, r1,r2,r3,r4,r5,r6):
@@ -310,21 +310,21 @@ def writeLabelForwardingRules(L3M_helper, L3MF_helper, L3T_helper, r1,r2,r3,r4,r
     mac = "nextHopMac"
 
     writeTableEntry(L3M_helper, r1, table, {match: 0x1010}, removeMSLP, None)
-    writeTableEntry(L3M_helper, r1, table, {match: 0x1020}, frwdTunnel, {port: 0x02, mac: 0xaa0000000201})
-    writeTableEntry(L3M_helper, r1, table, {match: 0x1030}, frwdTunnel, {port: 0x03, mac: 0xaa0000000601})
+    writeTableEntry(L3M_helper, r1, table, {match: 0x1020}, frwdTunnel, {port: 2, mac: "aa:00:00:00:02:01"})
+    writeTableEntry(L3M_helper, r1, table, {match: 0x1030}, frwdTunnel, {port: 3, mac: "aa:00:00:00:06:01"})
 
     writeTableEntry(L3MF_helper, r4, table, {match: 0x4010}, removeMSLP, None)
-    writeTableEntry(L3MF_helper, r4, table, {match: 0x4020}, frwdTunnel, {port: 0x02, mac: 0xaa0000000502})
-    writeTableEntry(L3MF_helper, r4, table, {match: 0x4030}, frwdTunnel, {port: 0x03, mac: 0xaa0000000302})
+    writeTableEntry(L3MF_helper, r4, table, {match: 0x4020}, frwdTunnel, {port: 2, mac: "aa:00:00:00:05:02"})
+    writeTableEntry(L3MF_helper, r4, table, {match: 0x4030}, frwdTunnel, {port: 3, mac: "aa:00:00:00:03:02"})
 
-    writeTableEntry(L3T_helper, r2, table, {match: 0x2010}, frwdTunnel, {port: 0x01, mac: 0xaa0000000102})
-    writeTableEntry(L3T_helper, r2, table, {match: 0x2020}, frwdTunnel, {port: 0x02, mac: 0xaa0000000301})
-    writeTableEntry(L3T_helper, r3, table, {match: 0x3010}, frwdTunnel, {port: 0x01, mac: 0xaa0000000202})
-    writeTableEntry(L3T_helper, r3, table, {match: 0x3020}, frwdTunnel, {port: 0x02, mac: 0xaa0000000403})
-    writeTableEntry(L3T_helper, r5, table, {match: 0x5010}, frwdTunnel, {port: 0x01, mac: 0xaa0000000602})
-    writeTableEntry(L3T_helper, r5, table, {match: 0x5020}, frwdTunnel, {port: 0x02, mac: 0xaa0000000402})
-    writeTableEntry(L3T_helper, r6, table, {match: 0x6010}, frwdTunnel, {port: 0x01, mac: 0xaa0000000103})
-    writeTableEntry(L3T_helper, r6, table, {match: 0x6020}, frwdTunnel, {port: 0x02, mac: 0xaa0000000501})
+    writeTableEntry(L3T_helper, r2, table, {match: 0x2010}, frwdTunnel, {port: 1, mac: "aa:00:00:00:01:02"})
+    writeTableEntry(L3T_helper, r2, table, {match: 0x2020}, frwdTunnel, {port: 2, mac: "aa:00:00:00:03:01"})
+    writeTableEntry(L3T_helper, r3, table, {match: 0x3010}, frwdTunnel, {port: 1, mac: "aa:00:00:00:02:02"})
+    writeTableEntry(L3T_helper, r3, table, {match: 0x3020}, frwdTunnel, {port: 2, mac: "aa:00:00:00:04:03"})
+    writeTableEntry(L3T_helper, r5, table, {match: 0x5010}, frwdTunnel, {port: 1, mac: "aa:00:00:00:06:02"})
+    writeTableEntry(L3T_helper, r5, table, {match: 0x5020}, frwdTunnel, {port: 2, mac: "aa:00:00:00:04:02"})
+    writeTableEntry(L3T_helper, r6, table, {match: 0x6010}, frwdTunnel, {port: 1, mac: "aa:00:00:00:01:03"})
+    writeTableEntry(L3T_helper, r6, table, {match: 0x6020}, frwdTunnel, {port: 2, mac: "aa:00:00:00:05:01"})
 
 # Function to write the static internal macs rules
 def writeMacRules(L3M_helper, L3MF_helper, L3T_helper, r1,r2,r3,r4,r5,r6):
@@ -333,22 +333,22 @@ def writeMacRules(L3M_helper, L3MF_helper, L3T_helper, r1,r2,r3,r4,r5,r6):
     match = "standard_metadata.egress_spec"
     mac = "srcMac"
 
-    writeTableEntry(L3M_helper, r1, table, {match: 0x01}, action, {mac: 0xaa0000000101})
-    writeTableEntry(L3M_helper, r1, table, {match: 0x02}, action, {mac: 0xaa0000000102})
-    writeTableEntry(L3M_helper, r1, table, {match: 0x03}, action, {mac: 0xaa0000000103})
+    writeTableEntry(L3M_helper, r1, table, {match: 1}, action, {mac: "aa:00:00:00:01:01"})
+    writeTableEntry(L3M_helper, r1, table, {match: 2}, action, {mac: "aa:00:00:00:01:02"})
+    writeTableEntry(L3M_helper, r1, table, {match: 3}, action, {mac: "aa:00:00:00:01:03"})
 
-    writeTableEntry(L3MF_helper,r4, table, {match: 0x01}, action, {mac: 0xaa0000000401})
-    writeTableEntry(L3MF_helper,r4, table, {match: 0x02}, action, {mac: 0xaa0000000402})
-    writeTableEntry(L3MF_helper,r4, table, {match: 0x03}, action, {mac: 0xaa0000000403})
+    writeTableEntry(L3MF_helper,r4, table, {match: 1}, action, {mac: "aa:00:00:00:04:01"})
+    writeTableEntry(L3MF_helper,r4, table, {match: 2}, action, {mac: "aa:00:00:00:04:02"})
+    writeTableEntry(L3MF_helper,r4, table, {match: 3}, action, {mac: "aa:00:00:00:04:03"})
     
-    writeTableEntry(L3T_helper, r2, table, {match: 0x01}, action, {mac: 0xaa0000000201})
-    writeTableEntry(L3T_helper, r2, table, {match: 0x02}, action, {mac: 0xaa0000000202})
-    writeTableEntry(L3T_helper, r3, table, {match: 0x01}, action, {mac: 0xaa0000000301})
-    writeTableEntry(L3T_helper, r3, table, {match: 0x02}, action, {mac: 0xaa0000000302})
-    writeTableEntry(L3T_helper, r5, table, {match: 0x01}, action, {mac: 0xaa0000000501})
-    writeTableEntry(L3T_helper, r5, table, {match: 0x02}, action, {mac: 0xaa0000000502})
-    writeTableEntry(L3T_helper, r6, table, {match: 0x01}, action, {mac: 0xaa0000000601})
-    writeTableEntry(L3T_helper, r6, table, {match: 0x02}, action, {mac: 0xaa0000000602})
+    writeTableEntry(L3T_helper, r2, table, {match: 1}, action, {mac: "aa:00:00:00:02:01"})
+    writeTableEntry(L3T_helper, r2, table, {match: 2}, action, {mac: "aa:00:00:00:02:02"})
+    writeTableEntry(L3T_helper, r3, table, {match: 1}, action, {mac: "aa:00:00:00:03:01"})
+    writeTableEntry(L3T_helper, r3, table, {match: 2}, action, {mac: "aa:00:00:00:03:02"})
+    writeTableEntry(L3T_helper, r5, table, {match: 1}, action, {mac: "aa:00:00:00:05:01"})
+    writeTableEntry(L3T_helper, r5, table, {match: 2}, action, {mac: "aa:00:00:00:05:02"})
+    writeTableEntry(L3T_helper, r6, table, {match: 1}, action, {mac: "aa:00:00:00:06:01"})
+    writeTableEntry(L3T_helper, r6, table, {match: 2}, action, {mac: "aa:00:00:00:06:02"})
 
 # Function to write the static firewall rules
 def writeFirewallRules(L3MF_helper, r4):
@@ -362,15 +362,15 @@ def writeFirewallRules(L3MF_helper, r4):
     matchUdp = "hdr.udp.dstPort"
     d = "dir"
 
-    writeTableEntry(L3MF_helper, r4, dirTable, {matchIngress: 0x01, matchEgress: 0x02}, action, {d: 0})
-    writeTableEntry(L3MF_helper, r4, dirTable, {matchIngress: 0x01, matchEgress: 0x03}, action, {d: 0})
-    writeTableEntry(L3MF_helper, r4, dirTable, {matchIngress: 0x02, matchEgress: 0x01}, action, {d: 1})
-    writeTableEntry(L3MF_helper, r4, dirTable, {matchIngress: 0x02, matchEgress: 0x03}, action, {d: 0})
-    writeTableEntry(L3MF_helper, r4, dirTable, {matchIngress: 0x03, matchEgress: 0x01}, action, {d: 1})
-    writeTableEntry(L3MF_helper, r4, dirTable, {matchIngress: 0x03, matchEgress: 0x02}, action, {d: 0})
+    writeTableEntry(L3MF_helper, r4, dirTable, {matchIngress: 1, matchEgress: 2}, action, {d: 0})
+    writeTableEntry(L3MF_helper, r4, dirTable, {matchIngress: 1, matchEgress: 3}, action, {d: 0})
+    writeTableEntry(L3MF_helper, r4, dirTable, {matchIngress: 2, matchEgress: 1}, action, {d: 1})
+    writeTableEntry(L3MF_helper, r4, dirTable, {matchIngress: 2, matchEgress: 3}, action, {d: 0})
+    writeTableEntry(L3MF_helper, r4, dirTable, {matchIngress: 3, matchEgress: 1}, action, {d: 1})
+    writeTableEntry(L3MF_helper, r4, dirTable, {matchIngress: 3, matchEgress: 2}, action, {d: 0})
 
-    writeTableEntry(L3MF_helper, r4, tcpTable, {matchTcp: 0x51}, "NoAction", None) # decimal 81 » 0x51
-    writeTableEntry(L3MF_helper, r4, udpTable, {matchUdp: 0x35}, "NoAction", None) # decimal 53 » 0x35
+    writeTableEntry(L3MF_helper, r4, tcpTable, {matchTcp: 81}, "NoAction", None) # decimal 81 » 0x51
+    writeTableEntry(L3MF_helper, r4, udpTable, {matchUdp: 53}, "NoAction", None) # decimal 53 » 0x35
 
 # Function to dynamicly change the tunnel selection rules from time to time
 def changeTunnelRules(L3M_helper, L3MF_helper, r1, r4, odd):
@@ -384,16 +384,16 @@ def changeTunnelRules(L3M_helper, L3MF_helper, r1, r4, odd):
         sleep(30) # wait 30 seconds
 
         if odd:
-            writeTableEntry(L3M_helper,  r1, table, {match: 0x0}, action, {l: 0x1020202030204010}, modify=True)
-            writeTableEntry(L3M_helper,  r1, table, {match: 0x1}, action, {l: 0x1030602050204010}, modify=True)
-            writeTableEntry(L3MF_helper, r4, table, {match: 0x0}, action, {l: 0x4030301020101010}, modify=True)
-            writeTableEntry(L3MF_helper, r4, table, {match: 0x1}, action, {l: 0x4020501060101010}, modify=True)
+            writeTableEntry(L3M_helper,  r1, table, {match: 0}, action, {l: 0x1020202030204010}, modify=True)
+            writeTableEntry(L3M_helper,  r1, table, {match: 1}, action, {l: 0x1030602050204010}, modify=True)
+            writeTableEntry(L3MF_helper, r4, table, {match: 0}, action, {l: 0x4030301020101010}, modify=True)
+            writeTableEntry(L3MF_helper, r4, table, {match: 1}, action, {l: 0x4020501060101010}, modify=True)
         else:
                                                     # inverted matching tunnel
-            writeTableEntry(L3M_helper,  r1, table, {match: 0x1}, action, {l: 0x1020202030204010}, modify=True)
-            writeTableEntry(L3M_helper,  r1, table, {match: 0x0}, action, {l: 0x1030602050204010}, modify=True)
-            writeTableEntry(L3MF_helper, r4, table, {match: 0x1}, action, {l: 0x4030301020101010}, modify=True)
-            writeTableEntry(L3MF_helper, r4, table, {match: 0x0}, action, {l: 0x4020501060101010}, modify=True)
+            writeTableEntry(L3M_helper,  r1, table, {match: 1}, action, {l: 0x1020202030204010}, modify=True)
+            writeTableEntry(L3M_helper,  r1, table, {match: 0}, action, {l: 0x1030602050204010}, modify=True)
+            writeTableEntry(L3MF_helper, r4, table, {match: 1}, action, {l: 0x4030301020101010}, modify=True)
+            writeTableEntry(L3MF_helper, r4, table, {match: 0}, action, {l: 0x4020501060101010}, modify=True)
         
         odd = not odd
         print("Changed tunnel selection rules!")
