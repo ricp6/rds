@@ -178,5 +178,16 @@ actions {
     alias: "popLabel"
   }
 }
+counters {
+  preamble {
+    id: 310394195
+    name: "MyIngress.tunnel_counter"
+    alias: "tunnel_counter"
+  }
+  spec {
+    unit: PACKETS
+  }
+  size: 2
+}
 type_info {
 }

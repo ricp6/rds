@@ -202,6 +202,8 @@ control MyVerifyChecksum(inout headers hdr, inout metadata meta) {
 control MyIngress(inout headers hdr,
                   inout metadata meta,
                   inout standard_metadata_t standard_metadata) {
+    
+    counter(2, CounterType.packets) tunnel_counter;
 
     action drop() {
         mark_to_drop(standard_metadata);
@@ -336,6 +338,11 @@ control MyIngress(inout headers hdr,
 
                 // Create MSLP header and recirculate the packet with MSLP header
                 if(tunnelLookup.apply().hit) {
+                    if(hdr.labels[0].label == 0x1020){
+                        tunnel_counter.count((bit<32>) 0);
+                    }else{
+                        tunnel_counter.count((bit<32>) 1);
+                    }
                     meta.setRecirculate = 1;
                 }
             }
