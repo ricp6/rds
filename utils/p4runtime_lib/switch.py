@@ -68,6 +68,23 @@ class SwitchConnection(object):
             for item in self.stream_msg_resp:
                 return item # just one
 
+    def HasP4ProgramInstalled(self):
+        request = p4runtime_pb2.GetForwardingPipelineConfigRequest()
+        request.device_id = self.device_id
+
+        try:
+            response = self.client_stub.GetForwardingPipelineConfig(request)
+            remote_p4info = response.config.p4info
+
+            if remote_p4info.tables:
+                # There is a table = some program installed
+                return True
+
+            return False
+
+        except grpc.RpcError as e:
+            return False
+
     def SetForwardingPipelineConfig(self, p4info, dry_run=False, **kwargs):
         device_config = self.buildDeviceConfig(**kwargs)
         request = p4runtime_pb2.SetForwardingPipelineConfigRequest()
@@ -147,6 +164,66 @@ class SwitchConnection(object):
             print("P4Runtime Write:", request)
         else:
             self.client_stub.Write(request)
+
+
+    def isMulticastGroupInstalled(self, group_id):
+        request = p4runtime_pb2.ReadRequest()
+        request.device_id = self.device_id
+
+        entity = p4runtime_pb2.Entity()
+        entity.packet_replication_engine_entry.multicast_group_entry.multicast_group_id = group_id
+
+        request.entities.append(entity)
+
+        try:
+            for response in self.client_stub.Read(request):
+                for entity in response.entities:
+                    if entity.packet_replication_engine_entry.HasField("multicast_group_entry"):
+                        return True
+            return False
+
+        except Exception as e:
+            return False
+
+    def isCloneSessionInstalled(self, session_id):
+        request = p4runtime_pb2.ReadRequest()
+        request.device_id = self.device_id
+
+        entity = p4runtime_pb2.Entity()
+        entity.packet_replication_engine_entry.clone_session_entry.session_id = session_id
+
+        request.entities.append(entity)
+
+        try:
+            for response in self.client_stub.Read(request):
+                for entity in response.entities:
+                    if entity.packet_replication_engine_entry.HasField("clone_session_entry"):
+                        return True
+            return False
+
+        except Exception as e:
+            return False
+
+    def getDefaultAction(self, table_id):
+        request = p4runtime_pb2.ReadRequest()
+        request.device_id = self.device_id
+
+        entity = p4runtime_pb2.Entity()
+        entity.table_entry.table_id = table_id
+        entity.table_entry.is_default_action = True
+
+        request.entities.append(entity)
+
+        try:
+            for response in self.client_stub.Read(request):
+                for entity in response.entities:
+                    if entity.HasField("table_entry") and entity.table_entry.is_default_action:
+                        return entity.table_entry
+            return None
+
+        except Exception as e:
+            return None
+
 
 class GrpcRequestLogger(grpc.UnaryUnaryClientInterceptor,
                         grpc.UnaryStreamClientInterceptor):
