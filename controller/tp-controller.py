@@ -83,6 +83,7 @@ def printTableRules(p4info_helper, sw):
                     print(p4info_helper.get_action_param_name(action_name, p.param_id), end=' ')
                     print('%r' % p.value, end=' ')
                 print()
+    print()
 
 # Function to install a default action entry into a table
 def writeDefaultTableAction(p4info_helper, sw, table, action):
@@ -505,8 +506,8 @@ def writeFirewallRules(L3MF_helper, r4, dirs, tcpPorts, udpPorts):
         writeTableEntry(L3MF_helper, r4, udpTable, {matchUdp: 53}, "NoAction", None)
         udpPorts.append(53)
 
-# Function to dynamicly change the tunnel selection rules from time to time
-def changeTunnelRules(L3M_helper, L3MF_helper, r1, r4, odd):
+# Function to dynamicly change the tunnel selection rules according to traffic metrics
+def changeTunnelRules(L3M_helper, L3MF_helper, r1, r4):
     # Define table and action names
     table = "MyIngress.tunnelLookup"
     action = "MyIngress.addMSLP"
@@ -561,7 +562,7 @@ def changeTunnelRules(L3M_helper, L3MF_helper, r1, r4, odd):
         print(f"Preferred Tunnel: {preferred_tunnel}\n")
         
         # Wait before the next iteration
-        sleep(10)
+        sleep(30)
 
 
 def read_counter(p4info_helper, switch, counter_name, index):
@@ -733,11 +734,11 @@ def printControllerState(ips, macs, labels, iMacs, tLabels, dirs, tcpPorts, udpP
     print("---------- Controller State ----------")
     print("----- IPs -----")
     print(ips)
-    print("----- MACs -----")
+    print("----- MACs known by L2 Switch -----")
     print(macs)
     print("----- Labels -----")
     print(labels)
-    print("----- Internal Ports -----")
+    print("----- MACs known by L3 Switches -----")
     print(iMacs)
     print("----- Tunnels -----")
     print(tLabels)
@@ -784,11 +785,11 @@ def main(p4infoL2_file_path, p4infoL3M_file_path, p4infoL3MF_file_path, p4infoL3
                           jsonL2_file_path, jsonL3M_file_path, jsonL3MF_file_path, jsonL3T_file_path,
                           s1,r1,r2,r3,r4,r5,r6)
 
-        # Write clone engines and their sessionId
+        # Write clone engines and their sessionId, if not written yet
         writeCloneEngines(L2_helper, L3M_helper, L3MF_helper, L3T_helper,
                           s1,r1,r2,r3,r4,r5,r6)
 
-        # Write default actions
+        # Write default actions, if not written yet
         writeDefaultActions(L2_helper, L3M_helper, L3MF_helper, L3T_helper,
                             s1,r1,r2,r3,r4,r5,r6)
 
@@ -799,22 +800,22 @@ def main(p4infoL2_file_path, p4infoL3M_file_path, p4infoL3MF_file_path, p4infoL3
         # Check the state of the controller
         printControllerState(ips, macs, labels, iMacs, tLabels, dirs, tcpPorts, udpPorts)
 
-        # Add the static rules to the L3 Switches
+        # Write static rules to the L3 Switches, if not written yet
         writeStaticRules(L3M_helper, L3MF_helper, L3T_helper, r1,r2,r3,r4,r5,r6,
                          ips, labels, iMacs, tLabels, dirs, tcpPorts, udpPorts)
 
         # Show all rules set in the tables
-        #printTableRules(L2_helper,   s1) # s1 is empty at the beginning
+        printTableRules(L2_helper,   s1) # s1 is empty before any traffic
         printTableRules(L3M_helper,  r1)
-        #printTableRules(L3T_helper,  r2)
-        #printTableRules(L3T_helper,  r3)
-        #printTableRules(L3MF_helper, r4)
-        #printTableRules(L3T_helper,  r5)
-        #printTableRules(L3T_helper,  r6)
+        printTableRules(L3T_helper,  r2)
+        printTableRules(L3T_helper,  r3)
+        printTableRules(L3MF_helper, r4)
+        printTableRules(L3T_helper,  r5)
+        printTableRules(L3T_helper,  r6)
 
-        # Thread to keep changing the tunnel rules
-        #t = threading.Thread(target=changeTunnelRules, args=(L3M_helper, L3MF_helper, r1, r4, False,), daemon=True)
-        #t.start()
+        # Thread to handle load balancing between the tunnels
+        t = threading.Thread(target=changeTunnelRules, args=(L3M_helper, L3MF_helper, r1, r4,), daemon=True)
+        t.start()
 
         for response in s1.stream_msg_resp:
             # Check if the response contains a packet-in message
