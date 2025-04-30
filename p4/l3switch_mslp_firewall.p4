@@ -214,7 +214,7 @@ control MyIngress(inout headers hdr,
     bit<1>  reg_val_1;   bit<1>  reg_val_2;
     bit<1>  direction;   bit<1>  activateFirewall;
 
-    counter(2, CounterType.packets) tunnel_counter;
+    counter(4, CounterType.packets) tunnel_counter;
 
     action drop() {
         mark_to_drop(standard_metadata);
@@ -312,7 +312,7 @@ control MyIngress(inout headers hdr,
         hash(
             meta.tunnel,
             HashAlgorithm.crc32,
-            (bit<1>)0,
+            (bit<2>)0,
             {
                 hdr.ipv4.protocol,
                 hdr.ipv4.srcAddr,
@@ -320,7 +320,7 @@ control MyIngress(inout headers hdr,
                 srcPort,
                 dstPort
             },
-            (bit<1>)1
+            (bit<2>)2
         );
     }
 
@@ -375,9 +375,10 @@ control MyIngress(inout headers hdr,
     }
 
     apply {
-        // If it is the original packet, save the ingess port
+        // If it is the original packet
         if(standard_metadata.instance_type == 0){
-            meta.ingress_port = standard_metadata.ingress_port;
+            meta.ingress_port = standard_metadata.ingress_port; // Save ingress port for after the recirculate
+            tunnel_counter.count((bit<32>) standard_metadata.ingress_port); // Count new packet in
         }
 
         activateFirewall = 0;
@@ -399,11 +400,6 @@ control MyIngress(inout headers hdr,
 
                 // Create MSLP header and recirculate the packet with MSLP header
                 if(tunnelLookup.apply().hit) {
-                    if(hdr.labels[0].label == 0x4020){
-                        tunnel_counter.count((bit<32>) 0);
-                    }else{
-                        tunnel_counter.count((bit<32>) 1);
-                    }
                     meta.setRecirculate = 1;
                 }
             }

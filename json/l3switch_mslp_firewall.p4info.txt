@@ -266,7 +266,7 @@ counters {
   spec {
     unit: PACKETS
   }
-  size: 2
+  size: 4
 }
 registers {
   preamble {

@@ -328,12 +328,12 @@ def writeTunnelSelectionRules(L3M_helper, L3MF_helper, r1, r4, tLabels):
     if 0x1030602050204010 not in tLabels:
         writeTableEntry(L3M_helper,  r1, table, {match: 1}, action, {l: 0x1030602050204010})
         tLabels.append(0x1030602050204010)
-    if 0x4020501060101010 not in tLabels:
-        writeTableEntry(L3MF_helper, r4, table, {match: 0}, action, {l: 0x4020501060101010})
-        tLabels.append(0x4020501060101010)
     if 0x4030301020101010 not in tLabels:
-        writeTableEntry(L3MF_helper, r4, table, {match: 1}, action, {l: 0x4030301020101010})
+        writeTableEntry(L3MF_helper, r4, table, {match: 0}, action, {l: 0x4030301020101010})
         tLabels.append(0x4030301020101010)
+    if 0x4020501060101010 not in tLabels:
+        writeTableEntry(L3MF_helper, r4, table, {match: 1}, action, {l: 0x4020501060101010})
+        tLabels.append(0x4020501060101010)
 
 # Function to write the static ipv4 forwarding rules
 def writeIPv4ForwardingRules(L3M_helper, L3MF_helper, r1, r4, ips):
@@ -515,54 +515,54 @@ def changeTunnelRules(L3M_helper, L3MF_helper, r1, r4):
     l = "labels"
     tunnel_counter = "MyIngress.tunnel_counter"
     
-    preferred_tunnel = 0  
+    current_state = 0  
 
     while True:
-        # Read counters for tunnel traffic at r1 (outbound traffic)
-        count_r1_t0 = read_counter(L3M_helper, r1, tunnel_counter, 0)
-        count_r1_t1 = read_counter(L3M_helper, r1, tunnel_counter, 1)
+        # Read counters for tunnel traffic at r1
+        count_r1_up   = read_counter(L3M_helper, r1, tunnel_counter, 2) # port 2 is up
+        count_r1_down = read_counter(L3M_helper, r1, tunnel_counter, 3) # port 3 is down
 
-        # Read counters for tunnel traffic at r4 (inbound traffic)
-        count_r4_t0 = read_counter(L3MF_helper, r4, tunnel_counter, 0)
-        count_r4_t1 = read_counter(L3MF_helper, r4, tunnel_counter, 1)
+        # Read counters for tunnel traffic at r4
+        count_r4_up   = read_counter(L3MF_helper, r4, tunnel_counter, 3) # port 3 is up
+        count_r4_down = read_counter(L3MF_helper, r4, tunnel_counter, 2) # port 2 is down
 
         # Print individual counter values for r1 and r4
-        print(f"r1 Tunnel 0 (saída): {count_r1_t0} pacotes, r1 Tunnel 1 (saída): {count_r1_t1} pacotes")
-        print(f"r4 Tunnel 0 (entrada): {count_r4_t0} pacotes, r4 Tunnel 1 (entrada): {count_r4_t1} pacotes")
+        print(f"r1 Tunnel UP: {count_r1_up} pacotes, r1 Tunnel DOWN: {count_r1_down} pacotes")
+        print(f"r4 Tunnel UP: {count_r4_up} pacotes, r4 Tunnel DOWN: {count_r4_down} pacotes")
 
         # Calculate total traffic for each tunnel
-        total_tunnel0 = count_r1_t0 + count_r4_t0
-        total_tunnel1 = count_r1_t1 + count_r4_t1
+        total_tunnel_up = count_r1_up + count_r4_up
+        total_tunnel_down = count_r1_down + count_r4_down
 
         # Print the total packet count for each tunnel
-        print(f"Tunnel 0 total: {total_tunnel0} packets, Tunnel 1 total: {total_tunnel1} packets")
+        print(f"Tunnel UP total: {total_tunnel_up} packets, Tunnel DOWN total: {total_tunnel_down} packets")
 
         # Decide whether to change the preferred tunnel based on thresholds
-        if abs(total_tunnel0 - total_tunnel1) > 100: 
-            if preferred_tunnel != 1:
-                preferred_tunnel = 1
-                # Switch to prefer tunnel 1
+        if abs(total_tunnel_up - total_tunnel_down) > 50: 
+            if current_state == 0:
+                # Switch to labels state 1
                 writeTableEntry(L3M_helper,  r1, table, {match: 0x1}, action, {l: 0x1020202030204010}, modify=True)
                 writeTableEntry(L3M_helper,  r1, table, {match: 0x0}, action, {l: 0x1030602050204010}, modify=True)
-                writeTableEntry(L3MF_helper, r4, table, {match: 0x1}, action, {l: 0x4020501060101010}, modify=True)
-                writeTableEntry(L3MF_helper, r4, table, {match: 0x0}, action, {l: 0x4030301020101010}, modify=True)
-                print("➡️ Change to tunnel 1")
+                writeTableEntry(L3MF_helper, r4, table, {match: 0x1}, action, {l: 0x4030301020101010}, modify=True)
+                writeTableEntry(L3MF_helper, r4, table, {match: 0x0}, action, {l: 0x4020501060101010}, modify=True)
+                current_state = 1
+                print("➡️ Change to labels state 1")
             else:
-                preferred_tunnel = 0
-                # Switch to prefer tunnel 0
+                # Switch to labels state 0
                 writeTableEntry(L3M_helper,  r1, table, {match: 0x0}, action, {l: 0x1020202030204010}, modify=True)
                 writeTableEntry(L3M_helper,  r1, table, {match: 0x1}, action, {l: 0x1030602050204010}, modify=True)
-                writeTableEntry(L3MF_helper, r4, table, {match: 0x0}, action, {l: 0x4020501060101010}, modify=True)
-                writeTableEntry(L3MF_helper, r4, table, {match: 0x1}, action, {l: 0x4030301020101010}, modify=True)
-                print("⬅️ Change to tunnel 0")
+                writeTableEntry(L3MF_helper, r4, table, {match: 0x0}, action, {l: 0x4030301020101010}, modify=True)
+                writeTableEntry(L3MF_helper, r4, table, {match: 0x1}, action, {l: 0x4020501060101010}, modify=True)
+                current_state = 0
+                print("⬅️ Change to labels state 0")
         else:
             print("No change necessary")
 
-        # Print the current preferred tunnel
-        print(f"Preferred Tunnel: {preferred_tunnel}\n")
+        # Print the current labels state
+        print(f"Current labels state: {current_state}\n")
         
         # Wait before the next iteration
-        sleep(30)
+        sleep(7)
 
 
 def read_counter(p4info_helper, switch, counter_name, index):

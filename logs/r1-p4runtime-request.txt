@@ -1,10 +1,10 @@
 
-[2025-04-21 15:22:32.744] /p4.v1.P4Runtime/GetForwardingPipelineConfig
+[2025-04-30 15:52:13.766] /p4.v1.P4Runtime/GetForwardingPipelineConfig
 ---
 device_id: 2
 ---
 
-[2025-04-21 15:22:32.758] /p4.v1.P4Runtime/Read
+[2025-04-30 15:52:13.775] /p4.v1.P4Runtime/Read
 ---
 device_id: 2
 entities {
@@ -16,7 +16,7 @@ entities {
 }
 ---
 
-[2025-04-21 15:22:32.768] /p4.v1.P4Runtime/Read
+[2025-04-30 15:52:13.787] /p4.v1.P4Runtime/Read
 ---
 device_id: 2
 entities {
@@ -27,7 +27,7 @@ entities {
 }
 ---
 
-[2025-04-21 15:22:32.769] /p4.v1.P4Runtime/Read
+[2025-04-30 15:52:13.788] /p4.v1.P4Runtime/Read
 ---
 device_id: 2
 entities {
@@ -38,7 +38,7 @@ entities {
 }
 ---
 
-[2025-04-21 15:22:32.770] /p4.v1.P4Runtime/Read
+[2025-04-30 15:52:13.788] /p4.v1.P4Runtime/Read
 ---
 device_id: 2
 entities {
@@ -49,7 +49,7 @@ entities {
 }
 ---
 
-[2025-04-21 15:22:32.771] /p4.v1.P4Runtime/Read
+[2025-04-30 15:52:13.789] /p4.v1.P4Runtime/Read
 ---
 device_id: 2
 entities {
@@ -60,26 +60,12 @@ entities {
 }
 ---
 
-[2025-04-21 15:22:32.792] /p4.v1.P4Runtime/GetForwardingPipelineConfig
+[2025-04-30 15:52:13.814] /p4.v1.P4Runtime/GetForwardingPipelineConfig
 ---
 device_id: 2
 ---
 
-[2025-04-21 15:22:32.792] /p4.v1.P4Runtime/Read
----
-device_id: 2
-entities {
-  table_entry {
-  }
-}
----
-
-[2025-04-21 15:22:32.796] /p4.v1.P4Runtime/GetForwardingPipelineConfig
----
-device_id: 2
----
-
-[2025-04-21 15:22:32.797] /p4.v1.P4Runtime/Read
+[2025-04-30 15:52:13.815] /p4.v1.P4Runtime/Read
 ---
 device_id: 2
 entities {
@@ -88,26 +74,67 @@ entities {
 }
 ---
 
-[2025-04-21 15:22:32.812] /p4.v1.P4Runtime/Read
+[2025-04-30 15:52:13.824] /p4.v1.P4Runtime/GetForwardingPipelineConfig
+---
+device_id: 2
+---
+
+[2025-04-30 15:52:13.825] /p4.v1.P4Runtime/Read
+---
+device_id: 2
+entities {
+  table_entry {
+  }
+}
+---
+
+[2025-04-30 15:52:13.838] /p4.v1.P4Runtime/Read
 ---
 device_id: 2
 entities {
   counter_entry {
     counter_id: 310394195
     index {
+      index: 2
     }
   }
 }
 ---
 
-[2025-04-21 15:22:32.812] /p4.v1.P4Runtime/Read
+[2025-04-30 15:52:13.840] /p4.v1.P4Runtime/Read
 ---
 device_id: 2
 entities {
   counter_entry {
     counter_id: 310394195
     index {
-      index: 1
+      index: 3
+    }
+  }
+}
+---
+
+[2025-04-30 15:52:20.853] /p4.v1.P4Runtime/Read
+---
+device_id: 2
+entities {
+  counter_entry {
+    counter_id: 310394195
+    index {
+      index: 2
+    }
+  }
+}
+---
+
+[2025-04-30 15:52:20.855] /p4.v1.P4Runtime/Read
+---
+device_id: 2
+entities {
+  counter_entry {
+    counter_id: 310394195
+    index {
+      index: 3
     }
   }
 }

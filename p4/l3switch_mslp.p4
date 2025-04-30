@@ -203,7 +203,7 @@ control MyIngress(inout headers hdr,
                   inout metadata meta,
                   inout standard_metadata_t standard_metadata) {
     
-    counter(2, CounterType.packets) tunnel_counter;
+    counter(4, CounterType.packets) tunnel_counter;
 
     action drop() {
         mark_to_drop(standard_metadata);
@@ -301,7 +301,7 @@ control MyIngress(inout headers hdr,
         hash(
             meta.tunnel,
             HashAlgorithm.crc32,
-            (bit<1>)0,
+            (bit<2>)0,
             {
                 hdr.ipv4.protocol,
                 hdr.ipv4.srcAddr,
@@ -309,11 +309,16 @@ control MyIngress(inout headers hdr,
                 srcPort,
                 dstPort
             },
-            (bit<1>)1
+            (bit<2>)2
         );
     }
 
     apply {
+        // If it is the original packet
+        if(standard_metadata.instance_type == 0){
+            tunnel_counter.count((bit<32>) standard_metadata.ingress_port); // Count new packet in
+        }
+
         if(hdr.mslp.isValid()) { // If encapsulated
             switch(labelLookup.apply().action_run) {
                 // If its the last label, removeMSLP and recirculate the ipv4 packet
@@ -338,11 +343,6 @@ control MyIngress(inout headers hdr,
 
                 // Create MSLP header and recirculate the packet with MSLP header
                 if(tunnelLookup.apply().hit) {
-                    if(hdr.labels[0].label == 0x1020){
-                        tunnel_counter.count((bit<32>) 0);
-                    }else{
-                        tunnel_counter.count((bit<32>) 1);
-                    }
                     meta.setRecirculate = 1;
                 }
             }

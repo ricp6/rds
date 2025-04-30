@@ -1,10 +1,10 @@
 
-[2025-04-21 15:22:32.750] /p4.v1.P4Runtime/GetForwardingPipelineConfig
+[2025-04-30 15:52:13.773] /p4.v1.P4Runtime/GetForwardingPipelineConfig
 ---
 device_id: 7
 ---
 
-[2025-04-21 15:22:32.765] /p4.v1.P4Runtime/Read
+[2025-04-30 15:52:13.784] /p4.v1.P4Runtime/Read
 ---
 device_id: 7
 entities {
@@ -16,7 +16,7 @@ entities {
 }
 ---
 
-[2025-04-21 15:22:32.783] /p4.v1.P4Runtime/Read
+[2025-04-30 15:52:13.797] /p4.v1.P4Runtime/Read
 ---
 device_id: 7
 entities {
@@ -27,7 +27,7 @@ entities {
 }
 ---
 
-[2025-04-21 15:22:32.784] /p4.v1.P4Runtime/Read
+[2025-04-30 15:52:13.798] /p4.v1.P4Runtime/Read
 ---
 device_id: 7
 entities {
@@ -38,12 +38,12 @@ entities {
 }
 ---
 
-[2025-04-21 15:22:32.790] /p4.v1.P4Runtime/GetForwardingPipelineConfig
+[2025-04-30 15:52:13.811] /p4.v1.P4Runtime/GetForwardingPipelineConfig
 ---
 device_id: 7
 ---
 
-[2025-04-21 15:22:32.791] /p4.v1.P4Runtime/Read
+[2025-04-30 15:52:13.813] /p4.v1.P4Runtime/Read
 ---
 device_id: 7
 entities {
@@ -52,12 +52,12 @@ entities {
 }
 ---
 
-[2025-04-21 15:22:32.809] /p4.v1.P4Runtime/GetForwardingPipelineConfig
+[2025-04-30 15:52:13.836] /p4.v1.P4Runtime/GetForwardingPipelineConfig
 ---
 device_id: 7
 ---
 
-[2025-04-21 15:22:32.809] /p4.v1.P4Runtime/Read
+[2025-04-30 15:52:13.836] /p4.v1.P4Runtime/Read
 ---
 device_id: 7
 entities {

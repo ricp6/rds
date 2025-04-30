@@ -1,10 +1,10 @@
 
-[2025-04-21 15:22:32.747] /p4.v1.P4Runtime/GetForwardingPipelineConfig
+[2025-04-30 15:52:13.770] /p4.v1.P4Runtime/GetForwardingPipelineConfig
 ---
 device_id: 5
 ---
 
-[2025-04-21 15:22:32.761] /p4.v1.P4Runtime/Read
+[2025-04-30 15:52:13.779] /p4.v1.P4Runtime/Read
 ---
 device_id: 5
 entities {
@@ -16,7 +16,7 @@ entities {
 }
 ---
 
-[2025-04-21 15:22:32.772] /p4.v1.P4Runtime/Read
+[2025-04-30 15:52:13.790] /p4.v1.P4Runtime/Read
 ---
 device_id: 5
 entities {
@@ -27,7 +27,7 @@ entities {
 }
 ---
 
-[2025-04-21 15:22:32.772] /p4.v1.P4Runtime/Read
+[2025-04-30 15:52:13.790] /p4.v1.P4Runtime/Read
 ---
 device_id: 5
 entities {
@@ -38,7 +38,7 @@ entities {
 }
 ---
 
-[2025-04-21 15:22:32.774] /p4.v1.P4Runtime/Read
+[2025-04-30 15:52:13.791] /p4.v1.P4Runtime/Read
 ---
 device_id: 5
 entities {
@@ -49,7 +49,7 @@ entities {
 }
 ---
 
-[2025-04-21 15:22:32.776] /p4.v1.P4Runtime/Read
+[2025-04-30 15:52:13.791] /p4.v1.P4Runtime/Read
 ---
 device_id: 5
 entities {
@@ -60,7 +60,7 @@ entities {
 }
 ---
 
-[2025-04-21 15:22:32.777] /p4.v1.P4Runtime/Read
+[2025-04-30 15:52:13.792] /p4.v1.P4Runtime/Read
 ---
 device_id: 5
 entities {
@@ -71,7 +71,7 @@ entities {
 }
 ---
 
-[2025-04-21 15:22:32.778] /p4.v1.P4Runtime/Read
+[2025-04-30 15:52:13.792] /p4.v1.P4Runtime/Read
 ---
 device_id: 5
 entities {
@@ -82,7 +82,7 @@ entities {
 }
 ---
 
-[2025-04-21 15:22:32.778] /p4.v1.P4Runtime/Read
+[2025-04-30 15:52:13.793] /p4.v1.P4Runtime/Read
 ---
 device_id: 5
 entities {
@@ -93,26 +93,12 @@ entities {
 }
 ---
 
-[2025-04-21 15:22:32.793] /p4.v1.P4Runtime/GetForwardingPipelineConfig
+[2025-04-30 15:52:13.817] /p4.v1.P4Runtime/GetForwardingPipelineConfig
 ---
 device_id: 5
 ---
 
-[2025-04-21 15:22:32.794] /p4.v1.P4Runtime/Read
----
-device_id: 5
-entities {
-  table_entry {
-  }
-}
----
-
-[2025-04-21 15:22:32.803] /p4.v1.P4Runtime/GetForwardingPipelineConfig
----
-device_id: 5
----
-
-[2025-04-21 15:22:32.805] /p4.v1.P4Runtime/Read
+[2025-04-30 15:52:13.819] /p4.v1.P4Runtime/Read
 ---
 device_id: 5
 entities {
@@ -121,26 +107,67 @@ entities {
 }
 ---
 
-[2025-04-21 15:22:32.814] /p4.v1.P4Runtime/Read
+[2025-04-30 15:52:13.832] /p4.v1.P4Runtime/GetForwardingPipelineConfig
+---
+device_id: 5
+---
+
+[2025-04-30 15:52:13.833] /p4.v1.P4Runtime/Read
+---
+device_id: 5
+entities {
+  table_entry {
+  }
+}
+---
+
+[2025-04-30 15:52:13.840] /p4.v1.P4Runtime/Read
 ---
 device_id: 5
 entities {
   counter_entry {
     counter_id: 310394195
     index {
+      index: 3
     }
   }
 }
 ---
 
-[2025-04-21 15:22:32.815] /p4.v1.P4Runtime/Read
+[2025-04-30 15:52:13.841] /p4.v1.P4Runtime/Read
 ---
 device_id: 5
 entities {
   counter_entry {
     counter_id: 310394195
     index {
-      index: 1
+      index: 2
+    }
+  }
+}
+---
+
+[2025-04-30 15:52:20.856] /p4.v1.P4Runtime/Read
+---
+device_id: 5
+entities {
+  counter_entry {
+    counter_id: 310394195
+    index {
+      index: 3
+    }
+  }
+}
+---
+
+[2025-04-30 15:52:20.857] /p4.v1.P4Runtime/Read
+---
+device_id: 5
+entities {
+  counter_entry {
+    counter_id: 310394195
+    index {
+      index: 2
     }
   }
 }
