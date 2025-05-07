@@ -1,0 +1,44 @@
+[
+    {
+        "name": "s1",
+        "address": "127.0.0.1:50051",
+        "device_id": 1,
+        "proto_dump_file": "logs/s1-p4runtime-request.txt"
+    },
+    {
+        "name": "r1",
+        "address": "127.0.0.1:50052",
+        "device_id": 2,
+        "proto_dump_file": "logs/r1-p4runtime-request.txt"
+    },
+    {
+        "name": "r2",
+        "address": "127.0.0.1:50053",
+        "device_id": 3,
+        "proto_dump_file": "logs/r2-p4runtime-request.txt"
+    },
+    {
+        "name": "r3",
+        "address": "127.0.0.1:50054",
+        "device_id": 4,
+        "proto_dump_file": "logs/r3-p4runtime-request.txt"
+    },
+    {
+        "name": "r4",
+        "address": "127.0.0.1:50055",
+        "device_id": 5,
+        "proto_dump_file": "logs/r4-p4runtime-request.txt"
+    },
+    {
+        "name": "r5",
+        "address": "127.0.0.1:50056",
+        "device_id": 6,
+        "proto_dump_file": "logs/r5-p4runtime-request.txt"
+    },
+    {
+        "name": "r6",
+        "address": "127.0.0.1:50057",
+        "device_id": 7,
+        "proto_dump_file": "logs/r6-p4runtime-request.txt"
+    }
+]

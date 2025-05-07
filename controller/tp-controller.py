@@ -8,6 +8,7 @@ from time import sleep
 from scapy.all import Ether, Packet, BitField, raw
 
 import grpc
+import json
 
 # Import P4Runtime lib from utils dir
 # This approach is used to import P4Runtime library when it's located in a different directory.
@@ -86,14 +87,20 @@ def printTableRules(p4info_helper, sw):
     print()
 
 # Function to install a default action entry into a table
-def writeDefaultTableAction(p4info_helper, sw, table, action):
-    if not sw.getDefaultAction(p4info_helper.get_tables_id(table)):
+def writeDefaultTableAction(p4info_helper, sw, table, intended_action):
+    table_id = p4info_helper.get_tables_id(table)
+    current_action_id = sw.getDefaultAction(table_id)
+
+    intended_action_id = p4info_helper.get_actions_id(intended_action)
+
+    if current_action_id != intended_action_id:
         table_entry = p4info_helper.buildTableEntry(
-                table_name = table,
-                default_action = True,
-                action_name = action)
+            table_name=table,
+            default_action=True,
+            action_name=intended_action
+        )
         sw.WriteTableEntry(table_entry)
-        print("Installed default entry on %s" % sw.name)
+        print(f"Updated default action in {table} on {sw.name} to {intended_action}")
 
 # Function to write a MAC destination lookup entry to the table
 def writeMacDstLookUp(p4info_helper, sw, mac, port):
@@ -124,173 +131,7 @@ def writeMacSrcLookUp(p4info_helper, sw, mac):
         priority = 0)
     sw.WriteTableEntry(table_entry)
     print("Installed MAC SRC rules on %s" % sw.name)
-
-# Function to write a multicast group entry to the switch
-def writeMcGroup(p4info_helper, sw, sessionId):
-    if not sw.isMulticastGroupInstalled(sessionId):
-        mc_group = p4info_helper.buildMulticastGroupEntry(sessionId, broadcastReplicas)
-        sw.WritePREEntry(mc_group)
-        print(f"Installed Multicast Group {sessionId} on {sw.name}")
-
-
-# Function to write a CPU session entry for packet cloning to the CPU port
-def writeCpuSession(p4info_helper, sw, sessionId):
-    if not sw.isCloneSessionInstalled(sessionId):
-        clone_entry = p4info_helper.buildCloneSessionEntry(sessionId, cpuReplicas)
-        sw.WritePREEntry(clone_entry)
-        print(f"Installed clone session {sessionId} on {sw.name}")
-
-# Function to instanciate the P4info helpers for all kinds of switches
-def getP4Helpers(L2_fp, L3M_fp, L3MF_fp, L3T_fp):
-    L2_helper   = p4runtime_lib.helper.P4InfoHelper(L2_fp)
-    L3M_helper  = p4runtime_lib.helper.P4InfoHelper(L3M_fp)
-    L3MF_helper = p4runtime_lib.helper.P4InfoHelper(L3MF_fp)
-    L3T_helper  = p4runtime_lib.helper.P4InfoHelper(L3T_fp)
-    return L2_helper, L3M_helper, L3MF_helper, L3T_helper
-
-# Function to create all P4Runtime connections to all the switches
-# with gRPC and proto dump files for logging
-def createConnectionsToSwitches():
-
-    print("------ Connecting to the devices... ------")
-
-    s1 = p4runtime_lib.bmv2.Bmv2SwitchConnection(
-        name='s1',
-        address='127.0.0.1:50051',
-        device_id=1,
-        proto_dump_file='logs/s1-p4runtime-request.txt') # the file need to exist
-    r1 = p4runtime_lib.bmv2.Bmv2SwitchConnection(
-        name='r1',
-        address='127.0.0.1:50052',
-        device_id=2,
-        proto_dump_file='logs/r1-p4runtime-request.txt')
-    r2 = p4runtime_lib.bmv2.Bmv2SwitchConnection(
-        name='r2',
-        address='127.0.0.1:50053',
-        device_id=3,
-        proto_dump_file='logs/r2-p4runtime-request.txt')
-    r3 = p4runtime_lib.bmv2.Bmv2SwitchConnection(
-        name='r3',
-        address='127.0.0.1:50054',
-        device_id=4,
-        proto_dump_file='logs/r3-p4runtime-request.txt')
-    r4 = p4runtime_lib.bmv2.Bmv2SwitchConnection(
-        name='r4',
-        address='127.0.0.1:50055',
-        device_id=5,
-        proto_dump_file='logs/r4-p4runtime-request.txt')
-    r5 = p4runtime_lib.bmv2.Bmv2SwitchConnection(
-        name='r5',
-        address='127.0.0.1:50056',
-        device_id=6,
-        proto_dump_file='logs/r5-p4runtime-request.txt')
-    r6 = p4runtime_lib.bmv2.Bmv2SwitchConnection(
-        name='r6',
-        address='127.0.0.1:50057',
-        device_id=7,
-        proto_dump_file='logs/r6-p4runtime-request.txt')
     
-    print("------ Connection successful! ------\n")
-    return s1,r1,r2,r3,r4,r5,r6
-
-# Function to send master arbitration update messages to all switches to establish
-# this controller as master
-def sendMasterAtributionMessage(s1,r1,r2,r3,r4,r5,r6):
-
-    print("------ Setting Master Atribution... ------")
-    s1.MasterArbitrationUpdate()
-    r1.MasterArbitrationUpdate()
-    r2.MasterArbitrationUpdate()
-    r3.MasterArbitrationUpdate()
-    r4.MasterArbitrationUpdate()
-    r5.MasterArbitrationUpdate()
-    r6.MasterArbitrationUpdate()
-    print("------ Master Atribution done! ------\n")
-        
-# Function to install the P4 programs on all switches
-def installP4Programs(L2_helper, L3M_helper, L3MF_helper, L3T_helper, 
-                      jsonL2, jsonL3M, jsonL3MF, jsonL3T,
-                      s1,r1,r2,r3,r4,r5,r6):
-    
-    print("------ Installing P4 Programs... ------")
-
-    if not s1.HasP4ProgramInstalled():
-        s1.SetForwardingPipelineConfig(p4info=L2_helper.p4info,   bmv2_json_file_path=jsonL2)
-        print("Installed P4 Program on s1")
-    if not r1.HasP4ProgramInstalled():
-        r1.SetForwardingPipelineConfig(p4info=L3M_helper.p4info,  bmv2_json_file_path=jsonL3M)
-        print("Installed P4 Program on r1")
-    if not r2.HasP4ProgramInstalled():
-        r2.SetForwardingPipelineConfig(p4info=L3T_helper.p4info,  bmv2_json_file_path=jsonL3T)
-        print("Installed P4 Program on r2")
-    if not r3.HasP4ProgramInstalled():
-        r3.SetForwardingPipelineConfig(p4info=L3T_helper.p4info,  bmv2_json_file_path=jsonL3T)
-        print("Installed P4 Program on r3")
-    if not r4.HasP4ProgramInstalled():
-        r4.SetForwardingPipelineConfig(p4info=L3MF_helper.p4info, bmv2_json_file_path=jsonL3MF)
-        print("Installed P4 Program on r4")
-    if not r5.HasP4ProgramInstalled():
-        r5.SetForwardingPipelineConfig(p4info=L3T_helper.p4info,  bmv2_json_file_path=jsonL3T)
-        print("Installed P4 Program on r5")
-    if not r6.HasP4ProgramInstalled():
-        r6.SetForwardingPipelineConfig(p4info=L3T_helper.p4info,  bmv2_json_file_path=jsonL3T)
-        print("Installed P4 Program on r6")
-    
-    print("------ P4 Programs Installation done! ------\n")
-    
-# Function to write the default actions on all tables from all switches
-def writeDefaultActions(L2_helper, L3M_helper, L3MF_helper, L3T_helper,
-                        s1,r1,r2,r3,r4,r5,r6):
-    
-    print("------ Writing Default Actions... ------")
-
-    # L2 Switch
-    writeDefaultTableAction(L2_helper, s1, "MyIngress.sMacLookup", "MyIngress.learnMac")
-    writeDefaultTableAction(L2_helper, s1, "MyIngress.dMacLookup", "NoAction")
-    # L3 MSLP Switch
-    writeDefaultTableAction(L3M_helper, r1, "MyIngress.ipv4Lpm",           "NoAction")
-    writeDefaultTableAction(L3M_helper, r1, "MyIngress.internalMacLookup", "MyIngress.drop")
-    writeDefaultTableAction(L3M_helper, r1, "MyIngress.tunnelLookup",      "MyIngress.drop")
-    writeDefaultTableAction(L3M_helper, r1, "MyIngress.labelLookup",       "MyIngress.drop")
-    # L3 MSLP & Firewall Switch
-    writeDefaultTableAction(L3MF_helper, r4, "MyIngress.ipv4Lpm",           "NoAction")
-    writeDefaultTableAction(L3MF_helper, r4, "MyIngress.internalMacLookup", "MyIngress.drop")
-    writeDefaultTableAction(L3MF_helper, r4, "MyIngress.tunnelLookup",      "MyIngress.drop")
-    writeDefaultTableAction(L3MF_helper, r4, "MyIngress.labelLookup",       "MyIngress.drop")
-    writeDefaultTableAction(L3MF_helper, r4, "MyIngress.checkDirection",    "NoAction")
-    writeDefaultTableAction(L3MF_helper, r4, "MyIngress.allowedPortsTCP",   "NoAction")
-    writeDefaultTableAction(L3MF_helper, r4, "MyIngress.allowedPortsUDP",   "NoAction")
-    # L3 Tunnel Switches
-    writeDefaultTableAction(L3T_helper, r2, "MyIngress.labelLookup",       "MyIngress.drop")
-    writeDefaultTableAction(L3T_helper, r2, "MyIngress.internalMacLookup", "MyIngress.drop")
-    writeDefaultTableAction(L3T_helper, r3, "MyIngress.labelLookup",       "MyIngress.drop")
-    writeDefaultTableAction(L3T_helper, r3, "MyIngress.internalMacLookup", "MyIngress.drop")
-    writeDefaultTableAction(L3T_helper, r5, "MyIngress.labelLookup",       "MyIngress.drop")
-    writeDefaultTableAction(L3T_helper, r5, "MyIngress.internalMacLookup", "MyIngress.drop")
-    writeDefaultTableAction(L3T_helper, r6, "MyIngress.labelLookup",       "MyIngress.drop")
-    writeDefaultTableAction(L3T_helper, r6, "MyIngress.internalMacLookup", "MyIngress.drop")
-
-    print("------ Write Default Actions done! ------\n")
-
-# Function to write clone engines and their sessionId
-def writeCloneEngines(L2_helper, L3M_helper, L3MF_helper, L3T_helper,
-                      s1,r1,r2,r3,r4,r5,r6):
-    
-    print("------ Installing MC Groups and Clone Sessions... ------")
-    
-    # Multicast Groups
-    writeMcGroup(L2_helper, s1, mcSessionId)
-    # CPU Sessions
-    writeCpuSession(L2_helper,   s1, cpuSessionId)
-    writeCpuSession(L3M_helper,  r1, cpuSessionId)
-    writeCpuSession(L3T_helper,  r2, cpuSessionId)
-    writeCpuSession(L3T_helper,  r3, cpuSessionId)
-    writeCpuSession(L3MF_helper, r4, cpuSessionId)
-    writeCpuSession(L3T_helper,  r5, cpuSessionId)
-    writeCpuSession(L3T_helper,  r6, cpuSessionId)
-
-    print("------ MC Groups and Clone Sessions done! ------\n")
-
 # Function to write an entry to a table of a switch
 def writeTableEntry(helper, sw, table, match, action, params, dryrun=False, modify=False):
     table_entry = helper.buildTableEntry(
@@ -302,6 +143,116 @@ def writeTableEntry(helper, sw, table, match, action, params, dryrun=False, modi
         priority = 0)
     sw.WriteTableEntry(table_entry, dryrun, modify)
     print("Installed rule for %s on %s" % (table, sw.name))
+
+# Function to write a multicast group entry to the switch
+def writeMcGroup(p4info_helper, sw, sessionId):
+    if not sw.isMulticastGroupInstalled(sessionId):
+        mc_group = p4info_helper.buildMulticastGroupEntry(sessionId, broadcastReplicas)
+        sw.WritePREEntry(mc_group)
+        print(f"Installed Multicast Group {sessionId} on {sw.name}")
+
+# Function to write a CPU session entry for packet cloning to the CPU port
+def writeCpuSession(p4info_helper, sw, sessionId):
+    if not sw.isCloneSessionInstalled(sessionId):
+        clone_entry = p4info_helper.buildCloneSessionEntry(sessionId, cpuReplicas)
+        sw.WritePREEntry(clone_entry)
+        print(f"Installed clone session {sessionId} on {sw.name}")
+
+# Function to create all P4Runtime connections to all the switches
+# with gRPC and proto dump files for logging
+def createConnectionsToSwitches(switches_config_path):
+    print("------ Connecting to the devices... ------")
+
+    with open(switches_config_path, 'r') as f:
+        switch_configs = json.load(f)
+
+    connections = {}
+    for switch in switch_configs:
+        name = switch["name"]
+        connections[name] = p4runtime_lib.bmv2.Bmv2SwitchConnection(
+            name=name,
+            address=switch["address"],
+            device_id=switch["device_id"],
+            proto_dump_file=switch["proto_dump_file"]
+        )
+
+    print("------ Connection successful! ------\n")
+    return connections
+
+# Function to send master arbitration update messages to all switches to establish
+# this controller as master
+def sendMasterAtributionMessage(connections):
+
+    print("------ Setting Master Atribution... ------")
+    for sw in connections.values():
+        sw.MasterArbitrationUpdate()
+    print("------ Master Atribution done! ------\n")
+
+# Function to load the P4 program configuration from a JSON file
+def loadProgramConfig(programs_config_path):
+    with open(programs_config_path, 'r') as f:
+        config_data = json.load(f)
+
+    program_config = {}
+
+    for sw_name, entry in config_data.items():
+        json_path = entry['json_path']
+        helper_path = entry['p4info_path']
+
+        helper = p4runtime_lib.helper.P4InfoHelper(helper_path)
+        program_config[sw_name] = (helper, json_path)
+
+    return program_config
+
+# Function to install the P4 programs on all switches
+def installP4Programs(connections, program_config):
+    print("------ Installing P4 Programs... ------")
+
+    for sw_name, sw_conn in connections.items():
+        expected_helper, json_path = program_config[sw_name]
+        installed_p4info = sw_conn.GetInstalledP4Info()
+
+        if installed_p4info is None:
+            print(f"{sw_name}: No P4 program found, installing...")
+        elif installed_p4info != expected_helper.p4info:
+            print(f"{sw_name}: Different P4 program found, re-installing...")
+        else:
+            print(f"{sw_name}: Correct P4 program already installed, skipping.")
+            continue
+
+        sw_conn.SetForwardingPipelineConfig(p4info=expected_helper.p4info, bmv2_json_file_path=json_path)
+        print(f"{sw_name}: P4 program installed.")
+
+    print("------ P4 Programs Installation done! ------\n")
+
+# Function to write clone engines and their sessionId
+def writeCloneEngines(connections, program_config):
+    
+    print("------ Installing MC Groups and Clone Sessions... ------")
+    
+    s1 = connections["s1"]
+    L2_helper, _ = program_config["s1"]  # Only L2 program needs to be handled here
+    writeMcGroup(L2_helper, s1, mcSessionId)
+    writeCpuSession(L2_helper, s1, cpuSessionId)
+    print("------ MC Groups and Clone Sessions done! ------\n")
+    
+# Function to write the default actions on all tables from all switches
+def writeDefaultActions(connections, program_config):
+    print("------ Writing Default Actions... ------")
+    
+    for sw_name, sw in connections.items():
+        p4info_helper, _ = program_config[sw_name]
+        try:
+            with open(f"configs/default_actions/{sw_name}.json") as f:
+                actions = json.load(f)
+        except FileNotFoundError:
+            print(f"No default actions config for {sw_name}, skipping...")
+            continue
+
+        for table_name, action_name in actions.items():
+            writeDefaultTableAction(p4info_helper, sw, table_name, action_name)
+    
+    print("------ Write Default Actions done! ------\n")
 
 # Function to write the static rules in all tables from all L3 switches
 def writeStaticRules(L3M_helper, L3MF_helper, L3T_helper, r1,r2,r3,r4,r5,r6, 
@@ -579,14 +530,64 @@ def read_counter(p4info_helper, switch, counter_name, index):
         return 0
 
 # Function to read the current table rules from the switch and store the known values
-def readTableRules(L2_helper, L3M_helper, L3MF_helper, L3T_helper, s1,r1,r2,r3,r4,r5,r6,
-                   ips, macs, labels, iMacs, tLabels, dirs, tcpPorts, udpPorts):
-    
-    readSwitch(L2_helper, s1, macs)
-    readTunnelRouter(L3T_helper, (r2,r3,r5,r6), labels, iMacs)
-    readMslpRouter(L3M_helper, (r1,), ips, iMacs, labels, tLabels)
-    readMslpFirewallRouter(L3MF_helper, (r4,), ips, iMacs, labels, tLabels, dirs, tcpPorts, udpPorts)
+def readTableRules(connections, program_config):
+    for sw_name, sw in connections.items():
+        helper, _ = program_config[sw_name]
+        if sw.HasP4ProgramInstalled():
 
+            for response in sw.ReadTableEntries():
+                for entity in response.entities:
+                    entry = entity.table_entry
+                    table_name = helper.get_tables_name(entry.table_id)
+
+                    # Initialize state for the switch if not already done
+                    if sw_name not in state:
+                        state[sw_name] = {}
+
+                    if table_name not in state[sw_name]:
+                        state[sw_name][table_name] = {}
+
+                    # Now handle specific table and entry cases
+                    if table_name == "MyIngress.ipv4Lpm":
+                        enc_ip = helper.get_match_field_value(entry.match[0])
+                        dec_ip = decodeIPv4(enc_ip[0])
+                        mask = enc_ip[1]
+                        ip = (dec_ip, mask)
+                        state[sw_name][table_name][str(ip)] = {
+                            "action": "MyIngress.forward",  # Example action
+                            "params": {"port": 80}  # Example parameters
+                        }
+                    
+                    elif table_name == "MyIngress.labelLookup":
+                        label = decodeNum(helper.get_match_field_value(entry.match[0]))
+                        state[sw_name][table_name][str(label)] = {
+                            "action": "MyIngress.drop",
+                            "params": {}
+                        }
+
+                    elif table_name == "MyIngress.internalMacLookup":
+                        imac = myDecodeMac(entry.action.action.params[0].value)
+                        state[sw_name][table_name][str(imac)] = {
+                            "action": "MyIngress.learnMac",
+                            "params": {}
+                        }
+
+                    elif table_name == "MyIngress.tunnelLookup":
+                        tl = decodeNum(entry.action.action.params[0].value)
+                        state[sw_name][table_name][str(tl)] = {
+                            "action": "MyIngress.addTunnel",
+                            "params": {}
+                        }
+
+                    elif table_name == "MyIngress.checkDirection":
+                        ingress = helper.get_match_field_value(entry.match[0])
+                        egress = helper.get_match_field_value(entry.match[1])
+                        dir = (decodeNum(ingress), decodeNum(egress))
+                        state[sw_name][table_name][str(dir)] = {
+                            "action": "MyIngress.setDirection",
+                            "params": {}
+                        }
+    
 # Function to read the current table rules from the switch and print them
 def readSwitch(helper, s1, macList):
     """
@@ -673,62 +674,7 @@ def readMslpRouter(helper, routers, ips, iMacs, labels, tLabels):
                         if tl not in tLabels:
                             tLabels.append(tl)
 
-# Function to read the current table rules from the tunnel routers and store the known values
-def readMslpFirewallRouter(helper, routers, ips, iMacs, labels,
-                           tLabels, dirs, tcpPorts, udpPorts):
-    """
-    Reads the table entries from all tables on the switch and populates 
-    the correct state variable if needed.
 
-    :param helper: the P4Info helper
-    :param routers: the switch connections
-    """
-    for r in routers:
-        if r.HasP4ProgramInstalled():
-            for response in r.ReadTableEntries():
-                for entity in response.entities:
-                    entry = entity.table_entry
-                    table_name = helper.get_tables_name(entry.table_id)
-
-                    if table_name == "MyIngress.ipv4Lpm":
-                        enc_ip = helper.get_match_field_value(entry.match[0])
-                        dec_ip = decodeIPv4(enc_ip[0])
-                        mask = enc_ip[1]
-                        ip = (dec_ip, mask)
-                        if ip not in ips:
-                            ips.append(ip)
-
-                    elif table_name == "MyIngress.labelLookup":
-                        label = decodeNum(helper.get_match_field_value(entry.match[0]))
-                        if label not in labels:
-                            labels.append(label)
-
-                    elif table_name == "MyIngress.internalMacLookup":
-                        imac = myDecodeMac(entry.action.action.params[0].value)
-                        if imac not in iMacs:
-                            iMacs.append(imac)
-
-                    elif table_name == "MyIngress.tunnelLookup":
-                        tl = decodeNum(entry.action.action.params[0].value)
-                        if tl not in tLabels:
-                            tLabels.append(tl)
-
-                    elif table_name == "MyIngress.checkDirection":
-                        ingress = helper.get_match_field_value(entry.match[0])
-                        egress  = helper.get_match_field_value(entry.match[1])
-                        dir = (decodeNum(ingress), decodeNum(egress))
-                        if dir not in dirs:
-                            dirs.append(dir)
-
-                    elif table_name == "MyIngress.allowedPortsTCP":
-                        port = decodeNum(helper.get_match_field_value(entry.match[0]))
-                        if port not in tcpPorts:
-                            tcpPorts.append(port)
-
-                    elif table_name == "MyIngress.allowedPortsUDP":
-                        port = decodeNum(helper.get_match_field_value(entry.match[0]))
-                        if port not in udpPorts:
-                            udpPorts.append(port)
 
 def printControllerState(ips, macs, labels, iMacs, tLabels, dirs, tcpPorts, udpPorts):
     print("---------- Controller State ----------")
@@ -766,32 +712,25 @@ def main(p4infoL2_file_path, p4infoL3M_file_path, p4infoL3MF_file_path, p4infoL3
     tcpPorts = []
     udpPorts = []
 
-    # Instantiate P4Runtime helpers from the p4info files
-    L2_helper, L3M_helper, L3MF_helper, L3T_helper = getP4Helpers(p4infoL2_file_path, 
-                                                                  p4infoL3M_file_path, 
-                                                                  p4infoL3MF_file_path, 
-                                                                  p4infoL3T_file_path)
-
     try:
         # Create P4Runtime connections to the switches
-        s1,r1,r2,r3,r4,r5,r6 = createConnectionsToSwitches()
+        connections = createConnectionsToSwitches('configs/switches_config.json')
         
         # Send master arbitration update message to establish this controller as
         # master (required by P4Runtime before performing any other write operation)
-        sendMasterAtributionMessage(s1,r1,r2,r3,r4,r5,r6)
+        sendMasterAtributionMessage(connections)
+        
+        # Load config files for the p4 programs
+        program_config = loadProgramConfig("configs/switch_programs.json")
 
         # Install the P4 programs on the switches if not yet installed
-        installP4Programs(L2_helper, L3M_helper, L3MF_helper, L3T_helper, 
-                          jsonL2_file_path, jsonL3M_file_path, jsonL3MF_file_path, jsonL3T_file_path,
-                          s1,r1,r2,r3,r4,r5,r6)
+        installP4Programs(connections, program_config)
 
         # Write clone engines and their sessionId, if not written yet
-        writeCloneEngines(L2_helper, L3M_helper, L3MF_helper, L3T_helper,
-                          s1,r1,r2,r3,r4,r5,r6)
+        writeCloneEngines(connections, program_config)
 
         # Write default actions, if not written yet
-        writeDefaultActions(L2_helper, L3M_helper, L3MF_helper, L3T_helper,
-                            s1,r1,r2,r3,r4,r5,r6)
+        writeDefaultActions(connections, program_config)
 
         # Read all entries of all tables of all routers and populate state variables
         readTableRules(L2_helper, L3M_helper, L3MF_helper, L3T_helper, s1,r1,r2,r3,r4,r5,r6,
@@ -805,18 +744,18 @@ def main(p4infoL2_file_path, p4infoL3M_file_path, p4infoL3MF_file_path, p4infoL3
                          ips, labels, iMacs, tLabels, dirs, tcpPorts, udpPorts)
 
         # Show all rules set in the tables
-        printTableRules(L2_helper,   s1) # s1 is empty before any traffic
-        printTableRules(L3M_helper,  r1)
-        printTableRules(L3T_helper,  r2)
-        printTableRules(L3T_helper,  r3)
-        printTableRules(L3MF_helper, r4)
-        printTableRules(L3T_helper,  r5)
-        printTableRules(L3T_helper,  r6)
+        for switch in connections.values():
+            helper, _ = program_config[switch]
+            printTableRules(helper, switch) # Note: s1 is empty before any traffic
 
         # Thread to handle load balancing between the tunnels
         t = threading.Thread(target=changeTunnelRules, args=(L3M_helper, L3MF_helper, r1, r4,), daemon=True)
         t.start()
 
+
+        s1 = connections["s1"]
+        L2_helper, _ = program_config["s1"]  # Only L2 program needs to be handled here
+        
         for response in s1.stream_msg_resp:
             # Check if the response contains a packet-in message
             if response.packet:

@@ -84,6 +84,21 @@ class SwitchConnection(object):
 
         except grpc.RpcError as e:
             return False
+        
+    def GetInstalledP4Info(self):
+        request = p4runtime_pb2.GetForwardingPipelineConfigRequest()
+        request.device_id = self.device_id
+        request.response_type = p4runtime_pb2.GetForwardingPipelineConfigRequest.ALL
+
+        try:
+            response = self.client_stub.GetForwardingPipelineConfig(request)
+            remote_p4info = response.config.p4info
+            if remote_p4info.tables:
+                return remote_p4info  # Return the actual P4Info
+            return None
+        except grpc.RpcError:
+            return None
+
 
     def SetForwardingPipelineConfig(self, p4info, dry_run=False, **kwargs):
         device_config = self.buildDeviceConfig(**kwargs)

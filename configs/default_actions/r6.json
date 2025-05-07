@@ -1,0 +1,5 @@
+{
+    "MyIngress.labelLookup": "MyIngress.drop",
+    "MyIngress.internalMacLookup": "MyIngress.drop"
+  }
+  

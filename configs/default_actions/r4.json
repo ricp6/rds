@@ -1,0 +1,10 @@
+{
+    "MyIngress.ipv4Lpm": "NoAction",
+    "MyIngress.internalMacLookup": "MyIngress.drop",
+    "MyIngress.tunnelLookup": "MyIngress.drop",
+    "MyIngress.labelLookup": "MyIngress.drop",
+    "MyIngress.checkDirection": "NoAction",
+    "MyIngress.allowedPortsTCP": "NoAction",
+    "MyIngress.allowedPortsUDP": "NoAction"
+  }
+  
