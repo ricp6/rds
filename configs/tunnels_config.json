@@ -1,11 +1,12 @@
 {
     "check_interval": 30,
     "threshold": 50,
+    "table": "MyIngress.tunnelLookup",
+    "match_field": "meta.tunnel",
+    "counter_name": "tunnel_counter",
     "tunnels": [
       {
         "name": "r1-to-r4",
-        "table": "MyIngress.tunnelLookup",
-        "match_field": "meta.tunnel",
         "switchA": "r1",
         "switchB": "r4",
         "counter_index": { "A_up": 2, "A_down": 3, "B_up": 3, "B_down": 2 },

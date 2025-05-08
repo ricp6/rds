@@ -534,52 +534,45 @@ def init_tunnel_states(connections, program_config, state, tunnels_config_path):
 # Function to dynamicly change the tunnel selection rules according to traffic metrics
 def changeTunnelRules(connections, program_config, tunnels_config_path, tunnel_states, state):
     # Load our generic tunnel config
-    cfgs      = json.load(open(tunnels_config_path))["tunnels"]
-    interval  = json.load(open(tunnels_config_path))["check_interval"]
-    threshold = json.load(open(tunnels_config_path))["threshold"]
+    file      = json.load(open(tunnels_config_path))
+    tunnels   = file["tunnels"]
+    interval  = file["check_interval"]
+    threshold = file["threshold"]
+    table     = file["table"]
+    mf        = file["match_field"]
+    cntr_name = file["counter_name"]
 
     # For each tunnel in the JSON, start a monitor thread
-    for tcfg in cfgs:
+    for tcfg in tunnels:
         threading.Thread(
             target=_monitor_single_tunnel,
             args=(
-                connections, program_config, tcfg, 
-                interval, threshold, tunnel_states, state
+                connections, program_config, tcfg, interval, 
+                threshold, table, mf, cntr_name, tunnel_states, state
             ),
             daemon=True
         ).start()
 
-def _monitor_single_tunnel(connections, program_config, tcfg, interval, threshold, tunnel_states, state):
-    name        = tcfg["name"]
-    table       = tcfg["table"]
-    counter     = tcfg["counter"]
-    mf          = tcfg["match_field"]
-    idxs        = tcfg["counter_index"]
-    states      = tcfg["states"]
-    curr_state  = tunnel_states[name]
+def _monitor_single_tunnel(connections, program_config, tcfg, interval, threshold, 
+                           table, mf, cntr_name, tunnel_states, state):
+    name   = tcfg["name"]
+    idxs   = tcfg["counter_index"]
+    states = tcfg["states"]
 
     swA = connections[tcfg["switchA"]]
     swB = connections[tcfg["switchB"]]
     hA  = program_config[tcfg["switchA"]]["helper"]
     hB  = program_config[tcfg["switchB"]]["helper"]
 
+    curr_state = tunnel_states[name]
     print(f"📡 Starting tunnel monitor '{name}' between {swA.name} ⇄ {swB.name}")
 
     while True:
-        # read counter helper
-        def read_counter(sw, helper, idx):
-            return next(
-                (e.counter_entry.data.packet_count
-                 for r in sw.ReadCounters(helper.get_counters_id(counter), idx)
-                   for e in r.entities
-                   if e.HasField("counter_entry")),
-                0
-            )
-
-        upA   = read_counter(swA, hA, idxs["A_up"])
-        downA = read_counter(swA, hA, idxs["A_down"])
-        upB   = read_counter(swB, hB, idxs["B_up"])
-        downB = read_counter(swB, hB, idxs["B_down"])
+        # read the counters from both switches
+        upA   = read_counter(swA, hA, cntr_name, idxs["A_up"])
+        downA = read_counter(swA, hA, cntr_name, idxs["A_down"])
+        upB   = read_counter(swB, hB, cntr_name, idxs["B_up"])
+        downB = read_counter(swB, hB, cntr_name, idxs["B_down"])
 
         total_up   = upA + upB
         total_down = downA + downB
@@ -616,6 +609,20 @@ def _monitor_single_tunnel(connections, program_config, tcfg, interval, threshol
             print(f"[{name}] no switch needed")
 
         sleep(interval)
+
+# Function to read the counter value from the switch
+def read_counter(helper, switch, counter_name, index):
+    try:
+        counter_id = helper.get_counters_id(counter_name)
+        for response in switch.ReadCounters(counter_id, index):
+            for entity in response.entities:
+                if entity.HasField("counter_entry"):
+                    counter_entry = entity.counter_entry
+                    return counter_entry.data.packet_count
+        return 0
+    except Exception as e:
+        print(f"Error reading counter {counter_name} [{index}]: {e}")
+        return 0
 
 
 
