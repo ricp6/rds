@@ -473,12 +473,14 @@ def init_tunnel_states(connections, program_config, state, tunnels_config_path):
       - If nothing is found, install state=0 and mirror into `state[...]`
     Returns a dict: { tunnel_name: detected_state_id, … }
     """
-    cfgs = json.load(open(tunnels_config_path))["tunnels"]
+    file  = json.load(open(tunnels_config_path))
+    cfgs  = file["tunnels"]
+    table = file["table"]
+    mf    = file["match_field"]
     detected_states = {}
+
     for tcfg in cfgs:
         name   = tcfg["name"]
-        table  = tcfg["table"]
-        mf     = tcfg["match_field"]
         swA    = tcfg["switchA"]
 
         # ensure the nested state
@@ -569,14 +571,17 @@ def _monitor_single_tunnel(connections, program_config, tcfg, interval, threshol
 
     while True:
         # read the counters from both switches
-        upA   = read_counter(swA, hA, cntr_name, idxs["A_up"])
-        downA = read_counter(swA, hA, cntr_name, idxs["A_down"])
-        upB   = read_counter(swB, hB, cntr_name, idxs["B_up"])
-        downB = read_counter(swB, hB, cntr_name, idxs["B_down"])
+        upA   = read_counter(hA, swA, cntr_name, idxs["A_up"])
+        downA = read_counter(hA, swA, cntr_name, idxs["A_down"])
+        upB   = read_counter(hB, swB, cntr_name, idxs["B_up"])
+        downB = read_counter(hB, swB, cntr_name, idxs["B_down"])
 
         total_up   = upA + upB
         total_down = downA + downB
         print(f"[{name}] up={total_up}, down={total_down}")
+        # Print individual counter values for both switches
+        print(f"[{swA.name}] up={upA}, [{swA.name}] down={downA}")
+        print(f"[{swB.name}] up={upB}, [{swB.name}] down={downB}")
 
         if abs(total_up - total_down) > threshold:
             # toggle state
@@ -604,9 +609,9 @@ def _monitor_single_tunnel(connections, program_config, tcfg, interval, threshol
 
             curr_state = next_state
             tunnel_states[name] = next_state
-            print(f"[{name}] switched to state {curr_state}")
+            print(f"[{name}] switched to state {curr_state}\n")
         else:
-            print(f"[{name}] no switch needed")
+            print(f"[{name}] no switch needed\n")
 
         sleep(interval)
 
