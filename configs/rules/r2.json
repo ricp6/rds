@@ -1,13 +1,13 @@
 {
     "MyIngress.labelLookup": {
-        "{\"hdr.labels[0].label\": 0x2010}": {
+        "{\"hdr.labels[0].label\": \"0x2010\"}": {
             "action": "MyIngress.forwardTunnel",
             "params": {
                 "egressPort": 1,
                 "nextHopMac": "aa:00:00:00:01:02"
             }
         },
-        "{\"hdr.labels[0].label\": 0x2020}": {
+        "{\"hdr.labels[0].label\": \"0x2020\"}": {
             "action": "MyIngress.forwardTunnel",
             "params": {
                 "egressPort": 2,

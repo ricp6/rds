@@ -23,18 +23,18 @@
         }
     },
     "MyIngress.labelLookup": {
-        "{\"hdr.labels[0].label\": 0x4010}": {
+        "{\"hdr.labels[0].label\": \"0x4010\"}": {
             "action": "MyIngress.removeMSLP",
             "params": {}
         },
-        "{\"hdr.labels[0].label\": 0x4020}": {
+        "{\"hdr.labels[0].label\": \"0x4020\"}": {
             "action": "MyIngress.forwardTunnel",
             "params": {
                 "egressPort": 2,
                 "nextHopMac": "aa:00:00:00:05:02"
             }
         },
-        "{\"hdr.labels[0].label\": 0x4030}": {
+        "{\"hdr.labels[0].label\": \"0x4030\"}": {
             "action": "MyIngress.forwardTunnel",
             "params": {
                 "egressPort": 3,

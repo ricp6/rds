@@ -37,18 +37,18 @@
         }
     },
     "MyIngress.labelLookup": {
-        "{\"hdr.labels[0].label\": 0x1010}": {
+        "{\"hdr.labels[0].label\": \"0x1010\"}": {
             "action": "MyIngress.removeMSLP",
             "params": {}
         },
-        "{\"hdr.labels[0].label\": 0x1020}": {
+        "{\"hdr.labels[0].label\": \"0x1020\"}": {
             "action": "MyIngress.forwardTunnel",
             "params": {
                 "egressPort": 2,
                 "nextHopMac": "aa:00:00:00:02:01"
             }
         },
-        "{\"hdr.labels[0].label\": 0x1030}": {
+        "{\"hdr.labels[0].label\": \"0x1030\"}": {
             "action": "MyIngress.forwardTunnel",
             "params": {
                 "egressPort": 3,

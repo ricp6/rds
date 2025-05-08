@@ -1,22 +1,15 @@
 
-[2025-04-30 15:52:13.767] /p4.v1.P4Runtime/GetForwardingPipelineConfig
+[2025-05-08 16:11:54.447] /p4.v1.P4Runtime/GetForwardingPipelineConfig
 ---
 device_id: 3
 ---
 
-[2025-04-30 15:52:13.776] /p4.v1.P4Runtime/Read
+[2025-05-08 16:11:54.451] /p4.v1.P4Runtime/SetForwardingPipelineConfig
 ---
-device_id: 3
-entities {
-  packet_replication_engine_entry {
-    clone_session_entry {
-      session_id: 100
-    }
-  }
-}
+Message too long (24229 bytes)! Skipping log...
 ---
 
-[2025-04-30 15:52:13.793] /p4.v1.P4Runtime/Read
+[2025-05-08 16:11:55.135] /p4.v1.P4Runtime/Read
 ---
 device_id: 3
 entities {
@@ -27,7 +20,29 @@ entities {
 }
 ---
 
-[2025-04-30 15:52:13.794] /p4.v1.P4Runtime/Read
+[2025-05-08 16:11:55.137] /p4.v1.P4Runtime/Write
+---
+device_id: 3
+election_id {
+  low: 1
+}
+updates {
+  type: MODIFY
+  entity {
+    table_entry {
+      table_id: 39414161
+      action {
+        action {
+          action_id: 25652968
+        }
+      }
+      is_default_action: true
+    }
+  }
+}
+---
+
+[2025-05-08 16:11:55.138] /p4.v1.P4Runtime/Read
 ---
 device_id: 3
 entities {
@@ -38,12 +53,34 @@ entities {
 }
 ---
 
-[2025-04-30 15:52:13.801] /p4.v1.P4Runtime/GetForwardingPipelineConfig
+[2025-05-08 16:11:55.139] /p4.v1.P4Runtime/Write
+---
+device_id: 3
+election_id {
+  low: 1
+}
+updates {
+  type: MODIFY
+  entity {
+    table_entry {
+      table_id: 50323762
+      action {
+        action {
+          action_id: 25652968
+        }
+      }
+      is_default_action: true
+    }
+  }
+}
+---
+
+[2025-05-08 16:11:55.202] /p4.v1.P4Runtime/GetForwardingPipelineConfig
 ---
 device_id: 3
 ---
 
-[2025-04-30 15:52:13.801] /p4.v1.P4Runtime/Read
+[2025-05-08 16:11:55.204] /p4.v1.P4Runtime/Read
 ---
 device_id: 3
 entities {
@@ -52,12 +89,144 @@ entities {
 }
 ---
 
-[2025-04-30 15:52:13.828] /p4.v1.P4Runtime/GetForwardingPipelineConfig
+[2025-05-08 16:11:55.230] /p4.v1.P4Runtime/Write
+---
+device_id: 3
+election_id {
+  low: 1
+}
+updates {
+  type: INSERT
+  entity {
+    table_entry {
+      table_id: 39414161
+      match {
+        field_id: 1
+        exact {
+          value: " \020"
+        }
+      }
+      action {
+        action {
+          action_id: 20445750
+          params {
+            param_id: 1
+            value: "\000\001"
+          }
+          params {
+            param_id: 2
+            value: "\252\000\000\000\001\002"
+          }
+        }
+      }
+    }
+  }
+}
+---
+
+[2025-05-08 16:11:55.232] /p4.v1.P4Runtime/Write
+---
+device_id: 3
+election_id {
+  low: 1
+}
+updates {
+  type: INSERT
+  entity {
+    table_entry {
+      table_id: 39414161
+      match {
+        field_id: 1
+        exact {
+          value: "  "
+        }
+      }
+      action {
+        action {
+          action_id: 20445750
+          params {
+            param_id: 1
+            value: "\000\002"
+          }
+          params {
+            param_id: 2
+            value: "\252\000\000\000\003\001"
+          }
+        }
+      }
+    }
+  }
+}
+---
+
+[2025-05-08 16:11:55.233] /p4.v1.P4Runtime/Write
+---
+device_id: 3
+election_id {
+  low: 1
+}
+updates {
+  type: INSERT
+  entity {
+    table_entry {
+      table_id: 50323762
+      match {
+        field_id: 1
+        exact {
+          value: "\000\001"
+        }
+      }
+      action {
+        action {
+          action_id: 26407428
+          params {
+            param_id: 1
+            value: "\252\000\000\000\002\001"
+          }
+        }
+      }
+    }
+  }
+}
+---
+
+[2025-05-08 16:11:55.236] /p4.v1.P4Runtime/Write
+---
+device_id: 3
+election_id {
+  low: 1
+}
+updates {
+  type: INSERT
+  entity {
+    table_entry {
+      table_id: 50323762
+      match {
+        field_id: 1
+        exact {
+          value: "\000\002"
+        }
+      }
+      action {
+        action {
+          action_id: 26407428
+          params {
+            param_id: 1
+            value: "\252\000\000\000\002\002"
+          }
+        }
+      }
+    }
+  }
+}
+---
+
+[2025-05-08 16:11:55.307] /p4.v1.P4Runtime/GetForwardingPipelineConfig
 ---
 device_id: 3
 ---
 
-[2025-04-30 15:52:13.829] /p4.v1.P4Runtime/Read
+[2025-05-08 16:11:55.308] /p4.v1.P4Runtime/Read
 ---
 device_id: 3
 entities {

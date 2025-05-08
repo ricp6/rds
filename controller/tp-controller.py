@@ -54,6 +54,17 @@ def _to_hex(v: int) -> str:
     # Format as 0x… using lowercase, adjust width if desired
     return f"0x{v:x}"
 
+def normalize_hex_strings(param: dict) -> dict:
+    if not param:
+        return {}
+    new_param = {}
+    for k, v in param.items():
+        if isinstance(v, str) and v.startswith("0x"):
+            new_param[k] = int(v, 16)
+        else:
+            new_param[k] = v
+    return new_param
+
 # Custom function to handle gRPC errors and display useful debugging information
 def printGrpcError(e):
     print("gRPC Error:", e.details(), end=' ')
@@ -139,6 +150,10 @@ def writeMacSrcLookUp(p4info_helper, sw, mac):
     
 # Function to write an entry to a table of a switch
 def writeTableEntry(helper, sw, table, match, action, params, dryrun=False, modify=False):
+    # Normalize any hex-string into ints
+    match  = normalize_hex_strings(match)
+    params = normalize_hex_strings(params)
+
     table_entry = helper.buildTableEntry(
         table_name = table,
         match_fields = match,
@@ -287,12 +302,13 @@ def writeStaticRules(connections, program_config, state):
 
         for table, rules in switch_rules.items():
             for match, action_params in rules.items():
+                pprint(match)
                 match_dict = json.loads(match)  # Assuming match is serialized as a JSON string
                 action = action_params["action"]
                 params = action_params["params"]
                 compareAndWriteRules(helper, switch, table, match_dict, action, params, state)
 
-    print("------ Static rules done! ------\n")
+    print("------ Write Static Rules done! ------\n")
     
 # Function to compare the current rule with the expected rule and write it if they differ
 def compareAndWriteRules(helper, switch, table, match, expected_action, expected_params, state):
@@ -300,7 +316,7 @@ def compareAndWriteRules(helper, switch, table, match, expected_action, expected
     current_state = state[switch.name][table]
     
     # Check if the rule already exists
-    match_str = str(match)
+    match_str = json.dumps(match, sort_keys=True)
     if match_str in current_state:
         current_action = current_state[match_str]["action"]
         current_params = current_state[match_str]["params"]
@@ -398,6 +414,8 @@ def read_counter(p4info_helper, switch, counter_name, index):
 # Function to read the current table rules from the switch and store the known values
 def readTableRules(connections, program_config, state):
     
+    print("------ Reading Tables Rules... ------\n")
+
     for sw_name, sw in connections.items():
         helper = program_config[sw_name]["helper"]
         if not sw.HasP4ProgramInstalled():
@@ -413,10 +431,13 @@ def readTableRules(connections, program_config, state):
                     enc_ip = helper.get_match_field_value(entry.match[0])
                     ip = (decodeIPv4(enc_ip[0]), enc_ip[1])
                     action = helper.get_actions_name(entry.action.action.action_id)
-                    params = {
-                        p.param_id: p.value
-                        for p in entry.action.action.params
-                    }
+                    if action == "MyIngress.forward":
+                        params = {
+                            "egressPort": decodeNum(entry.action.action.params[0].value),
+                            "nextHopMac": myDecodeMac(entry.action.action.params[1].value)
+                        }
+                    else:
+                        params = {}
                     key = json.dumps({"hdr.ipv4.dstAddr": list(ip)})
                     state[sw_name][table][key] = {
                         "action": action,
@@ -426,10 +447,14 @@ def readTableRules(connections, program_config, state):
                 # 2. Label Lookup → store label as hex string
                 elif table == "MyIngress.labelLookup":
                     lbl = decodeNum(helper.get_match_field_value(entry.match[0]))
-                    params = {
-                        p.param_id: p.value
-                        for p in entry.action.action.params
-                    }
+                    action = helper.get_actions_name(entry.action.action.action_id)
+                    if action == "MyIngress.forwardTunnel":
+                        params = {
+                            "egressPort": decodeNum(entry.action.action.params[0].value),
+                            "nextHopMac": myDecodeMac(entry.action.action.params[1].value)
+                        }
+                    else:
+                        params = {}
                     key = json.dumps({ "hdr.labels[0].label": _to_hex(lbl) })
                     state[sw_name][table][key] = {
                         "action": action,
@@ -438,12 +463,14 @@ def readTableRules(connections, program_config, state):
 
                 # 3. Internal MAC Lookup
                 elif table == "MyIngress.internalMacLookup":
-                    mac_key = myDecodeMac(helper.get_match_field_value(entry.match[0]))
+                    port = decodeNum(helper.get_match_field_value(entry.match[0]))
                     imac = myDecodeMac(entry.action.action.params[0].value)
+                    params = {"mac": imac}
                     action = helper.get_actions_name(entry.action.action.action_id)
-                    state[sw_name][table][str(mac_key)] = {
+                    key = json.dumps({ "standard_metadata.egress_spec": port })
+                    state[sw_name][table][key] = {
                         "action": action,
-                        "params": {"mac": imac}
+                        "params": params
                     }
 
                 # 4. Tunnel Lookup → also hex
@@ -463,16 +490,31 @@ def readTableRules(connections, program_config, state):
                     ingress = decodeNum(helper.get_match_field_value(entry.match[0]))
                     egress = decodeNum(helper.get_match_field_value(entry.match[1]))
                     action = helper.get_actions_name(entry.action.action.action_id)
-                    state[sw_name][table][str((ingress, egress))] = {
+                    key = json.dumps({
+                        "meta.ingress_port": ingress, 
+                        "standard_metadata.egress_spec": egress
+                    })
+                    state[sw_name][table][key] = {
                         "action": action,
                         "params": {}
                     }
 
-                # 6. Allowed TCP Ports + 7. Allowed UDP Ports
-                elif table == "MyIngress.allowedPortsTCP" or table == "MyIngress.allowedPortsUDP":
+                # 6. Allowed TCP Ports
+                elif table == "MyIngress.allowedPortsTCP":
                     port = decodeNum(helper.get_match_field_value(entry.match[0]))
                     action = helper.get_actions_name(entry.action.action.action_id)
-                    state[sw_name][table][str(port)] = {
+                    key = json.dumps({ "hdr.tcp.dstPort": port })
+                    state[sw_name][table][key] = {
+                        "action": action,
+                        "params": {}
+                    }
+                                    
+                # 7. Allowed UDP Ports
+                elif table == "MyIngress.allowedPortsUDP":
+                    port = decodeNum(helper.get_match_field_value(entry.match[0]))
+                    action = helper.get_actions_name(entry.action.action.action_id)
+                    key = json.dumps({ "hdr.udp.dstPort": port })
+                    state[sw_name][table][key] = {
                         "action": action,
                         "params": {}
                     }
@@ -485,6 +527,8 @@ def readTableRules(connections, program_config, state):
                         "action": action,
                         "params": {}
                     }
+
+    print("------ Read Tables Rules done! ------\n")
     
 def printControllerState(state):
     print("---------- Controller State ----------")
