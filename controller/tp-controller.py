@@ -105,7 +105,7 @@ def printTableRules(p4info_helper, sw):
 # Function to install a default action entry into a table
 def writeDefaultTableAction(p4info_helper, sw, table, intended_action):
     table_id = p4info_helper.get_tables_id(table)
-    current_action_id = sw.getDefaultAction(table_id)
+    current_action_id = sw.getDefaultAction(table_id).action.action.action_id
 
     intended_action_id = p4info_helper.get_actions_id(intended_action)
 
@@ -580,8 +580,8 @@ def _monitor_single_tunnel(connections, program_config, tcfg, interval, threshol
         total_down = downA + downB
         print(f"[{name}] up={total_up}, down={total_down}")
         # Print individual counter values for both switches
-        print(f"[{swA.name}] up={upA}, [{swA.name}] down={downA}")
-        print(f"[{swB.name}] up={upB}, [{swB.name}] down={downB}")
+        print(f"[{swA.name}] up={upA}, down={downA}")
+        print(f"[{swB.name}] up={upB}, down={downB}")
 
         if abs(total_up - total_down) > threshold:
             # toggle state
