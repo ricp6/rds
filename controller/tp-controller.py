@@ -341,75 +341,84 @@ def compareAndWriteRules(helper, switch, table, match, expected_action, expected
         }
 
 # Function to dynamicly change the tunnel selection rules according to traffic metrics
-def changeTunnelRules(L3M_helper, L3MF_helper, r1, r4):
-    # Define table and action names
-    table = "MyIngress.tunnelLookup"
-    action = "MyIngress.addMSLP"
-    match = "meta.tunnel"
-    l = "labels"
-    tunnel_counter = "MyIngress.tunnel_counter"
-    
-    current_state = 0  
+def changeTunnelRules(connections, program_config, tunnels_config_path):
+    # Load our generic tunnel config
+    cfg = json.load(open(tunnels_config_path))
+    interval  = cfg["check_interval"]
+    threshold = cfg["threshold"]
+
+    # For each tunnel in the JSON, start a monitor thread
+    for tcfg in cfg["tunnels"]:
+        threading.Thread(
+            target=_monitor_single_tunnel,
+            args=(connections, program_config, tcfg, interval, threshold),
+            daemon=True
+        ).start()
+
+
+def _monitor_single_tunnel(connections, program_config, tcfg, interval, threshold):
+    name        = tcfg["name"]
+    table       = tcfg["table"]
+    counter     = tcfg["counter"]
+    mf          = tcfg["match_field"]
+    idxs        = tcfg["counter_index"]
+    states      = tcfg["states"]
+
+    swA = connections[tcfg["switchA"]]
+    swB = connections[tcfg["switchB"]]
+    hA  = program_config[tcfg["switchA"]]["helper"]
+    hB  = program_config[tcfg["switchB"]]["helper"]
+
+    current_state = 0
+    print(f"📡 Starting tunnel monitor '{name}' between {swA.name} ⇄ {swB.name}")
 
     while True:
-        # Read counters for tunnel traffic at r1
-        count_r1_up   = read_counter(L3M_helper, r1, tunnel_counter, 2) # port 2 is up
-        count_r1_down = read_counter(L3M_helper, r1, tunnel_counter, 3) # port 3 is down
+        # read counter helper
+        def read_sw(sw, helper, idx):
+            return next(
+                (e.counter_entry.data.packet_count
+                 for r in sw.ReadCounters(helper.get_counters_id(counter), idx)
+                   for e in r.entities
+                   if e.HasField("counter_entry")),
+                0
+            )
 
-        # Read counters for tunnel traffic at r4
-        count_r4_up   = read_counter(L3MF_helper, r4, tunnel_counter, 3) # port 3 is up
-        count_r4_down = read_counter(L3MF_helper, r4, tunnel_counter, 2) # port 2 is down
+        upA   = read_sw(swA, hA, idxs["A_up"])
+        downA = read_sw(swA, hA, idxs["A_down"])
+        upB   = read_sw(swB, hB, idxs["B_up"])
+        downB = read_sw(swB, hB, idxs["B_down"])
 
-        # Print individual counter values for r1 and r4
-        print(f"r1 Tunnel UP: {count_r1_up} pacotes, r1 Tunnel DOWN: {count_r1_down} pacotes")
-        print(f"r4 Tunnel UP: {count_r4_up} pacotes, r4 Tunnel DOWN: {count_r4_down} pacotes")
+        total_up   = upA + upB
+        total_down = downA + downB
+        print(f"[{name}] up={total_up}, down={total_down}")
 
-        # Calculate total traffic for each tunnel
-        total_tunnel_up = count_r1_up + count_r4_up
-        total_tunnel_down = count_r1_down + count_r4_down
+        if abs(total_up - total_down) > threshold:
+            # toggle state
+            cur = states[current_state]
+            nxt = states[1 - current_state]
 
-        # Print the total packet count for each tunnel
-        print(f"Tunnel UP total: {total_tunnel_up} packets, Tunnel DOWN total: {total_tunnel_down} packets")
+            # write out new label assignments for both switches
+            for sw, helper, labels in [
+                (swA, hA, nxt["A_labels"]),
+                (swB, hB, nxt["B_labels"])
+            ]:
+                for match_val, lbl in labels.items():
+                    writeTableEntry(
+                        helper, sw,
+                        table,
+                        {mf: int(match_val)},
+                        "MyIngress.addMSLP",
+                        {"labels": lbl},
+                        modify=True
+                    )
 
-        # Decide whether to change the preferred tunnel based on thresholds
-        if abs(total_tunnel_up - total_tunnel_down) > 50: 
-            if current_state == 0:
-                # Switch to labels state 1
-                writeTableEntry(L3M_helper,  r1, table, {match: 0x1}, action, {l: 0x1020202030204010}, modify=True)
-                writeTableEntry(L3M_helper,  r1, table, {match: 0x0}, action, {l: 0x1030602050204010}, modify=True)
-                writeTableEntry(L3MF_helper, r4, table, {match: 0x1}, action, {l: 0x4030301020101010}, modify=True)
-                writeTableEntry(L3MF_helper, r4, table, {match: 0x0}, action, {l: 0x4020501060101010}, modify=True)
-                current_state = 1
-                print("➡️ Change to labels state 1")
-            else:
-                # Switch to labels state 0
-                writeTableEntry(L3M_helper,  r1, table, {match: 0x0}, action, {l: 0x1020202030204010}, modify=True)
-                writeTableEntry(L3M_helper,  r1, table, {match: 0x1}, action, {l: 0x1030602050204010}, modify=True)
-                writeTableEntry(L3MF_helper, r4, table, {match: 0x0}, action, {l: 0x4030301020101010}, modify=True)
-                writeTableEntry(L3MF_helper, r4, table, {match: 0x1}, action, {l: 0x4020501060101010}, modify=True)
-                current_state = 0
-                print("⬅️ Change to labels state 0")
+            current_state = 1 - current_state
+            print(f"[{name}] switched to state {current_state}")
         else:
-            print("No change necessary")
+            print(f"[{name}] no switch needed")
 
-        # Print the current labels state
-        print(f"Current labels state: {current_state}\n")
-        
-        # Wait before the next iteration
-        sleep(30)
+        sleep(interval)
 
-def read_counter(p4info_helper, switch, counter_name, index):
-    try:
-        counter_id = p4info_helper.get_counters_id(counter_name)
-        for response in switch.ReadCounters(counter_id, index):
-            for entity in response.entities:
-                if entity.HasField("counter_entry"):
-                    counter_entry = entity.counter_entry
-                    return counter_entry.data.packet_count
-        return 0
-    except Exception as e:
-        print(f"Error reading counter {counter_name} [{index}]: {e}")
-        return 0
 
 # Function to read the current table rules from the switch and store the known values
 def readTableRules(connections, program_config, state):
@@ -538,7 +547,7 @@ def printControllerState(state):
 
 
 # Main function that initializes P4Runtime connections and performs setup
-def main(switches_config_path, switch_programs_path, ):
+def main(switches_config_path, switch_programs_path, tunnels_config_path):
 
     # Variables to store the state of the tables
     state = {}
@@ -577,15 +586,8 @@ def main(switches_config_path, switch_programs_path, ):
             # Note: s1 is empty before any traffic
             printTableRules(program_config[sw_name]["helper"], switch) 
 
-
-        r1 = connections["r1"]
-        r1_helper = program_config["r1"]["helper"]
-        r4 = connections["r4"]
-        r4_helper = program_config["r4"]["helper"]
         # Thread to handle load balancing between the tunnels
-        t = threading.Thread(target=changeTunnelRules, args=(r1_helper, r4_helper, r1, r4,), daemon=True)
-        t.start()
-
+        changeTunnelRules(connections, program_config, tunnels_config_path)
 
         s1 = connections["s1"]
         s1_helper = program_config["s1"]["helper"]
@@ -631,6 +633,8 @@ if __name__ == '__main__':
                         help='json file with the switches configuration')
     parser.add_argument('--programs', type=str, action="store", required=True,
                         help='json file with the P4 programs configuration')
+    parser.add_argument('--tunnels', type=str, action="store", required=True,
+                        help='json file with the tunnels configuration')
 
     args = parser.parse_args()
 
@@ -641,7 +645,11 @@ if __name__ == '__main__':
         parser.exit(1)
     if not os.path.exists(args.programs):
         parser.print_help()
-        print("\programs file not found:")
+        print("\nprograms file not found:")
+        parser.exit(1)
+    if not os.path.exists(args.tunnels):
+        parser.print_help()
+        print("\ntunnels file not found:")
         parser.exit(1)
     
-    main(args.config, args.programs)
+    main(args.config, args.programs, args.tunnels)
