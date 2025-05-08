@@ -6,5 +6,4 @@
     "MyIngress.checkDirection": "NoAction",
     "MyIngress.allowedPortsTCP": "NoAction",
     "MyIngress.allowedPortsUDP": "NoAction"
-  }
-  
+}

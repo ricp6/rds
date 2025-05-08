@@ -1,0 +1,79 @@
+{
+    "MyIngress.tunnelLookup": {
+        "{\"meta.tunnel\": 0}": {
+            "action": "MyIngress.addMSLP",
+            "params": {
+                "labels": "0x1020202030204010"
+            }
+        },
+        "{\"meta.tunnel\": 1}": {
+            "action": "MyIngress.addMSLP",
+            "params": {
+                "labels": "0x1030602050204010"
+            }
+        }
+    },
+    "MyIngress.ipv4Lpm": {
+        "{\"hdr.ipv4.dstAddr\": [\"10.0.1.1\", 32]}": {
+            "action": "MyIngress.forward",
+            "params": {
+                "egressPort": 1,
+                "nextHopMac": "aa:00:00:00:00:01"
+            }
+        },
+        "{\"hdr.ipv4.dstAddr\": [\"10.0.1.2\", 32]}": {
+            "action": "MyIngress.forward",
+            "params": {
+                "egressPort": 1,
+                "nextHopMac": "aa:00:00:00:00:02"
+            }
+        },
+        "{\"hdr.ipv4.dstAddr\": [\"10.0.1.3\", 32]}": {
+            "action": "MyIngress.forward",
+            "params": {
+                "egressPort": 1,
+                "nextHopMac": "aa:00:00:00:00:03"
+            }
+        }
+    },
+    "MyIngress.labelLookup": {
+        "{\"hdr.labels[0].label\": 0x1010}": {
+            "action": "MyIngress.removeMSLP",
+            "params": {}
+        },
+        "{\"hdr.labels[0].label\": 0x1020}": {
+            "action": "MyIngress.forwardTunnel",
+            "params": {
+                "egressPort": 2,
+                "nextHopMac": "aa:00:00:00:02:01"
+            }
+        },
+        "{\"hdr.labels[0].label\": 0x1030}": {
+            "action": "MyIngress.forwardTunnel",
+            "params": {
+                "egressPort": 3,
+                "nextHopMac": "aa:00:00:00:06:01"
+            }
+        }
+    },
+    "MyIngress.internalMacLookup": {
+        "{\"standard_metadata.egress_spec\": 1}": {
+            "action": "MyIngress.rewriteMacs",
+            "params": {
+                "srcMac": "aa:00:00:00:01:01"
+            }
+        },
+        "{\"standard_metadata.egress_spec\": 2}": {
+            "action": "MyIngress.rewriteMacs",
+            "params": {
+                "srcMac": "aa:00:00:00:01:02"
+            }
+        },
+        "{\"standard_metadata.egress_spec\": 3}": {
+            "action": "MyIngress.rewriteMacs",
+            "params": {
+                "srcMac": "aa:00:00:00:01:03"
+            }
+        }
+    }
+}

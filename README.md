@@ -4,10 +4,10 @@
 
 1. **Start Compile P4 program with API description in P4Info file:**
 ```bash
-p4c-bm2-ss --std p4-16  p4/l2switch.p4 -o json/l2switch.json --p4runtime-files json/l2switch.p4info.txt
-p4c-bm2-ss --std p4-16  p4/l3switch_tunnel.p4 -o json/l3switch_tunnel.json  --p4runtime-files json/l3switch_tunnel.p4info.txt
-p4c-bm2-ss --std p4-16  p4/l3switch_mslp.p4 -o json/l3switch_mslp.json  --p4runtime-files json/l3switch_mslp.p4info.txt
-p4c-bm2-ss --std p4-16  p4/l3switch_mslp_firewall.p4 -o json/l3switch_mslp_firewall.json  --p4runtime-files json/l3switch_mslp_firewall.p4info.txt
+p4c-bm2-ss --std p4-16  p4/l2switch.p4 -o configs/json/l2switch.json --p4runtime-files configs/p4info/l2switch.p4info.txt
+p4c-bm2-ss --std p4-16  p4/l3switch_tunnel.p4 -o configs/json/l3switch_tunnel.json  --p4runtime-files configs/p4info/l3switch_tunnel.p4info.txt
+p4c-bm2-ss --std p4-16  p4/l3switch_mslp.p4 -o configs/json/l3switch_mslp.json  --p4runtime-files configs/p4info/l3switch_mslp.p4info.txt
+p4c-bm2-ss --std p4-16  p4/l3switch_mslp_firewall.p4 -o configs/json/l3switch_mslp_firewall.json  --p4runtime-files configs/p4info/l3switch_mslp_firewall.p4info.txt
 ```
 
 2. **Run the mininet script (terminal 1):**
@@ -17,7 +17,7 @@ sudo python3 mininet/tp-topo.py
 
 3. **Run the controller (terminal 2):**
 ```bash
-python3 controller/tp-controller.py --p4infoL2 json/l2switch.p4info.txt --p4infoL3M json/l3switch_mslp.p4info.txt --p4infoL3MF json/l3switch_mslp_firewall.p4info.txt --p4infoL3T json/l3switch_tunnel.p4info.txt --jsonL2 json/l2switch.json --jsonL3M json/l3switch_mslp.json --jsonL3MF json/l3switch_mslp_firewall.json --jsonL3T json/l3switch_tunnel.json
+python3 controller/tp-controller.py --config configs/switches_config.json --programs configs/switches_programs.json
 ```
 
 

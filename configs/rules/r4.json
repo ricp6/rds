@@ -1,0 +1,115 @@
+{
+    "MyIngress.tunnelLookup": {
+        "{\"meta.tunnel\": 0}": {
+            "action": "MyIngress.addMSLP",
+            "params": {
+                "labels": "0x4030301020101010"
+            }
+        },
+        "{\"meta.tunnel\": 1}": {
+            "action": "MyIngress.addMSLP",
+            "params": {
+                "labels": "0x4020501060101010"
+            }
+        }
+    },
+    "MyIngress.ipv4Lpm": {
+        "{\"hdr.ipv4.dstAddr\": [\"10.0.2.1\", 32]}": {
+            "action": "MyIngress.forward",
+            "params": {
+                "egressPort": 1,
+                "nextHopMac": "aa:00:00:00:00:04"
+            }
+        }
+    },
+    "MyIngress.labelLookup": {
+        "{\"hdr.labels[0].label\": 0x4010}": {
+            "action": "MyIngress.removeMSLP",
+            "params": {}
+        },
+        "{\"hdr.labels[0].label\": 0x4020}": {
+            "action": "MyIngress.forwardTunnel",
+            "params": {
+                "egressPort": 2,
+                "nextHopMac": "aa:00:00:00:05:02"
+            }
+        },
+        "{\"hdr.labels[0].label\": 0x4030}": {
+            "action": "MyIngress.forwardTunnel",
+            "params": {
+                "egressPort": 3,
+                "nextHopMac": "aa:00:00:00:03:02"
+            }
+        }
+    },
+    "MyIngress.internalMacLookup": {
+        "{\"standard_metadata.egress_spec\": 1}": {
+            "action": "MyIngress.rewriteMacs",
+            "params": {
+                "srcMac": "aa:00:00:00:04:01"
+            }
+        },
+        "{\"standard_metadata.egress_spec\": 2}": {
+            "action": "MyIngress.rewriteMacs",
+            "params": {
+                "srcMac": "aa:00:00:00:04:02"
+            }
+        },
+        "{\"standard_metadata.egress_spec\": 3}": {
+            "action": "MyIngress.rewriteMacs",
+            "params": {
+                "srcMac": "aa:00:00:00:04:03"
+            }
+        }
+    },
+    "MyIngress.checkDirection": {
+        "{\"meta.ingress_port\": 1, \"standard_metadata.egress_spec\": 2}": {
+            "action": "MyIngress.setDirection",
+            "params": {
+                "dir": 0
+            }
+        },
+        "{\"meta.ingress_port\": 1, \"standard_metadata.egress_spec\": 3}": {
+            "action": "MyIngress.setDirection",
+            "params": {
+                "dir": 0
+            }
+        },
+        "{\"meta.ingress_port\": 2, \"standard_metadata.egress_spec\": 1}": {
+            "action": "MyIngress.setDirection",
+            "params": {
+                "dir": 1
+            }
+        },
+        "{\"meta.ingress_port\": 2, \"standard_metadata.egress_spec\": 3}": {
+            "action": "MyIngress.setDirection",
+            "params": {
+                "dir": 0
+            }
+        },
+        "{\"meta.ingress_port\": 3, \"standard_metadata.egress_spec\": 1}": {
+            "action": "MyIngress.setDirection",
+            "params": {
+                "dir": 1
+            }
+        },
+        "{\"meta.ingress_port\": 3, \"standard_metadata.egress_spec\": 2}": {
+            "action": "MyIngress.setDirection",
+            "params": {
+                "dir": 0
+            }
+        }
+    },
+    "MyIngress.allowedPortsTCP": {
+        "{\"hdr.tcp.dstPort\": 81}": {
+            "action": "NoAction",
+            "params": {}
+        }
+    },
+    "MyIngress.allowedPortsUDP": {
+        "{\"hdr.udp.dstPort\": 53}": {
+            "action": "NoAction",
+            "params": {}
+        }
+    }
+}

@@ -1,0 +1,44 @@
+{
+    "s1": {
+        "p4info_path": "configs/p4info/l2switch.p4info.txt",
+        "json_path": "configs/json/l2switch.json",
+        "default_actions_path": "configs/default_actions/s1.json",
+        "rules_path": "configs/rules/s1.json"
+    },
+    "r1": {
+        "p4info_path": "configs/p4info/l3switch_mslp.p4info.txt",
+        "json_path": "configs/json/l3switch_mslp.json",
+        "default_actions_path": "configs/default_actions/r1.json",
+        "rules_path": "configs/rules/r1.json"
+    },
+    "r2": {
+        "p4info_path": "configs/p4info/l3switch_tunnel.p4info.txt",
+        "json_path": "configs/json/l3switch_tunnel.json",
+        "default_actions_path": "configs/default_actions/r2.json",
+        "rules_path": "configs/rules/r2.json"
+    },
+    "r3": {
+        "p4info_path": "configs/p4info/l3switch_tunnel.p4info.txt",
+        "json_path": "configs/json/l3switch_tunnel.json",
+        "default_actions_path": "configs/default_actions/r3.json",
+        "rules_path": "configs/rules/r3.json"
+    },
+    "r4": {
+        "p4info_path": "configs/p4info/l3switch_mslp_firewall.p4info.txt",
+        "json_path": "configs/json/l3switch_mslp_firewall.json",
+        "default_actions_path": "configs/default_actions/r4.json",
+        "rules_path": "configs/rules/r4.json"
+    },
+    "r5": {
+        "p4info_path": "configs/p4info/l3switch_tunnel.p4info.txt",
+        "json_path": "configs/json/l3switch_tunnel.json",
+        "default_actions_path": "configs/default_actions/r5.json",
+        "rules_path": "configs/rules/r5.json"
+    },
+    "r6": {
+        "p4info_path": "configs/p4info/l3switch_tunnel.p4info.txt",
+        "json_path": "configs/json/l3switch_tunnel.json",
+        "default_actions_path": "configs/default_actions/r6.json",
+        "rules_path": "configs/rules/r6.json"
+    }
+}

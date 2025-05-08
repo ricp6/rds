@@ -50,6 +50,10 @@ cpuSessionId = 100
 def myDecodeMac(mac):
     return ':'.join(f'{byte:02x}' for byte in mac)
 
+def _to_hex(v: int) -> str:
+    # Format as 0x… using lowercase, adjust width if desired
+    return f"0x{v:x}"
+
 # Custom function to handle gRPC errors and display useful debugging information
 def printGrpcError(e):
     print("gRPC Error:", e.details(), end=' ')
@@ -198,20 +202,28 @@ def loadProgramConfig(programs_config_path):
     program_config = {}
 
     for sw_name, entry in config_data.items():
-        json_path = entry['json_path']
         helper_path = entry['p4info_path']
+        json_path = entry['json_path']
+        default_actions_path = entry['default_actions_path']
+        rules_path = entry['rules_path']
 
         helper = p4runtime_lib.helper.P4InfoHelper(helper_path)
-        program_config[sw_name] = (helper, json_path)
+        program_config[sw_name] = {
+            "helper": helper, 
+            "json": json_path,
+            "default_actions": default_actions_path,
+            "rules": rules_path
+        }
 
     return program_config
 
 # Function to install the P4 programs on all switches
-def installP4Programs(connections, program_config, state):
+def installP4Programs(connections, program_config):
     print("------ Installing P4 Programs... ------")
 
     for sw_name, sw_conn in connections.items():
-        expected_helper, json_path = program_config[sw_name]
+        expected_helper = program_config[sw_name]["helper"] 
+        json_path = program_config[sw_name]["json"]
         installed_p4info = sw_conn.GetInstalledP4Info()
 
         if installed_p4info is None:
@@ -233,7 +245,7 @@ def writeCloneEngines(connections, program_config):
     print("------ Installing MC Groups and Clone Sessions... ------")
     
     s1 = connections["s1"]
-    L2_helper, _ = program_config["s1"]  # Only L2 program needs to be handled here
+    L2_helper = program_config["s1"]["helper"]
     writeMcGroup(L2_helper, s1, mcSessionId)
     writeCpuSession(L2_helper, s1, cpuSessionId)
     print("------ MC Groups and Clone Sessions done! ------\n")
@@ -243,9 +255,10 @@ def writeDefaultActions(connections, program_config, state):
     print("------ Writing Default Actions... ------")
     
     for sw_name, sw in connections.items():
-        p4info_helper, _ = program_config[sw_name]
+        helper = program_config[sw_name]["helper"]
+        da_path = program_config[sw_name]["default_actions"]
         try:
-            with open(f"configs/default_actions/{sw_name}.json") as f:
+            with open(da_path) as f:
                 actions = json.load(f)
         except FileNotFoundError:
             print(f"No default actions config for {sw_name}, skipping...")
@@ -253,7 +266,7 @@ def writeDefaultActions(connections, program_config, state):
 
         for table_name, action_name in actions.items():
             state[sw_name][table_name] = {}
-            writeDefaultTableAction(p4info_helper, sw, table_name, action_name)
+            writeDefaultTableAction(helper, sw, table_name, action_name)
     
     print("------ Write Default Actions done! ------\n")
         
@@ -263,8 +276,14 @@ def writeStaticRules(connections, program_config, state):
 
     # Load the desired rules from JSON files
     for sw_name, switch in connections.items():
-        helper, _ = program_config[sw_name]
-        switch_rules = json.load(open(f"configs/rules/{sw_name}.json"))
+        helper = program_config[sw_name]["helper"]
+        rules_path = program_config[sw_name]["rules"]
+        try:
+            with open(rules_path) as f:
+                switch_rules = json.load(f)
+        except FileNotFoundError:
+            print(f"No default actions config for {sw_name}, skipping...")
+            continue
 
         for table, rules in switch_rules.items():
             for match, action_params in rules.items():
@@ -304,197 +323,6 @@ def compareAndWriteRules(helper, switch, table, match, expected_action, expected
             "action": expected_action,
             "params": expected_params
         }
-
-# Function to write the static tunnel selection rules
-def writeTunnelSelectionRules(L3M_helper, L3MF_helper, r1, r4, tLabels):
-    table = "MyIngress.tunnelLookup"
-    action = "MyIngress.addMSLP"
-    match = "meta.tunnel"
-    l = "labels"
-    
-    if 0x1020202030204010 not in tLabels:
-        writeTableEntry(L3M_helper,  r1, table, {match: 0}, action, {l: 0x1020202030204010})
-        tLabels.append(0x1020202030204010)
-    if 0x1030602050204010 not in tLabels:
-        writeTableEntry(L3M_helper,  r1, table, {match: 1}, action, {l: 0x1030602050204010})
-        tLabels.append(0x1030602050204010)
-    if 0x4030301020101010 not in tLabels:
-        writeTableEntry(L3MF_helper, r4, table, {match: 0}, action, {l: 0x4030301020101010})
-        tLabels.append(0x4030301020101010)
-    if 0x4020501060101010 not in tLabels:
-        writeTableEntry(L3MF_helper, r4, table, {match: 1}, action, {l: 0x4020501060101010})
-        tLabels.append(0x4020501060101010)
-
-# Function to write the static ipv4 forwarding rules
-def writeIPv4ForwardingRules(L3M_helper, L3MF_helper, r1, r4, ips):
-    table = "MyIngress.ipv4Lpm"
-    action = "MyIngress.forward"
-    match = "hdr.ipv4.dstAddr"
-    port = "egressPort"
-    mac = "nextHopMac"
-
-    if ("10.0.1.1", 32) not in ips:
-        writeTableEntry(L3M_helper,  r1, table, {match: ("10.0.1.1", 32)}, action, {port: 1, mac: "aa:00:00:00:00:01"})
-        ips.append(("10.0.1.1", 32))
-    if ("10.0.1.2", 32) not in ips:
-        writeTableEntry(L3M_helper,  r1, table, {match: ("10.0.1.2", 32)}, action, {port: 1, mac: "aa:00:00:00:00:02"})
-        ips.append(("10.0.1.2", 32))
-    if ("10.0.1.3", 32) not in ips:
-        writeTableEntry(L3M_helper,  r1, table, {match: ("10.0.1.3", 32)}, action, {port: 1, mac: "aa:00:00:00:00:03"})
-        ips.append(("10.0.1.3", 32))
-    if ("10.0.2.1", 32) not in ips:
-        writeTableEntry(L3MF_helper, r4, table, {match: ("10.0.2.1", 32)}, action, {port: 1, mac: "aa:00:00:00:00:04"})
-        ips.append(("10.0.2.1", 32))
-
-# Function to write the static label forwarding rules
-def writeLabelForwardingRules(L3M_helper, L3MF_helper, L3T_helper, r1,r2,r3,r4,r5,r6, labels):
-    table = "MyIngress.labelLookup"
-    frwdTunnel = "MyIngress.forwardTunnel"
-    removeMSLP = "MyIngress.removeMSLP"
-    match = "hdr.labels[0].label"
-    port = "egressPort"
-    mac = "nextHopMac"
-
-    if 0x1010 not in labels:
-        writeTableEntry(L3M_helper, r1, table, {match: 0x1010}, removeMSLP, None)
-        labels.append(0x1010)
-    if 0x1020 not in labels:
-        writeTableEntry(L3M_helper, r1, table, {match: 0x1020}, frwdTunnel, {port: 2, mac: "aa:00:00:00:02:01"})
-        labels.append(0x1020)
-    if 0x1030 not in labels:
-        writeTableEntry(L3M_helper, r1, table, {match: 0x1030}, frwdTunnel, {port: 3, mac: "aa:00:00:00:06:01"})
-        labels.append(0x1030)
-
-    if 0x2010 not in labels:
-        writeTableEntry(L3T_helper, r2, table, {match: 0x2010}, frwdTunnel, {port: 1, mac: "aa:00:00:00:01:02"})
-        labels.append(0x2010)
-    if 0x2020 not in labels:
-        writeTableEntry(L3T_helper, r2, table, {match: 0x2020}, frwdTunnel, {port: 2, mac: "aa:00:00:00:03:01"})
-        labels.append(0x2020)
-
-    if 0x3010 not in labels:
-        writeTableEntry(L3T_helper, r3, table, {match: 0x3010}, frwdTunnel, {port: 1, mac: "aa:00:00:00:02:02"})
-        labels.append(0x3010)
-    if 0x3020 not in labels:
-        writeTableEntry(L3T_helper, r3, table, {match: 0x3020}, frwdTunnel, {port: 2, mac: "aa:00:00:00:04:03"})
-        labels.append(0x3020)
-
-    if 0x4010 not in labels:
-        writeTableEntry(L3MF_helper, r4, table, {match: 0x4010}, removeMSLP, None)
-        labels.append(0x4010)
-    if 0x4020 not in labels:
-        writeTableEntry(L3MF_helper, r4, table, {match: 0x4020}, frwdTunnel, {port: 2, mac: "aa:00:00:00:05:02"})
-        labels.append(0x4020)
-    if 0x4030 not in labels:
-        writeTableEntry(L3MF_helper, r4, table, {match: 0x4030}, frwdTunnel, {port: 3, mac: "aa:00:00:00:03:02"})
-        labels.append(0x4030)
-
-    if 0x5010 not in labels:
-        writeTableEntry(L3T_helper, r5, table, {match: 0x5010}, frwdTunnel, {port: 1, mac: "aa:00:00:00:06:02"})
-        labels.append(0x5010)
-    if 0x5020 not in labels:
-        writeTableEntry(L3T_helper, r5, table, {match: 0x5020}, frwdTunnel, {port: 2, mac: "aa:00:00:00:04:02"})
-        labels.append(0x5020)
-
-    if 0x6010 not in labels:
-        writeTableEntry(L3T_helper, r6, table, {match: 0x6010}, frwdTunnel, {port: 1, mac: "aa:00:00:00:01:03"})
-        labels.append(0x6010)
-    if 0x6020 not in labels:
-        writeTableEntry(L3T_helper, r6, table, {match: 0x6020}, frwdTunnel, {port: 2, mac: "aa:00:00:00:05:01"})
-        labels.append(0x6020)
-
-# Function to write the static internal macs rules
-def writeMacRules(L3M_helper, L3MF_helper, L3T_helper, r1,r2,r3,r4,r5,r6, iMacs):
-    table = "MyIngress.internalMacLookup"
-    action = "MyIngress.rewriteMacs"
-    match = "standard_metadata.egress_spec"
-    mac = "srcMac"
-
-    if "aa:00:00:00:01:01" not in iMacs:
-        writeTableEntry(L3M_helper, r1, table, {match: 1}, action, {mac: "aa:00:00:00:01:01"})
-        iMacs.append("aa:00:00:00:01:01")
-    if "aa:00:00:00:01:02" not in iMacs:
-        writeTableEntry(L3M_helper, r1, table, {match: 2}, action, {mac: "aa:00:00:00:01:02"})
-        iMacs.append("aa:00:00:00:01:02")
-    if "aa:00:00:00:01:03" not in iMacs:
-        writeTableEntry(L3M_helper, r1, table, {match: 3}, action, {mac: "aa:00:00:00:01:03"})
-        iMacs.append("aa:00:00:00:01:03")
-
-    if "aa:00:00:00:02:01" not in iMacs:
-        writeTableEntry(L3T_helper, r2, table, {match: 1}, action, {mac: "aa:00:00:00:02:01"})
-        iMacs.append("aa:00:00:00:02:01")
-    if "aa:00:00:00:02:02" not in iMacs:
-        writeTableEntry(L3T_helper, r2, table, {match: 2}, action, {mac: "aa:00:00:00:02:02"})
-        iMacs.append("aa:00:00:00:02:02")
-
-    if "aa:00:00:00:03:01" not in iMacs:
-        writeTableEntry(L3T_helper, r3, table, {match: 1}, action, {mac: "aa:00:00:00:03:01"})
-        iMacs.append("aa:00:00:00:03:01")
-    if "aa:00:00:00:03:02" not in iMacs:
-        writeTableEntry(L3T_helper, r3, table, {match: 2}, action, {mac: "aa:00:00:00:03:02"})
-        iMacs.append("aa:00:00:00:03:02")
-
-    if "aa:00:00:00:04:01" not in iMacs:
-        writeTableEntry(L3MF_helper,r4, table, {match: 1}, action, {mac: "aa:00:00:00:04:01"})
-        iMacs.append("aa:00:00:00:04:01")
-    if "aa:00:00:00:04:02" not in iMacs:
-        writeTableEntry(L3MF_helper,r4, table, {match: 2}, action, {mac: "aa:00:00:00:04:02"})
-        iMacs.append("aa:00:00:00:04:02")
-    if "aa:00:00:00:04:03" not in iMacs:
-        writeTableEntry(L3MF_helper,r4, table, {match: 3}, action, {mac: "aa:00:00:00:04:03"})
-        iMacs.append("aa:00:00:00:04:03")
-        
-    if "aa:00:00:00:05:01" not in iMacs:
-        writeTableEntry(L3T_helper, r5, table, {match: 1}, action, {mac: "aa:00:00:00:05:01"})
-        iMacs.append("aa:00:00:00:05:01")
-    if "aa:00:00:00:05:02" not in iMacs:
-        writeTableEntry(L3T_helper, r5, table, {match: 2}, action, {mac: "aa:00:00:00:05:02"})
-        iMacs.append("aa:00:00:00:05:02")
-        
-    if "aa:00:00:00:06:01" not in iMacs:
-        writeTableEntry(L3T_helper, r6, table, {match: 1}, action, {mac: "aa:00:00:00:06:01"})
-        iMacs.append("aa:00:00:00:06:01")
-    if "aa:00:00:00:06:02" not in iMacs:
-        writeTableEntry(L3T_helper, r6, table, {match: 2}, action, {mac: "aa:00:00:00:06:02"})
-        iMacs.append("aa:00:00:00:06:02")
-
-# Function to write the static firewall rules
-def writeFirewallRules(L3MF_helper, r4, dirs, tcpPorts, udpPorts):
-    dirTable = "MyIngress.checkDirection"
-    tcpTable = "MyIngress.allowedPortsTCP"
-    udpTable = "MyIngress.allowedPortsUDP"
-    action = "MyIngress.setDirection"
-    matchIngress = "meta.ingress_port"
-    matchEgress = "standard_metadata.egress_spec"
-    matchTcp = "hdr.tcp.dstPort"
-    matchUdp = "hdr.udp.dstPort"
-    d = "dir"
-
-    if (1,2) not in dirs:
-        writeTableEntry(L3MF_helper, r4, dirTable, {matchIngress: 1, matchEgress: 2}, action, {d: 0})
-        dirs.append((1,2))
-    if (1,3) not in dirs:
-        writeTableEntry(L3MF_helper, r4, dirTable, {matchIngress: 1, matchEgress: 3}, action, {d: 0})
-        dirs.append((1,3))
-    if (2,1) not in dirs:
-        writeTableEntry(L3MF_helper, r4, dirTable, {matchIngress: 2, matchEgress: 1}, action, {d: 1})
-        dirs.append((2,1))
-    if (2,3) not in dirs:
-        writeTableEntry(L3MF_helper, r4, dirTable, {matchIngress: 2, matchEgress: 3}, action, {d: 0})
-        dirs.append((2,3))
-    if (3,1) not in dirs:
-        writeTableEntry(L3MF_helper, r4, dirTable, {matchIngress: 3, matchEgress: 1}, action, {d: 1})
-        dirs.append((3,1))
-    if (3,2) not in dirs:
-        writeTableEntry(L3MF_helper, r4, dirTable, {matchIngress: 3, matchEgress: 2}, action, {d: 0})
-        dirs.append((3,2))
-
-    if 81 not in tcpPorts:
-        writeTableEntry(L3MF_helper, r4, tcpTable, {matchTcp: 81}, "NoAction", None)
-        tcpPorts.append(81)
-    if 53 not in udpPorts:
-        writeTableEntry(L3MF_helper, r4, udpTable, {matchUdp: 53}, "NoAction", None)
-        udpPorts.append(53)
 
 # Function to dynamicly change the tunnel selection rules according to traffic metrics
 def changeTunnelRules(L3M_helper, L3MF_helper, r1, r4):
@@ -552,8 +380,7 @@ def changeTunnelRules(L3M_helper, L3MF_helper, r1, r4):
         print(f"Current labels state: {current_state}\n")
         
         # Wait before the next iteration
-        sleep(7)
-
+        sleep(30)
 
 def read_counter(p4info_helper, switch, counter_name, index):
     try:
@@ -572,171 +399,119 @@ def read_counter(p4info_helper, switch, counter_name, index):
 def readTableRules(connections, program_config, state):
     
     for sw_name, sw in connections.items():
-        helper, _ = program_config[sw_name]
-        if sw.HasP4ProgramInstalled():
-
-            for response in sw.ReadTableEntries():
-                for entity in response.entities:
-                    entry = entity.table_entry
-                    table_name = helper.get_tables_name(entry.table_id)
-
-                    # Now handle specific table and entry cases
-                    if table_name == "MyIngress.ipv4Lpm":
-                        enc_ip = helper.get_match_field_value(entry.match[0])
-                        dec_ip = decodeIPv4(enc_ip[0])
-                        mask = enc_ip[1]
-                        ip = (dec_ip, mask)
-                        state[sw_name][table_name][str(ip)] = {
-                            "action": "MyIngress.forward",  # Example action
-                            "params": {"port": 80}  # Example parameters
-                        }
-                    
-                    elif table_name == "MyIngress.labelLookup":
-                        label = decodeNum(helper.get_match_field_value(entry.match[0]))
-                        state[sw_name][table_name][str(label)] = {
-                            "action": "MyIngress.drop",
-                            "params": {}
-                        }
-
-                    elif table_name == "MyIngress.internalMacLookup":
-                        imac = myDecodeMac(entry.action.action.params[0].value)
-                        state[sw_name][table_name][str(imac)] = {
-                            "action": "MyIngress.learnMac",
-                            "params": {}
-                        }
-
-                    elif table_name == "MyIngress.tunnelLookup":
-                        tl = decodeNum(entry.action.action.params[0].value)
-                        state[sw_name][table_name][str(tl)] = {
-                            "action": "MyIngress.addTunnel",
-                            "params": {}
-                        }
-
-                    elif table_name == "MyIngress.checkDirection":
-                        ingress = helper.get_match_field_value(entry.match[0])
-                        egress = helper.get_match_field_value(entry.match[1])
-                        dir = (decodeNum(ingress), decodeNum(egress))
-                        state[sw_name][table_name][str(dir)] = {
-                            "action": "MyIngress.setDirection",
-                            "params": {}
-                        }
-    
-# Function to read the current table rules from the switch and print them
-def readSwitch(helper, s1, macList):
-    """
-    Reads the table entries from all tables on the switch and populates 
-    the correct state variable if needed.
-
-    :param helper: the P4Info helper
-    :param s1: the switch connection
-    :param mac_list: variable to store the macs known by s1
-    """
-    if s1.HasP4ProgramInstalled():
-        for response in s1.ReadTableEntries():
+        helper = program_config[sw_name]["helper"]
+        if not sw.HasP4ProgramInstalled():
+            continue
+        
+        for response in sw.ReadTableEntries():
             for entity in response.entities:
                 entry = entity.table_entry
-                table_name = helper.get_tables_name(entry.table_id)
+                table = helper.get_tables_name(entry.table_id)
 
-                if table_name == "MyIngress.sMacLookup":
+                # 1. IPv4 LPM (leave as tuple of string/int)
+                if table == "MyIngress.ipv4Lpm":
+                    enc_ip = helper.get_match_field_value(entry.match[0])
+                    ip = (decodeIPv4(enc_ip[0]), enc_ip[1])
+                    action = helper.get_actions_name(entry.action.action.action_id)
+                    params = {
+                        p.param_id: p.value
+                        for p in entry.action.action.params
+                    }
+                    key = json.dumps({"hdr.ipv4.dstAddr": list(ip)})
+                    state[sw_name][table][key] = {
+                        "action": action,
+                        "params": params
+                    }
+
+                # 2. Label Lookup → store label as hex string
+                elif table == "MyIngress.labelLookup":
+                    lbl = decodeNum(helper.get_match_field_value(entry.match[0]))
+                    params = {
+                        p.param_id: p.value
+                        for p in entry.action.action.params
+                    }
+                    key = json.dumps({ "hdr.labels[0].label": _to_hex(lbl) })
+                    state[sw_name][table][key] = {
+                        "action": action,
+                        "params": params
+                    }
+
+                # 3. Internal MAC Lookup
+                elif table == "MyIngress.internalMacLookup":
+                    mac_key = myDecodeMac(helper.get_match_field_value(entry.match[0]))
+                    imac = myDecodeMac(entry.action.action.params[0].value)
+                    action = helper.get_actions_name(entry.action.action.action_id)
+                    state[sw_name][table][str(mac_key)] = {
+                        "action": action,
+                        "params": {"mac": imac}
+                    }
+
+                # 4. Tunnel Lookup → also hex
+                elif table == "MyIngress.tunnelLookup":
+                    tun = decodeNum(helper.get_match_field_value(entry.match[0]))
+                    lbl = decodeNum(entry.action.action.params[0].value)
+                    params = { "labels": _to_hex(lbl) }
+                    action = helper.get_actions_name(entry.action.action.action_id)
+                    key = json.dumps({ "meta.tunnel": tun })
+                    state[sw_name][table][key] = {
+                        "action": action, 
+                        "params": params
+                    }
+
+                # 5. Check Direction
+                elif table == "MyIngress.checkDirection":
+                    ingress = decodeNum(helper.get_match_field_value(entry.match[0]))
+                    egress = decodeNum(helper.get_match_field_value(entry.match[1]))
+                    action = helper.get_actions_name(entry.action.action.action_id)
+                    state[sw_name][table][str((ingress, egress))] = {
+                        "action": action,
+                        "params": {}
+                    }
+
+                # 6. Allowed TCP Ports + 7. Allowed UDP Ports
+                elif table == "MyIngress.allowedPortsTCP" or table == "MyIngress.allowedPortsUDP":
+                    port = decodeNum(helper.get_match_field_value(entry.match[0]))
+                    action = helper.get_actions_name(entry.action.action.action_id)
+                    state[sw_name][table][str(port)] = {
+                        "action": action,
+                        "params": {}
+                    }
+
+                # 8. sMacLookup (L2 MAC Learning)
+                elif table == "MyIngress.sMacLookup":
                     mac = myDecodeMac(helper.get_match_field_value(entry.match[0]))
-                    if mac not in macList:
-                        macList.append(mac)
-
-# Function to read the current table rules from the tunnel routers and store the known values
-def readTunnelRouter(helper, routers, labelList, iMacList):
-    """
-    Reads the table entries from all tables on the switch and populates 
-    the correct state variable if needed.
-
-    :param helper: the P4Info helper
-    :param routers: the switches connections
-    """
-    for r in routers:
-        if r.HasP4ProgramInstalled():    
-            for response in r.ReadTableEntries():
-                for entity in response.entities:
-                    entry = entity.table_entry
-                    table_name = helper.get_tables_name(entry.table_id)
-
-                    if table_name == "MyIngress.labelLookup":
-                        label = decodeNum(helper.get_match_field_value(entry.match[0]))
-                        if label not in labelList:
-                            labelList.append(label)
-
-                    elif table_name == "MyIngress.internalMacLookup":
-                        imac = myDecodeMac(entry.action.action.params[0].value)
-                        if imac not in iMacList:
-                            iMacList.append(imac)
-
-# Function to read the current table rules from the tunnel routers and store the known values
-def readMslpRouter(helper, routers, ips, iMacs, labels, tLabels):
-    """
-    Reads the table entries from all tables on the switch and populates 
-    the correct state variable if needed.
-
-    :param helper: the P4Info helper
-    :param routers: the switch connections
-    """
-    for r in routers:
-        if r.HasP4ProgramInstalled():
-            for response in r.ReadTableEntries():
-                for entity in response.entities:
-                    entry = entity.table_entry
-                    table_name = helper.get_tables_name(entry.table_id)
-
-                    if table_name == "MyIngress.ipv4Lpm":
-                        enc_ip = helper.get_match_field_value(entry.match[0])
-                        dec_ip = decodeIPv4(enc_ip[0])
-                        mask = enc_ip[1]
-                        ip = (dec_ip, mask)
-                        if ip not in ips:
-                            ips.append(ip)
-
-                    elif table_name == "MyIngress.labelLookup":
-                        label = decodeNum(helper.get_match_field_value(entry.match[0]))
-                        if label not in labels:
-                            labels.append(label)
-
-                    elif table_name == "MyIngress.internalMacLookup":
-                        imac = myDecodeMac(entry.action.action.params[0].value)
-                        if imac not in iMacs:
-                            iMacs.append(imac)
-
-                    elif table_name == "MyIngress.tunnelLookup":
-                        tl = decodeNum(entry.action.action.params[0].value)
-                        if tl not in tLabels:
-                            tLabels.append(tl)
-
-
-def printControllerState(state, macs):
+                    action = helper.get_actions_name(entry.action.action.action_id)
+                    state[sw_name][table][str(mac)] = {
+                        "action": action,
+                        "params": {}
+                    }
+    
+def printControllerState(state):
     print("---------- Controller State ----------")
     pprint(state)
-    print("macs: ", macs)
     print()
 
 
 
 # Main function that initializes P4Runtime connections and performs setup
-def main(p4infoL2_file_path, p4infoL3M_file_path, p4infoL3MF_file_path, p4infoL3T_file_path, 
-         jsonL2_file_path, jsonL3M_file_path, jsonL3MF_file_path, jsonL3T_file_path):
+def main(switches_config_path, switch_programs_path, ):
 
     # Variables to store the state of the tables
-    macs = []
     state = {}
 
     try:
         # Create P4Runtime connections to the switches
-        connections = createConnectionsToSwitches('configs/switches_config.json', state)
+        connections = createConnectionsToSwitches(switches_config_path, state)
         
         # Send master arbitration update message to establish this controller as
         # master (required by P4Runtime before performing any other write operation)
         sendMasterAtributionMessage(connections)
         
         # Load config files for the p4 programs
-        program_config = loadProgramConfig("configs/switch_programs.json")
+        program_config = loadProgramConfig(switch_programs_path)
 
         # Install the P4 programs on the switches if not yet installed
-        installP4Programs(connections, program_config, state)
+        installP4Programs(connections, program_config)
 
         # Write clone engines and their sessionId, if not written yet
         writeCloneEngines(connections, program_config)
@@ -748,28 +523,28 @@ def main(p4infoL2_file_path, p4infoL3M_file_path, p4infoL3MF_file_path, p4infoL3
         readTableRules(connections, program_config, state)
 
         # Check the state of the controller
-        printControllerState(state, macs)
+        printControllerState(state)
 
         # Write static rules to the L3 Switches, if not written yet
         writeStaticRules(connections, program_config, state)
 
         # Show all rules set in the tables
-        for switch in connections.values():
-            helper, _ = program_config[switch]
-            printTableRules(helper, switch) # Note: s1 is empty before any traffic
+        for sw_name, switch in connections.items():
+            # Note: s1 is empty before any traffic
+            printTableRules(program_config[sw_name]["helper"], switch) 
 
 
         r1 = connections["r1"]
-        L3M_helper, _ = program_config["r1"]
+        r1_helper = program_config["r1"]["helper"]
         r4 = connections["r4"]
-        L3MF_helper, _ = program_config["r4"]
+        r4_helper = program_config["r4"]["helper"]
         # Thread to handle load balancing between the tunnels
-        t = threading.Thread(target=changeTunnelRules, args=(L3M_helper, L3MF_helper, r1, r4,), daemon=True)
+        t = threading.Thread(target=changeTunnelRules, args=(r1_helper, r4_helper, r1, r4,), daemon=True)
         t.start()
 
 
         s1 = connections["s1"]
-        L2_helper, _ = program_config["s1"]  # Only L2 program needs to be handled here
+        s1_helper = program_config["s1"]["helper"]
         for response in s1.stream_msg_resp:
             # Check if the response contains a packet-in message
             if response.packet:
@@ -777,11 +552,18 @@ def main(p4infoL2_file_path, p4infoL3M_file_path, p4infoL3MF_file_path, p4infoL3
                 packet = Ether(raw(response.packet.payload))
                 if packet.type == 0x1234:
                     cpu_header = CpuHeader(bytes(packet.load))
+                    new_mac = cpu_header.macAddr  # e.g. "aa:bb:cc:dd:ee:ff"
+                    match_key = json.dumps({"hdr.eth.srcAddr": new_mac})
                     #print("mac: %012X ingress_port: %s " % (cpu_header.macAddr, cpu_header.ingressPort))
-                    if cpu_header.macAddr not in macs:
-                        writeMacSrcLookUp(L2_helper, s1, cpu_header.macAddr)
-                        writeMacDstLookUp(L2_helper, s1, cpu_header.macAddr, cpu_header.ingressPort)
-                        macs.append(cpu_header.macAddr)
+                    
+                    sw_state = state.setdefault("s1", {}).setdefault("MyIngress.sMacLookup", {})
+                    if match_key not in sw_state:
+                        writeMacSrcLookUp(s1_helper, s1, new_mac)
+                        writeMacDstLookUp(s1_helper, s1, new_mac, cpu_header.ingressPort)
+                        sw_state[match_key] = {
+                            "action": "NoAction",
+                            "params": {}
+                        }
                     #else:
                         #print("Rules already set")
             else:
@@ -801,60 +583,21 @@ def main(p4infoL2_file_path, p4infoL3M_file_path, p4infoL3MF_file_path, p4infoL3
 # Entry point for the script
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='P4Runtime Controller')
-    parser.add_argument('--p4infoL2', type=str, action="store", required=True,
-                        help='p4info proto in text format from p4c for L2 Switch')
-    parser.add_argument('--p4infoL3M', type=str, action="store", required=True,
-                        help='p4info proto in text format from p4c for L3 Switch with MSLP')
-    parser.add_argument('--p4infoL3MF', type=str, action="store", required=True,
-                        help='p4info proto in text format from p4c for L3 Switch with MSLP and Firewall')
-    parser.add_argument('--p4infoL3T', type=str, action="store", required=True,
-                        help='p4info proto in text format from p4c for L3 Switch with Tunnel')
-    
-    parser.add_argument('--jsonL2', type=str, action="store", required=True,
-                        help='BMv2 JSON file from p4c for L2 Switch')
-    parser.add_argument('--jsonL3M', type=str, action="store", required=True,
-                        help='BMv2 JSON file from p4c for L3 Switch with MSLP')
-    parser.add_argument('--jsonL3MF', type=str, action="store", required=True,
-                        help='BMv2 JSON file from p4c for L3 Switch with MSLP and Firewall')
-    parser.add_argument('--jsonL3T', type=str, action="store", required=True,
-                        help='BMv2 JSON file from p4c for L3 Switch with Tunnel')
+    parser.add_argument('--config', type=str, action="store", required=True,
+                        help='json file with the switches configuration')
+    parser.add_argument('--programs', type=str, action="store", required=True,
+                        help='json file with the P4 programs configuration')
 
     args = parser.parse_args()
 
     # Validate the provided paths for p4infos and JSONs files
-    if not os.path.exists(args.p4infoL2):
+    if not os.path.exists(args.config):
         parser.print_help()
-        print("\np4infoL2 file not found:")
+        print("\nconfig file not found:")
         parser.exit(1)
-    if not os.path.exists(args.p4infoL3M):
+    if not os.path.exists(args.programs):
         parser.print_help()
-        print("\np4infoL3M file not found:")
-        parser.exit(1)
-    if not os.path.exists(args.p4infoL3MF):
-        parser.print_help()
-        print("\np4infoL3MF file not found:")
-        parser.exit(1)
-    if not os.path.exists(args.p4infoL3T):
-        parser.print_help()
-        print("\np4infoL3T file not found:")
+        print("\programs file not found:")
         parser.exit(1)
     
-    if not os.path.exists(args.jsonL2):
-        parser.print_help()
-        print("\nBMv2 JSONL2 file not found:")
-        parser.exit(1)
-    if not os.path.exists(args.jsonL3M):
-        parser.print_help()
-        print("\nBMv2 JSONL3M file not found:")
-        parser.exit(1)
-    if not os.path.exists(args.jsonL3MF):
-        parser.print_help()
-        print("\nBMv2 JSONL3MF file not found:")
-        parser.exit(1)
-    if not os.path.exists(args.jsonL3T):
-        parser.print_help()
-        print("\nBMv2 JSONL3T file not found:")
-        parser.exit(1)
-    
-    main(args.p4infoL2, args.p4infoL3M, args.p4infoL3MF, args.p4infoL3T, 
-         args.jsonL2, args.jsonL3M, args.jsonL3MF, args.jsonL3T)
+    main(args.config, args.programs)

@@ -1,0 +1,32 @@
+{
+    "MyIngress.labelLookup": {
+        "{\"hdr.labels[0].label\": 0x3010}": {
+            "action": "MyIngress.forwardTunnel",
+            "params": {
+                "egressPort": 1,
+                "nextHopMac": "aa:00:00:00:02:02"
+            }
+        },
+        "{\"hdr.labels[0].label\": 0x3020}": {
+            "action": "MyIngress.forwardTunnel",
+            "params": {
+                "egressPort": 2,
+                "nextHopMac": "aa:00:00:00:04:03"
+            }
+        }
+    },
+    "MyIngress.internalMacLookup": {
+        "{\"standard_metadata.egress_spec\": 1}": {
+            "action": "MyIngress.rewriteMacs",
+            "params": {
+                "srcMac": "aa:00:00:00:03:01"
+            }
+        },
+        "{\"standard_metadata.egress_spec\": 2}": {
+            "action": "MyIngress.rewriteMacs",
+            "params": {
+                "srcMac": "aa:00:00:00:03:02"
+            }
+        }
+    }
+}

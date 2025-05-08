@@ -1,9 +1,0 @@
-{
-    "s1":  { "p4info_path": "json/l2switch.p4info.txt",               "json_path": "json/L2switch.json" },
-    "r1":  { "p4info_path": "json/l3switch_mslp.p4info.txt",          "json_path": "json/L3switch_mslp.json" },
-    "r2":  { "p4info_path": "json/l3switch_tunnel.p4info.txt",        "json_path": "json/L3switch_tunnel.json" },
-    "r3":  { "p4info_path": "json/l3switch_tunnel.p4info.txt",        "json_path": "json/L3switch_tunnel.json" },
-    "r4":  { "p4info_path": "json/l3switch_mslp_firewall.p4info.txt", "json_path": "json/L3switch_mslp_firewall.json" },
-    "r5":  { "p4info_path": "json/l3switch_tunnel.p4info.txt",        "json_path": "json/L3switch_tunnel.json" },
-    "r6":  { "p4info_path": "json/l3switch_tunnel.p4info.txt",        "json_path": "json/L3switch_tunnel.json" }
-}
