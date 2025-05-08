@@ -302,7 +302,6 @@ def writeStaticRules(connections, program_config, state):
 
         for table, rules in switch_rules.items():
             for match, action_params in rules.items():
-                pprint(match)
                 match_dict = json.loads(match)  # Assuming match is serialized as a JSON string
                 action = action_params["action"]
                 params = action_params["params"]
@@ -394,7 +393,7 @@ def readTableRules(connections, program_config, state):
                 elif table == "MyIngress.internalMacLookup":
                     port = decodeNum(helper.get_match_field_value(entry.match[0]))
                     imac = myDecodeMac(entry.action.action.params[0].value)
-                    params = {"mac": imac}
+                    params = {"srcMac": imac}
                     action = helper.get_actions_name(entry.action.action.action_id)
                     key = json.dumps({ "standard_metadata.egress_spec": port })
                     state[sw_name][table][key] = {
@@ -418,6 +417,8 @@ def readTableRules(connections, program_config, state):
                 elif table == "MyIngress.checkDirection":
                     ingress = decodeNum(helper.get_match_field_value(entry.match[0]))
                     egress = decodeNum(helper.get_match_field_value(entry.match[1]))
+                    direction = decodeNum(entry.action.action.params[0].value)
+                    params = { "dir": direction }
                     action = helper.get_actions_name(entry.action.action.action_id)
                     key = json.dumps({
                         "meta.ingress_port": ingress, 
@@ -425,7 +426,7 @@ def readTableRules(connections, program_config, state):
                     })
                     state[sw_name][table][key] = {
                         "action": action,
-                        "params": {}
+                        "params": params
                     }
 
                 # 6. Allowed TCP Ports
