@@ -2,43 +2,25 @@
     "check_interval": 30,
     "threshold": 50,
     "tunnels": [
-        {
-            "name": "primary",
-            "table": "MyIngress.tunnelLookup",
-            "counter": "MyIngress.tunnel_counter",
-            "match_field": "meta.tunnel",
-            "switchA": "r1",
-            "switchB": "r4",
-            "counter_index": {
-                "A_up": 2,
-                "A_down": 3,
-                "B_up": 3,
-                "B_down": 2
-            },
-            "states": [
-                {
-                    "id": 0,
-                    "A_labels": {
-                        "0": "0x1020202030204010",
-                        "1": "0x1030602050204010"
-                    },
-                    "B_labels": {
-                        "0": "0x4030301020101010",
-                        "1": "0x4020501060101010"
-                    }
-                },
-                {
-                    "id": 1,
-                    "A_labels": {
-                        "0": "0x1030602050204010",
-                        "1": "0x1020202030204010"
-                    },
-                    "B_labels": {
-                        "0": "0x4020501060101010",
-                        "1": "0x4030301020101010"
-                    }
-                }
-            ]
-        }
+      {
+        "name": "r1-to-r4",
+        "table": "MyIngress.tunnelLookup",
+        "match_field": "meta.tunnel",
+        "switchA": "r1",
+        "switchB": "r4",
+        "counter_index": { "A_up": 2, "A_down": 3, "B_up": 3, "B_down": 2 },
+        "states": [
+          {
+            "id": 0,
+            "labelsA": { "0": "0x1020202030204010", "1": "0x1030602050204010" },
+            "labelsB": { "0": "0x4030301020101010", "1": "0x4020501060101010" }
+          },
+          {
+            "id": 1,
+            "labelsA": { "0": "0x1030602050204010", "1": "0x1020202030204010" },
+            "labelsB": { "0": "0x4020501060101010", "1": "0x4030301020101010" }
+          }
+        ]
+      }
     ]
-}
+  }

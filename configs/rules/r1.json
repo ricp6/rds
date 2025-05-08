@@ -1,18 +1,4 @@
 {
-    "MyIngress.tunnelLookup": {
-        "{\"meta.tunnel\": 0}": {
-            "action": "MyIngress.addMSLP",
-            "params": {
-                "labels": "0x1020202030204010"
-            }
-        },
-        "{\"meta.tunnel\": 1}": {
-            "action": "MyIngress.addMSLP",
-            "params": {
-                "labels": "0x1030602050204010"
-            }
-        }
-    },
     "MyIngress.ipv4Lpm": {
         "{\"hdr.ipv4.dstAddr\": [\"10.0.1.1\", 32]}": {
             "action": "MyIngress.forward",

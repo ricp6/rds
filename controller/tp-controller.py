@@ -340,86 +340,6 @@ def compareAndWriteRules(helper, switch, table, match, expected_action, expected
             "params": expected_params
         }
 
-# Function to dynamicly change the tunnel selection rules according to traffic metrics
-def changeTunnelRules(connections, program_config, tunnels_config_path):
-    # Load our generic tunnel config
-    cfg = json.load(open(tunnels_config_path))
-    interval  = cfg["check_interval"]
-    threshold = cfg["threshold"]
-
-    # For each tunnel in the JSON, start a monitor thread
-    for tcfg in cfg["tunnels"]:
-        threading.Thread(
-            target=_monitor_single_tunnel,
-            args=(connections, program_config, tcfg, interval, threshold),
-            daemon=True
-        ).start()
-
-
-def _monitor_single_tunnel(connections, program_config, tcfg, interval, threshold):
-    name        = tcfg["name"]
-    table       = tcfg["table"]
-    counter     = tcfg["counter"]
-    mf          = tcfg["match_field"]
-    idxs        = tcfg["counter_index"]
-    states      = tcfg["states"]
-
-    swA = connections[tcfg["switchA"]]
-    swB = connections[tcfg["switchB"]]
-    hA  = program_config[tcfg["switchA"]]["helper"]
-    hB  = program_config[tcfg["switchB"]]["helper"]
-
-    current_state = 0
-    print(f"📡 Starting tunnel monitor '{name}' between {swA.name} ⇄ {swB.name}")
-
-    while True:
-        # read counter helper
-        def read_sw(sw, helper, idx):
-            return next(
-                (e.counter_entry.data.packet_count
-                 for r in sw.ReadCounters(helper.get_counters_id(counter), idx)
-                   for e in r.entities
-                   if e.HasField("counter_entry")),
-                0
-            )
-
-        upA   = read_sw(swA, hA, idxs["A_up"])
-        downA = read_sw(swA, hA, idxs["A_down"])
-        upB   = read_sw(swB, hB, idxs["B_up"])
-        downB = read_sw(swB, hB, idxs["B_down"])
-
-        total_up   = upA + upB
-        total_down = downA + downB
-        print(f"[{name}] up={total_up}, down={total_down}")
-
-        if abs(total_up - total_down) > threshold:
-            # toggle state
-            cur = states[current_state]
-            nxt = states[1 - current_state]
-
-            # write out new label assignments for both switches
-            for sw, helper, labels in [
-                (swA, hA, nxt["A_labels"]),
-                (swB, hB, nxt["B_labels"])
-            ]:
-                for match_val, lbl in labels.items():
-                    writeTableEntry(
-                        helper, sw,
-                        table,
-                        {mf: int(match_val)},
-                        "MyIngress.addMSLP",
-                        {"labels": lbl},
-                        modify=True
-                    )
-
-            current_state = 1 - current_state
-            print(f"[{name}] switched to state {current_state}")
-        else:
-            print(f"[{name}] no switch needed")
-
-        sleep(interval)
-
-
 # Function to read the current table rules from the switch and store the known values
 def readTableRules(connections, program_config, state):
     
@@ -538,11 +458,164 @@ def readTableRules(connections, program_config, state):
                     }
 
     print("------ Read Tables Rules done! ------\n")
-    
+
+# Function to print the current state of the controller    
 def printControllerState(state):
     print("---------- Controller State ----------")
     pprint(state)
     print()
+
+# Function to detect which tunnel state is active or initialize the first tunnel state if none is found
+def init_tunnel_states(connections, program_config, state, tunnels_config_path):
+    """
+    For each tunnel entry in tunnels_config.json:
+      - Try to detect its current installed state from `state[...]`
+      - If nothing is found, install state=0 and mirror into `state[...]`
+    Returns a dict: { tunnel_name: detected_state_id, … }
+    """
+    cfgs = json.load(open(tunnels_config_path))["tunnels"]
+    detected_states = {}
+    for tcfg in cfgs:
+        name   = tcfg["name"]
+        table  = tcfg["table"]
+        mf     = tcfg["match_field"]
+        swA    = tcfg["switchA"]
+
+        # ensure the nested state
+        state.setdefault(swA, {}).setdefault(table, {})
+
+        # Try to detect current state by matching labels
+        found = None
+        for s in tcfg["states"]:
+            # build the expected mapping of JSON‐serialized match→hexlabel
+            exp = {
+              json.dumps({mf:int(k)}, sort_keys=True): v
+              for k,v in s["labelsA"].items()
+            }
+            actual = {
+              k: entry["params"]["labels"]
+              for k,entry in state[swA][table].items()
+            }
+            if exp == actual:
+                found = s["id"]
+                break
+        
+        # if not found, install state 0
+        if found is None:
+            s0 = tcfg["states"][0]
+            print(f"[{name}] no existing config, installing initial state 0")
+            for side in ("A","B"):
+                sw   = connections[tcfg[f"switch{side}"]]
+                hlp  = program_config[tcfg[f"switch{side}"]]["helper"]
+                labels = s0[f"labels{side}"]
+
+                for match_val, hexlbl in labels.items():
+                    writeTableEntry(
+                        hlp, sw, table, {mf:int(match_val)},
+                        "MyIngress.addMSLP",
+                        {"labels": hexlbl},
+                        modify=False
+                    )
+                    # mirror into state
+                    key = json.dumps({mf:int(match_val)}, sort_keys=True)
+                    state[sw.name][table][key] = {
+                        "action":"MyIngress.addMSLP",
+                        "params":{"labels":hexlbl}
+                    }
+            found = 0
+        else:
+            print(f"[{name}] detected existing tunnel state {found}")
+        
+        detected_states[name] = found
+
+    return detected_states
+
+
+# Function to dynamicly change the tunnel selection rules according to traffic metrics
+def changeTunnelRules(connections, program_config, tunnels_config_path, tunnel_states, state):
+    # Load our generic tunnel config
+    cfgs      = json.load(open(tunnels_config_path))["tunnels"]
+    interval  = json.load(open(tunnels_config_path))["check_interval"]
+    threshold = json.load(open(tunnels_config_path))["threshold"]
+
+    # For each tunnel in the JSON, start a monitor thread
+    for tcfg in cfgs:
+        threading.Thread(
+            target=_monitor_single_tunnel,
+            args=(
+                connections, program_config, tcfg, 
+                interval, threshold, tunnel_states, state
+            ),
+            daemon=True
+        ).start()
+
+def _monitor_single_tunnel(connections, program_config, tcfg, interval, threshold, tunnel_states, state):
+    name        = tcfg["name"]
+    table       = tcfg["table"]
+    counter     = tcfg["counter"]
+    mf          = tcfg["match_field"]
+    idxs        = tcfg["counter_index"]
+    states      = tcfg["states"]
+    curr_state  = tunnel_states[name]
+
+    swA = connections[tcfg["switchA"]]
+    swB = connections[tcfg["switchB"]]
+    hA  = program_config[tcfg["switchA"]]["helper"]
+    hB  = program_config[tcfg["switchB"]]["helper"]
+
+    print(f"📡 Starting tunnel monitor '{name}' between {swA.name} ⇄ {swB.name}")
+
+    while True:
+        # read counter helper
+        def read_counter(sw, helper, idx):
+            return next(
+                (e.counter_entry.data.packet_count
+                 for r in sw.ReadCounters(helper.get_counters_id(counter), idx)
+                   for e in r.entities
+                   if e.HasField("counter_entry")),
+                0
+            )
+
+        upA   = read_counter(swA, hA, idxs["A_up"])
+        downA = read_counter(swA, hA, idxs["A_down"])
+        upB   = read_counter(swB, hB, idxs["B_up"])
+        downB = read_counter(swB, hB, idxs["B_down"])
+
+        total_up   = upA + upB
+        total_down = downA + downB
+        print(f"[{name}] up={total_up}, down={total_down}")
+
+        if abs(total_up - total_down) > threshold:
+            # toggle state
+            next_state = 1 - curr_state
+            nxt = states[next_state]
+
+            # write out new label assignments for both switches
+            for sw, helper, labels in [
+                (swA, hA, nxt["A_labels"]),
+                (swB, hB, nxt["B_labels"])
+            ]:
+                for match_val, lbl in labels.items():
+                    writeTableEntry(
+                        helper, sw, table,
+                        {mf: int(match_val)},
+                        "MyIngress.addMSLP",
+                        {"labels": lbl},
+                        modify=True
+                    )
+                    key = json.dumps({mf:int(match_val)}, sort_keys=True)
+                    state[sw.name][table][key] = {
+                        "action":"MyIngress.addMSLP",
+                        "params":{"labels":lbl}
+                    }
+
+            curr_state = next_state
+            tunnel_states[name] = next_state
+            print(f"[{name}] switched to state {curr_state}")
+        else:
+            print(f"[{name}] no switch needed")
+
+        sleep(interval)
 
 
 
@@ -586,8 +659,11 @@ def main(switches_config_path, switch_programs_path, tunnels_config_path):
             # Note: s1 is empty before any traffic
             printTableRules(program_config[sw_name]["helper"], switch) 
 
+        # Initialize the tunnel state and check if any tunnels are already active
+        tunnel_states = init_tunnel_states(connections, program_config, state, tunnels_config_path)
+        
         # Thread to handle load balancing between the tunnels
-        changeTunnelRules(connections, program_config, tunnels_config_path)
+        changeTunnelRules(connections, program_config, tunnels_config_path, tunnel_states, state)
 
         s1 = connections["s1"]
         s1_helper = program_config["s1"]["helper"]
@@ -623,7 +699,6 @@ def main(switches_config_path, switch_programs_path, tunnels_config_path):
         ShutdownAllSwitchConnections()
     except grpc.RpcError as e:
         printGrpcError(e) # Handle any gRPC errors that might occur
-
 
 
 # Entry point for the script
