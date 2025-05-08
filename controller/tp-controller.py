@@ -591,8 +591,8 @@ def _monitor_single_tunnel(connections, program_config, tcfg, interval, threshol
 
             # write out new label assignments for both switches
             for sw, helper, labels in [
-                (swA, hA, nxt["A_labels"]),
-                (swB, hB, nxt["B_labels"])
+                (swA, hA, nxt["labelsA"]),
+                (swB, hB, nxt["labelsB"])
             ]:
                 for match_val, lbl in labels.items():
                     writeTableEntry(
