@@ -167,7 +167,6 @@ class SwitchConnection(object):
             for response in self.client_stub.Read(request):
                 yield response
 
-
     def WritePREEntry(self, pre_entry, dry_run=False):
         request = p4runtime_pb2.WriteRequest()
         request.device_id = self.device_id
@@ -238,6 +237,40 @@ class SwitchConnection(object):
 
         except Exception as e:
             return None
+        
+    def DeleteTableEntry(self, table_entry, dry_run=False):
+        request = p4runtime_pb2.WriteRequest()
+        request.device_id = self.device_id
+        request.election_id.low = 1
+
+        update = request.updates.add()
+        update.type = p4runtime_pb2.Update.DELETE
+        update.entity.table_entry.CopyFrom(table_entry)
+
+        if dry_run:
+            print("P4Runtime Delete:", request)
+        else:
+            self.client_stub.Write(request)
+            
+    def WriteCounterEntry(self, counter_id, index, dry_run=False):
+        request = p4runtime_pb2.WriteRequest()
+        request.device_id = self.device_id
+        request.election_id.low = 1
+        
+        ce = p4runtime_pb2.CounterEntry()
+        ce.counter_id = counter_id
+        ce.index.index = index
+        ce.data.packet_count = 0
+        
+        update = request.updates.add()
+        update.type = p4runtime_pb2.Update.MODIFY
+        update.entity.counter_entry.CopyFrom(ce)
+
+        if dry_run:
+            print("P4Runtime WriteCounter:", request)
+        else:
+            self.client_stub.Write(request)
+
 
 
 class GrpcRequestLogger(grpc.UnaryUnaryClientInterceptor,

@@ -28,24 +28,6 @@ class CpuHeader(Packet):
     name = 'CpuPacket'
     fields_desc = [BitField('macAddr',0,48), BitField('ingressPort', 0, 16)]
 
-# List of broadcast replicas the clone engine for the multicast group
-# with egress port and the number of copies "instance"
-broadcastReplicas = [
-    {'egress_port': 1, 'instance': 1},
-    {'egress_port': 2, 'instance': 1},
-    {'egress_port': 3, 'instance': 1},
-    {'egress_port': 4, 'instance': 1}
-]
-
-# List of CPU replicas, clone engine for sending packets to CPU (port 510)
-cpuReplicas = [
-     {'egress_port': 510, 'instance': 1}
-]
-
-# Define session IDs for multicast and CPU sessions (clone engines)
-mcSessionId = 1
-cpuSessionId = 100
-
 # Custom function to decode Mac Addresses from a bytes object
 def myDecodeMac(mac):
     return ':'.join(f'{byte:02x}' for byte in mac)
@@ -165,14 +147,14 @@ def writeTableEntry(helper, sw, table, match, action, params, dryrun=False, modi
     #print("Installed rule for %s on %s" % (table, sw.name))
 
 # Function to write a multicast group entry to the switch
-def writeMcGroup(p4info_helper, sw, sessionId):
+def writeMcGroup(p4info_helper, sw, sessionId, broadcastReplicas):
     if not sw.isMulticastGroupInstalled(sessionId):
         mc_group = p4info_helper.buildMulticastGroupEntry(sessionId, broadcastReplicas)
         sw.WritePREEntry(mc_group)
         print(f"Installed Multicast Group {sessionId} on {sw.name}")
 
 # Function to write a CPU session entry for packet cloning to the CPU port
-def writeCpuSession(p4info_helper, sw, sessionId):
+def writeCpuSession(p4info_helper, sw, sessionId, cpuReplicas):
     if not sw.isCloneSessionInstalled(sessionId):
         clone_entry = p4info_helper.buildCloneSessionEntry(sessionId, cpuReplicas)
         sw.WritePREEntry(clone_entry)
@@ -180,14 +162,11 @@ def writeCpuSession(p4info_helper, sw, sessionId):
 
 # Function to create all P4Runtime connections to all the switches
 # with gRPC and proto dump files for logging
-def createConnectionsToSwitches(switches_config_path, state):
+def createConnectionsToSwitches(switches_config, connections, state):
     print("------ Connecting to the devices... ------")
 
-    with open(switches_config_path, 'r') as f:
-        switch_configs = json.load(f)
-
-    connections = {}
-    for switch in switch_configs:
+    connections.clear()
+    for switch in switches_config:
         name = switch["name"]
         connections[name] = p4runtime_lib.bmv2.Bmv2SwitchConnection(
             name=name,
@@ -195,27 +174,17 @@ def createConnectionsToSwitches(switches_config_path, state):
             device_id=switch["device_id"],
             proto_dump_file=switch["proto_dump_file"]
         )
+        connections["name"].MasterArbitrationUpdate()
         state[name] = {}
 
     print("------ Connection successful! ------\n")
-    return connections
-
-# Function to send master arbitration update messages to all switches to establish
-# this controller as master
-def sendMasterAtributionMessage(connections):
-
-    print("------ Setting Master Atribution... ------")
-    for sw in connections.values():
-        sw.MasterArbitrationUpdate()
-    print("------ Master Atribution done! ------\n")
 
 # Function to load the P4 program configuration from a JSON file
-def loadProgramConfig(programs_config_path):
-    with open(programs_config_path, 'r') as f:
-        config_data = json.load(f)
-
+def loadProgramConfig(switch_programs_path):
+        
+    config_data = json.load(open(switch_programs_path))
     program_config = {}
-
+    
     for sw_name, entry in config_data.items():
         helper_path = entry['p4info_path']
         json_path = entry['json_path']
@@ -229,7 +198,7 @@ def loadProgramConfig(programs_config_path):
             "default_actions": default_actions_path,
             "rules": rules_path
         }
-
+    
     return program_config
 
 # Function to install the P4 programs on all switches
@@ -255,14 +224,23 @@ def installP4Programs(connections, program_config):
     print("------ P4 Programs Installation done! ------\n")
 
 # Function to write clone engines and their sessionId
-def writeCloneEngines(connections, program_config):
-    
+def writeCloneEngines(connections, program_config, clone_config):
     print("------ Installing MC Groups and Clone Sessions... ------")
     
-    s1 = connections["s1"]
-    L2_helper = program_config["s1"]["helper"]
-    writeMcGroup(L2_helper, s1, mcSessionId)
-    writeCpuSession(L2_helper, s1, cpuSessionId)
+    for sw_name, cfg in clone_config.items():
+        sw     = connections[sw_name]
+        helper = program_config[sw_name]["helper"]
+
+        if "mcSessionId" in cfg:
+            mc_id  = cfg["mcSessionId"]
+            mc_replicas  = cfg["broadcastReplicas"]
+            writeMcGroup(helper, sw, mc_id, mc_replicas)
+        
+        if "cpuSessionId" in cfg:
+            cpu_id = cfg["cpuSessionId"]
+            cpu_replicas = cfg["cpuReplicas"]
+            writeCpuSession(helper, sw, cpu_id, cpu_replicas)
+        
     print("------ MC Groups and Clone Sessions done! ------\n")
     
 # Function to write the default actions on all tables from all switches
@@ -467,22 +445,20 @@ def printControllerState(state):
     print()
 
 # Function to detect which tunnel state is active or initialize the first tunnel state if none is found
-def init_tunnel_states(connections, program_config, state, tunnels_config_path):
+def init_tunnel_states(connections, program_config, tunnels_config, tunnels, state):
     """
     For each tunnel entry in tunnels_config.json:
       - Try to detect its current installed state from `state[...]`
       - If nothing is found, install state=0 and mirror into `state[...]`
-    Returns a dict: { tunnel_name: detected_state_id, … }
     """
-    file  = json.load(open(tunnels_config_path))
-    cfgs  = file["tunnels"]
-    table = file["table"]
-    mf    = file["match_field"]
-    detected_states = {}
+    cfgs  = tunnels_config["tunnels"]
+    table = tunnels_config["table"]
+    mf    = tunnels_config["match_field"]
+    tunnels.clear() # clear any previous state
 
     for tcfg in cfgs:
-        name   = tcfg["name"]
-        swA    = tcfg["switchA"]
+        name = tcfg["name"]
+        swA  = tcfg["switchA"]
 
         # ensure the nested state
         state.setdefault(swA, {}).setdefault(table, {})
@@ -529,32 +505,34 @@ def init_tunnel_states(connections, program_config, state, tunnels_config_path):
         else:
             print(f"[{name}] detected existing tunnel state {found}")
         
-        detected_states[name] = found
-
-    return detected_states
-
+        tunnels[name]["state"] = found
 
 # Function to dynamicly change the tunnel selection rules according to traffic metrics
-def changeTunnelRules(connections, program_config, tunnels_config_path, tunnel_states, state):
+def changeTunnelRules(connections, program_config, tunnels_config, tunnels, state):
     # Load our generic tunnel config
-    file      = json.load(open(tunnels_config_path))
-    tunnels   = file["tunnels"]
-    interval  = file["check_interval"]
-    threshold = file["threshold"]
-    table     = file["table"]
-    mf        = file["match_field"]
-    cntr_name = file["counter_name"]
+    tcfgs     = tunnels_config["tunnels"]
+    interval  = tunnels_config["check_interval"]
+    threshold = tunnels_config["threshold"]
+    table     = tunnels_config["table"]
+    mf        = tunnels_config["match_field"]
+    cntr_name = tunnels_config["counter_name"]
 
     # For each tunnel in the JSON, start a monitor thread
-    for tcfg in tunnels:
-        threading.Thread(
+    for tcfg in tcfgs:
+        name = tcfg["name"]
+        stop_event = threading.Event()
+        tunnels[name]["stop_event"] = stop_event
+        
+        thread = threading.Thread(
             target=_monitor_single_tunnel,
             args=(
                 connections, program_config, tcfg, interval, 
-                threshold, table, mf, cntr_name, tunnel_states, state
+                threshold, table, mf, cntr_name, tunnels, state
             ),
             daemon=True
-        ).start()
+        )
+        tunnels[name]["thread"] = thread
+        thread.start()
 
 def _monitor_single_tunnel(connections, program_config, tcfg, interval, threshold, 
                            table, mf, cntr_name, tunnel_states, state):
@@ -567,10 +545,10 @@ def _monitor_single_tunnel(connections, program_config, tcfg, interval, threshol
     hA  = program_config[tcfg["switchA"]]["helper"]
     hB  = program_config[tcfg["switchB"]]["helper"]
 
-    curr_state = tunnel_states[name]
+    curr_state = tunnel_states[name]["state"]
     print(f"📡 Starting tunnel monitor '{name}' between {swA.name} ⇄ {swB.name}")
 
-    while True:
+    while not tunnel_states[name]["stop_event"].is_set():
         # read the counters from both switches
         upA   = read_counter(hA, swA, cntr_name, idxs["A_up"])
         downA = read_counter(hA, swA, cntr_name, idxs["A_down"])
@@ -630,81 +608,256 @@ def read_counter(helper, switch, counter_name, index):
         print(f"Error reading counter {counter_name} [{index}]: {e}")
         return 0
 
+# Function to start a thread for each switch with a cpu session id defined
+def listenToPacketIns(connections, program_config, clone_config, state):
+
+    for sw_name, cfg in clone_config.items():
+        if "cpuSessionId" in cfg:
+            threading.Thread(
+                target=_listen_single_switch,
+                args=(program_config[sw_name]["helper"], connections[sw_name], state),
+                daemon=True
+            ).start()
+
+# Function to listen for packet-in messages on a single switch            
+def _listen_single_switch(helper, sw, state):
+    print(f"🔍 Listening for packet-ins on {sw.name}")
+    for response in sw.stream_msg_resp:
+        # Check if the response contains a packet-in message
+        if response.packet:
+            #print("Received packet-in message:")
+            packet = Ether(raw(response.packet.payload))
+            if packet.type == 0x1234:
+                cpu_header = CpuHeader(bytes(packet.load))
+                new_mac = cpu_header.macAddr   # e.g. "aa:bb:cc:dd:ee:ff"
+                match_key = json.dumps({"hdr.eth.srcAddr": new_mac})
+                #print("mac: %012X ingress_port: %s " % (new_mac, cpu_header.ingressPort))
+
+                sw_state = state.setdefault(sw.name, {}).setdefault("MyIngress.sMacLookup", {})
+                if match_key not in sw_state:
+                    writeMacSrcLookUp(helper, sw, new_mac)
+                    writeMacDstLookUp(helper, sw, new_mac, cpu_header.ingressPort)
+                    sw_state[match_key] = {
+                        "action": "NoAction",
+                        "params": {}
+                    }
+                #else:
+                    #print("Rules already set")
+        else:
+            print(f"[{sw.name}] Received non-packet-in message: {response}")
+
+# Function to reset a switch by reinstalling the P4 program and resetting the state
+def resetSwitch(sw_name, connections, program_config, clone_config, tunnels_cfg, tunnels, state):
+    print(f"🔄 Resetting switch {sw_name}...")
+
+    # Clean ALL tunnel rules from ALL switches
+    # This is needed to ensure that the tunnel rules are in sync with the new switch rules
+    cleanTunnelRules(tunnels_cfg["table"], connections, program_config, tunnels, state)
+        
+    # Clear controller-side state for this switch
+    state[sw_name] = {}
+    
+    # Reinstall P4 program, clones, default actions, and static rules, 
+    # only for this switch
+    sw_conn = {sw_name: connections[sw_name]}
+    sw_program_cfg = {sw_name: program_config[sw_name]}
+    setup_switches(sw_conn, sw_program_cfg, clone_config, state)
+    
+    # Reinstall the tunnel rules for all switches
+    setup_tunnels(connections, program_config, tunnels_cfg["tunnels"], tunnels, state)
+        
+    # Print new table state
+    printTableRules(program_config[sw_name]["helper"], connections[sw_name])
+
+    print(f"✅ {sw_name} has been reset.")
+
+# Function to clean all tunnel rules from a switch's tunnel table using the controller's state
+def cleanTunnelRules(table_name, connections, program_config, tunnels, state):
+
+    print("🧽 Cleaning ALL tunnel rules from all switches...")
+
+    # Stop ALL tunnel monitor threads
+    for tname, tinfo in tunnels.items():
+        tinfo["stop_event"].set()
+        tinfo["thread"].join()
+        print(f"🛑 Stopped tunnel monitor for {tname}")
+    tunnels.clear()
+    
+    # Remove all tunnel rules from the tables and state
+    for sw_name, sw in connections.items():
+        # Get current state for the table
+        table_state = state.get(sw_name, {}).get(table_name, {})
+
+        # Loop over all match entries in the state
+        for key_str in list(table_state.keys()):  # list() to safely modify during iteration
+            match_fields = json.loads(key_str)
+            try:
+                # Build and delete the entry
+                entry = program_config[sw_name]["helper"].buildTableEntry(
+                    table_name=table_name,
+                    match_fields=match_fields,
+                    default_action=False
+                )
+                sw.DeleteTableEntry(entry)
+                del table_state[key_str]
+                print(f"🗑️ Removed rule with match {match_fields} from {sw_name}")
+            except Exception as e:
+                print(f"⚠️ Could not remove rule {match_fields} from {sw_name}: {e}")
+
+# Function to setup tunnels and start the load balancing threads
+def setup_tunnels(connections, program_config, tunnels_config, tunnels, state):
+        
+    # Initialize the tunnel state and check if any tunnels are already active
+    init_tunnel_states(connections, program_config, tunnels_config, tunnels, state)
+    # Thread to handle load balancing between the tunnels
+    changeTunnelRules(connections, program_config, tunnels_config, tunnels, state)
+
+# Function to load the configuration files for switches, programs, tunnels, and clones
+def loadConfigFiles(switches_config_path, switch_programs_path, tunnels_config_path, clone_config_path):
+
+    switches_config = json.load(open(switches_config_path))
+    program_config = loadProgramConfig(switch_programs_path)
+    tunnels_config = json.load(open(tunnels_config_path))
+    clone_config = json.load(open(clone_config_path))
+    return switches_config, program_config, tunnels_config, clone_config
+
+# Function to perform the initial setup of the switches
+# including installing P4 programs, writing clone engines, default actions, and static rules
+def setup_switches(connections, program_config, clone_config, state):
+    
+    installP4Programs(connections, program_config)
+    writeCloneEngines(connections, program_config, clone_config)
+    writeDefaultActions(connections, program_config, state)
+    readTableRules(connections, program_config, state)
+    writeStaticRules(connections, program_config, state)
+
+# Function to perform a full reset of the controller and switches
+def full_reset(switches_config_path, switch_programs_path, tunnels_config_path, clone_config_path, connections, tunnels, state):
+    print("🔄 Performing full reset of the controller and switches...")
+
+    # Shutdown all switch connections
+    ShutdownAllSwitchConnections()
+    
+    # Reload config files
+    switches_config, program_config, tunnels_config, clone_config = loadConfigFiles(
+        switches_config_path, switch_programs_path, tunnels_config_path, clone_config_path)
+    
+    # Create new connections to the switches
+    createConnectionsToSwitches(switches_config, connections, state)
+    
+    # Do the initial setup of the switches
+    setup_switches(connections, program_config, clone_config, state)
+    
+    # Setup the tunnels and start the load balancing threads
+    setup_tunnels(connections, program_config, tunnels_config, tunnels, state)
+
+    return switches_config, program_config, tunnels_config, clone_config
+
+# Function to reset the packet count of all counters on all switches
+def resetAllCounters(connections, program_config, tunnels_config):
+    # Reset tunnel counters
+    for tcfg in tunnels_config["tunnels"]:
+        for side, role in [("switchA", "A"), ("switchB", "B")]:
+            sw_name = tcfg[side]
+            helper = program_config[sw_name]["helper"]
+            sw     = connections[sw_name]
+            idxs   = tcfg["counter_index"]
+            counter_name = tcfg["counter"]
+            # Reset both up/down indices
+            resetCounter(helper, sw, counter_name, idxs[f"{role}_up"])
+            resetCounter(helper, sw, counter_name, idxs[f"{role}_down"])
+            
+# Function to reset the packet count of a specific counter on a switch
+def resetCounter(p4info_helper, sw, counter_name, idx):
+    """
+    Reset the packet_count of a counter at a given index to zero.
+    """
+    counter_id = p4info_helper.get_counters_id(counter_name)
+    sw.WriteCounterEntry(counter_id, idx)
+    print(f"🔄 Reset counter '{counter_name}' idx={idx} on {sw.name}")
+
 
 
 # Main function that initializes P4Runtime connections and performs setup
-def main(switches_config_path, switch_programs_path, tunnels_config_path):
+def main(switches_config_path, switch_programs_path, tunnels_config_path, clone_config_path):
 
     # Variables to store the state of the tables
+    switches_config = {}
+    program_config = {}
+    clone_config = {}
+    tunnels_config = {}
     state = {}
+    connections = {}
+    tunnels = {}
 
     try:
+        # Load config files
+        switches_config, program_config, tunnels_config, clone_config = loadConfigFiles(
+            switches_config_path, switch_programs_path, tunnels_config_path, clone_config_path)
+
         # Create P4Runtime connections to the switches
-        connections = createConnectionsToSwitches(switches_config_path, state)
+        createConnectionsToSwitches(switches_config, connections, state)
+
+        # Do the initial setup of the switches
+        setup_switches(connections, program_config, clone_config, state)
+
+        # Setup the tunnels and start the load balancing threads
+        setup_tunnels(connections, program_config, tunnels_config, tunnels, state)
         
-        # Send master arbitration update message to establish this controller as
-        # master (required by P4Runtime before performing any other write operation)
-        sendMasterAtributionMessage(connections)
-        
-        # Load config files for the p4 programs
-        program_config = loadProgramConfig(switch_programs_path)
-
-        # Install the P4 programs on the switches if not yet installed
-        installP4Programs(connections, program_config)
-
-        # Write clone engines and their sessionId, if not written yet
-        writeCloneEngines(connections, program_config)
-
-        # Write default actions, if not written yet
-        writeDefaultActions(connections, program_config, state)
-
-        # Read all entries of all tables of all routers and populate state variables
-        readTableRules(connections, program_config, state)
+        # Start a thread for each switch with a cpu session id defined
+        # to listen for packet-in messages
+        listenToPacketIns(connections, program_config, clone_config, state)
 
         # Check the state of the controller
-        printControllerState(state)
-
-        # Write static rules to the L3 Switches, if not written yet
-        writeStaticRules(connections, program_config, state)
+        #printControllerState(state)
 
         # Show all rules set in the tables
-        for sw_name, switch in connections.items():
+        #for sw_name, switch in connections.items():
             # Note: s1 is empty before any traffic
-            printTableRules(program_config[sw_name]["helper"], switch) 
+            #printTableRules(program_config[sw_name]["helper"], switch) 
 
-        # Initialize the tunnel state and check if any tunnels are already active
-        tunnel_states = init_tunnel_states(connections, program_config, state, tunnels_config_path)
-        
-        # Thread to handle load balancing between the tunnels
-        changeTunnelRules(connections, program_config, tunnels_config_path, tunnel_states, state)
+        # Loop to handle user input for resetting switches
+        while True:
+            user_input = input(">>> ").strip()
+            if user_input.startswith("reset "):
+                target = user_input[6:].strip()
 
-        s1 = connections["s1"]
-        s1_helper = program_config["s1"]["helper"]
-        for response in s1.stream_msg_resp:
-            # Check if the response contains a packet-in message
-            if response.packet:
-                #print("Received packet-in message:")
-                packet = Ether(raw(response.packet.payload))
-                if packet.type == 0x1234:
-                    cpu_header = CpuHeader(bytes(packet.load))
-                    new_mac = cpu_header.macAddr  # e.g. "aa:bb:cc:dd:ee:ff"
-                    match_key = json.dumps({"hdr.eth.srcAddr": new_mac})
-                    #print("mac: %012X ingress_port: %s " % (cpu_header.macAddr, cpu_header.ingressPort))
+                if target == "all":
+                    # Perform a full reset of the controller and switches
+                    switches_config, program_config, tunnels_config, clone_config = full_reset(
+                        switch_programs_path, switches_config_path, tunnels_config_path, 
+                        clone_config_path, connections, tunnels, state)
+                
+                elif target == "tunnels":
+                    # Clean tunnel rules from all switches
+                    cleanTunnelRules(tunnels_config["table"], connections, program_config, tunnels, state)
+                    # Setup the tunnels and start the load balancing threads
+                    setup_tunnels(connections, program_config, tunnels_config, tunnels, state)
                     
-                    sw_state = state.setdefault("s1", {}).setdefault("MyIngress.sMacLookup", {})
-                    if match_key not in sw_state:
-                        writeMacSrcLookUp(s1_helper, s1, new_mac)
-                        writeMacDstLookUp(s1_helper, s1, new_mac, cpu_header.ingressPort)
-                        sw_state[match_key] = {
-                            "action": "NoAction",
-                            "params": {}
-                        }
-                    #else:
-                        #print("Rules already set")
-            else:
-                print(f"Received non-packet-in message: {response}")
+                elif target == "counters":
+                    # Reset all counters on all switches
+                    resetAllCounters(connections, program_config, tunnels_config)
+                    
+                elif target in connections:
+                    # Load config files
+                    switches_config, program_config, tunnels_config, clone_config = loadConfigFiles(
+                        switches_config_path, switch_programs_path, tunnels_config_path, clone_config_path)
+                    # Reset the specified switch
+                    resetSwitch(target, connections, program_config, clone_config,
+                                tunnels_config, tunnels, state)
 
-        print("out of the loop")        
+                else:
+                    print(f"Unknown switch '{target}'")
+
+            elif user_input in ["exit", "quit"]:
+                print("Shutting down controller.")
+                # Cleanly shutdown all switch connections, this can cause problems
+                ShutdownAllSwitchConnections()
+                break
+            else:
+                print(f"Unknown command: {user_input}")
+
+        print("out of the loop")
 
     except KeyboardInterrupt:
         print(" Shutting down.")
@@ -723,6 +876,8 @@ if __name__ == '__main__':
                         help='json file with the P4 programs configuration')
     parser.add_argument('--tunnels', type=str, action="store", required=True,
                         help='json file with the tunnels configuration')
+    parser.add_argument('--clone', type=str, action="store", required=True,
+                        help='json file with the mc and clone sessions configuration')
 
     args = parser.parse_args()
 
@@ -739,5 +894,9 @@ if __name__ == '__main__':
         parser.print_help()
         print("\ntunnels file not found:")
         parser.exit(1)
+    if not os.path.exists(args.clone):
+        parser.print_help()
+        print("\nclone file not found:")
+        parser.exit(1)
     
-    main(args.config, args.programs, args.tunnels)
+    main(args.config, args.programs, args.tunnels, args.clone)

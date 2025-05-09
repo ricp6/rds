@@ -5,23 +5,23 @@
     "match_field": "meta.tunnel",
     "counter_name": "tunnel_counter",
     "tunnels": [
-      {
+    {
         "name": "r1-to-r4",
         "switchA": "r1",
         "switchB": "r4",
         "counter_index": { "A_up": 2, "A_down": 3, "B_up": 3, "B_down": 2 },
         "states": [
-          {
+        {
             "id": 0,
             "labelsA": { "0": "0x1020202030204010", "1": "0x1030602050204010" },
             "labelsB": { "0": "0x4030301020101010", "1": "0x4020501060101010" }
-          },
-          {
+        },
+        {
             "id": 1,
             "labelsA": { "0": "0x1030602050204010", "1": "0x1020202030204010" },
             "labelsB": { "0": "0x4020501060101010", "1": "0x4030301020101010" }
-          }
+        }
         ]
-      }
+    }
     ]
-  }
+}

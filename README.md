@@ -17,7 +17,7 @@ sudo python3 mininet/tp-topo.py
 
 3. **Run the controller (terminal 2):**
 ```bash
-python3 controller/tp-controller.py --config configs/switches_config.json --programs configs/switches_programs.json --tunnels "configs/tunnels_config.json"
+python3 controller/tp-controller.py --config configs/switches_config.json --programs configs/switches_programs.json --tunnels "configs/tunnels_config.json" --clone "configs/clone_config.json"
 ```
 
 

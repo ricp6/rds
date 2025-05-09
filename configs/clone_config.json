@@ -1,0 +1,15 @@
+{
+    "s1": {
+        "mcSessionId": 1,
+        "broadcastReplicas": [
+            { "egress_port": 1, "instance": 1 },
+            { "egress_port": 2, "instance": 1 },
+            { "egress_port": 3, "instance": 1 },
+            { "egress_port": 4, "instance": 1 }
+        ],
+        "cpuSessionId": 100,
+        "cpuReplicas": [
+            { "egress_port": 510, "instance": 1 }
+        ]
+    }
+}
