@@ -669,7 +669,7 @@ def resetSwitch(sw_name, connections, program_config, clone_config, tunnels_conf
     cleanTunnelRules(tunnels_config["table"], connections, program_config, tunnels, state)
     
     # Stop the clone session thread on this switch
-    stopCloneEngineThreads((sw_name,), clones)
+    stopCloneEngineThreadSwitch(sw_name, clones)
 
     # Clear controller-side state for this switch
     state[sw_name] = {}
@@ -753,7 +753,9 @@ def fullReset(switches_config_path, switch_programs_path, tunnels_config_path, c
     print("🔄 Performing full reset of the controller and switches...")
 
     # Stop all clone engine threads form all switches
-    stopCloneEngineThreads(connections.keys(), clones)
+    stopCloneEngineThreads(clones)
+    # Stop all tunnel monitor threads
+    stopTunnelMonitorThreads(tunnels)
 
     # Shutdown all switch connections
     ShutdownAllSwitchConnections()
@@ -798,14 +800,40 @@ def resetCounter(p4info_helper, sw, counter_name, idx):
     print(f"🔄 Reset counter '{counter_name}' idx={idx} on {sw.name}")
     
 # Function to stop the threads of the clone engines and clean them up
-def stopCloneEngineThreads(sw_names, clones):
+def stopCloneEngineThreads(clones):
+        
+    # Stop all packet-in listener threads
+    for sw_name, tinfo in clones.items():
+        tinfo["stop_event"].set()
+        tinfo["thread"].join()
+        print(f"Stopped packet-in listener for {sw_name}")
+    clones.clear()
+
+# Function to stop the clone engine thread of one switch    
+def stopCloneEngineThreadSwitch(sw_name, clones):    
+
+    if sw_name in clones:
+        clones[sw_name]["stop_event"].set()
+        clones[sw_name]["thread"].join()
+        del clones[sw_name]
+
+def stopTunnelMonitorThreads(tunnels):
     
-    for sw_name in sw_names:
-        # Check if the switch is already in the clones dictionary
-        if sw_name in clones:
-            clones[sw_name]["stop_event"].set()
-            clones[sw_name]["thread"].join()
-            del clones[sw_name]
+    # Stop all tunnel monitor threads
+    for tname, tinfo in tunnels.items():
+        tinfo["stop_event"].set()
+        tinfo["thread"].join()
+        print(f"Stopped tunnel monitor for {tname}")
+
+def gracefulShutdown(clones, tunnels):
+    print("Shutting down.")
+
+    stopCloneEngineThreads(clones)
+    stopTunnelMonitorThreads(tunnels)
+
+    # Finally, shut down all gRPC switch connections
+    ShutdownAllSwitchConnections()
+    print("Controller exited cleanly.")
 
 
 
@@ -888,20 +916,17 @@ def main(switches_config_path, switch_programs_path, tunnels_config_path, clone_
                     print(f"Unknown show target: '{target}'")
                     
             elif cmd in ["exit", "quit", "q"]:
-                print("Shutting down controller.")
-                # Cleanly shutdown all switch connections, this can cause problems
-                ShutdownAllSwitchConnections()
+                # Exit the program gracefully
+                print("Exiting by input...")
+                gracefulShutdown(clones, tunnels)
                 break
             
             else:
                 print(f"Unknown command: {user_input}")
 
-        print("out of the loop")
-
     except KeyboardInterrupt:
-        print("Shutting down.")
-        # Cleanly shutdown all switch connections, this can cause problems
-        ShutdownAllSwitchConnections()
+        print("Controller interrupted by user.")
+        gracefulShutdown(clones, tunnels)
     except grpc.RpcError as e:
         printGrpcError(e) # Handle any gRPC errors that might occur
 
