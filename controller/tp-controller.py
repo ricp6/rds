@@ -181,18 +181,20 @@ def createConnectionsToSwitches(switches_config, connections, state):
     
 # Function to create all P4Runtime connections to all the switches
 # with gRPC and proto dump files for logging
-def createConnectionToSwitch(switch_config, connections, state):
+def createConnectionToSwitch(target, switches_config, connections, state):
     print("------ Connecting to the device... ------")
 
-    name = switch_config["name"]
-    connections[name] = p4runtime_lib.bmv2.Bmv2SwitchConnection(
-        name=name,
-        address=switch_config["address"],
-        device_id=switch_config["device_id"],
-        proto_dump_file=switch_config["proto_dump_file"]
-    )
-    connections[name].MasterArbitrationUpdate()
-    state[name] = {}
+    for switch in switches_config:
+        if target == switch["name"]:
+            connections[target] = p4runtime_lib.bmv2.Bmv2SwitchConnection(
+                name=target,
+                address=switch["address"],
+                device_id=switch["device_id"],
+                proto_dump_file=switch["proto_dump_file"]
+            )
+            connections[target].MasterArbitrationUpdate()
+            state[target] = {}
+            break
 
     print("------ Connection successful! ------\n")
 
@@ -595,11 +597,12 @@ def _monitor_single_tunnel(connections, program_config, tcfg, interval, threshol
 
         total_up   = upA + upB
         total_down = downA + downB
-        print(f"[{name}] up={total_up}, down={total_down}")
+        print(f"\n[{name}] up={total_up}, down={total_down}")
         # Print individual counter values for both switches
         print(f"[{swA.name}] up={upA}, down={downA}")
         print(f"[{swB.name}] up={upB}, down={downB}")
 
+        sleep_boost = 1
         if abs(total_up - total_down) > threshold:
             # toggle state
             next_state = 1 - curr_state
@@ -626,11 +629,12 @@ def _monitor_single_tunnel(connections, program_config, tcfg, interval, threshol
 
             curr_state = next_state
             tunnels[name]["state"] = next_state
+            sleep_boost = 3   # Leave more time for the changes to be effective
             print(f"[{name}] switched to state {curr_state}\n")
         else:
             print(f"[{name}] no switch needed\n")
 
-        sleep(interval)
+        sleep(interval * sleep_boost)
 
 # Function to read the counter value from the switch
 def read_counter(helper, switch, counter_name, index):
@@ -707,7 +711,7 @@ def resetSwitch(sw_name, switches_config_path, switch_programs_path, tunnels_con
     switches_config_path, switch_programs_path, tunnels_config_path, clone_config_path)
 
     # Create a new connection to the switch
-    createConnectionToSwitch(switches_config[sw_name], connections, state)
+    createConnectionToSwitch(sw_name, switches_config, connections, state)
     
     # Reinstall P4 program, clones, default actions, and static rules, 
     # only for this switch
@@ -935,7 +939,7 @@ def main(switches_config_path, switch_programs_path, tunnels_config_path, clone_
                     # Reset the specified switch
                     switches_config, program_config, tunnels_config, clone_config = resetSwitch(
                         target, switches_config_path, switch_programs_path, tunnels_config_path, 
-                        clone_config_path, connections, clones, tunnels, state)
+                        clone_config_path, program_config, tunnels_config, connections, clones, tunnels, state)
 
                 else:
                     print(f"Unknown target for reset: '{target}'")

@@ -1,6 +1,6 @@
 {
-    "check_interval": 30,
-    "threshold": 50,
+    "check_interval": 20,
+    "threshold": 30,
     "table": "MyIngress.tunnelLookup",
     "match_field": "meta.tunnel",
     "counter_name": "tunnel_counter",
