@@ -245,17 +245,18 @@ def writeCloneEngines(connections, program_config, clone_config, clones, state):
                 cpu_replicas = cfg["cpuReplicas"]
                 writeCpuSession(helper, sw, cpu_id, cpu_replicas)
 
+                clones.setdefault(sw_name, {})
+                clones[sw_name]["id"] = cpu_id
+
                 # Start a thread for each switch with a cpu session id defined
                 # to listen for packet-in messages
                 stop_event = threading.Event()
+                clones[sw_name]["stop_event"] = stop_event
                 thread = threading.Thread(
                     target=_listen_single_switch,
                     args=(program_config[sw_name]["helper"], connections[sw_name], clones, state),
                     daemon=True
                 )
-                clones.setdefault(sw_name, {})
-                clones[sw_name]["id"] = cpu_id
-                clones[sw_name]["stop_event"] = stop_event
                 clones[sw_name]["thread"] = thread
 
                 thread.start()
@@ -555,7 +556,7 @@ def changeTunnelRules(connections, program_config, tunnels_config, tunnels, stat
         thread.start()
 
 def _monitor_single_tunnel(connections, program_config, tcfg, interval, threshold, 
-                           table, mf, cntr_name, tunnel_states, state):
+                           table, mf, cntr_name, tunnels, state):
     name   = tcfg["name"]
     idxs   = tcfg["counter_index"]
     states = tcfg["states"]
@@ -565,10 +566,10 @@ def _monitor_single_tunnel(connections, program_config, tcfg, interval, threshol
     hA  = program_config[tcfg["switchA"]]["helper"]
     hB  = program_config[tcfg["switchB"]]["helper"]
 
-    curr_state = tunnel_states[name]["state"]
+    curr_state = tunnels[name]["state"]
     print(f"📡 Starting tunnel monitor '{name}' between {swA.name} ⇄ {swB.name}")
 
-    while not tunnel_states[name]["stop_event"].is_set():
+    while not tunnels[name]["stop_event"].is_set():
         # read the counters from both switches
         upA   = read_counter(hA, swA, cntr_name, idxs["A_up"])
         downA = read_counter(hA, swA, cntr_name, idxs["A_down"])
@@ -607,7 +608,7 @@ def _monitor_single_tunnel(connections, program_config, tcfg, interval, threshol
                     }
 
             curr_state = next_state
-            tunnel_states[name] = next_state
+            tunnels[name]["state"] = next_state
             print(f"[{name}] switched to state {curr_state}\n")
         else:
             print(f"[{name}] no switch needed\n")
@@ -632,33 +633,42 @@ def read_counter(helper, switch, counter_name, index):
 def _listen_single_switch(helper, sw, clones, state):
     print(f"🔍 Listening for packet-ins on {sw.name}")
     
-    for response in sw.stream_msg_resp:
-        if clones[sw.name]["stop_event"].is_set():
-            print(f"🛑 Stopping packet-in listener for {sw.name}")
-            break
-        
-        # Check if the response contains a packet-in message
-        if response.packet:
-            #print("Received packet-in message:")
-            packet = Ether(raw(response.packet.payload))
-            if packet.type == 0x1234:
-                cpu_header = CpuHeader(bytes(packet.load))
-                new_mac = cpu_header.macAddr   # e.g. "aa:bb:cc:dd:ee:ff"
-                match_key = json.dumps({"hdr.eth.srcAddr": new_mac})
-                #print("mac: %012X ingress_port: %s " % (new_mac, cpu_header.ingressPort))
+    try:
+        for response in sw.stream_msg_resp:
+            if clones[sw.name]["stop_event"].is_set():
+                break
+            
+            # Check if the response contains a packet-in message
+            if response.packet:
+                #print("Received packet-in message:")
+                packet = Ether(raw(response.packet.payload))
+                if packet.type == 0x1234:
+                    cpu_header = CpuHeader(bytes(packet.load))
+                    new_mac = cpu_header.macAddr   # e.g. "aa:bb:cc:dd:ee:ff"
+                    match_key = json.dumps({"hdr.eth.srcAddr": new_mac})
+                    #print("mac: %012X ingress_port: %s " % (new_mac, cpu_header.ingressPort))
 
-                sw_state = state.setdefault(sw.name, {}).setdefault("MyIngress.sMacLookup", {})
-                if match_key not in sw_state:
-                    writeMacSrcLookUp(helper, sw, new_mac)
-                    writeMacDstLookUp(helper, sw, new_mac, cpu_header.ingressPort)
-                    sw_state[match_key] = {
-                        "action": "NoAction",
-                        "params": {}
-                    }
-                #else:
-                    #print("Rules already set")
+                    sw_state = state.setdefault(sw.name, {}).setdefault("MyIngress.sMacLookup", {})
+                    if match_key not in sw_state:
+                        writeMacSrcLookUp(helper, sw, new_mac)
+                        writeMacDstLookUp(helper, sw, new_mac, cpu_header.ingressPort)
+                        sw_state[match_key] = {
+                            "action": "NoAction",
+                            "params": {}
+                        }
+                    #else:
+                        #print("Rules already set")
+            else:
+                print(f"[{sw.name}] Received non-packet-in message: {response}")
+        
+    except grpc.RpcError as e:
+        if e.code() == grpc.StatusCode.CANCELLED:
+            # expected on shudown
+            print(f"[{sw.name}] packet-in stream cancelled, exiting listener.")
         else:
-            print(f"[{sw.name}] Received non-packet-in message: {response}")
+            print(f"[{sw.name}] unexpected gRPC error: {e}")
+    finally:
+        print(f"[{sw.name}] listener thread terminating.")
 
 # Function to reset a switch by reinstalling the P4 program and resetting the state
 def resetSwitch(sw_name, connections, program_config, clone_config, tunnels_config, clones, tunnels, state):
@@ -798,16 +808,6 @@ def resetCounter(p4info_helper, sw, counter_name, idx):
     counter_id = p4info_helper.get_counters_id(counter_name)
     sw.WriteCounterEntry(counter_id, idx)
     print(f"🔄 Reset counter '{counter_name}' idx={idx} on {sw.name}")
-    
-# Function to stop the threads of the clone engines and clean them up
-def stopCloneEngineThreads(clones):
-        
-    # Stop all packet-in listener threads
-    for sw_name, tinfo in clones.items():
-        tinfo["stop_event"].set()
-        tinfo["thread"].join()
-        print(f"Stopped packet-in listener for {sw_name}")
-    clones.clear()
 
 # Function to stop the clone engine thread of one switch    
 def stopCloneEngineThreadSwitch(sw_name, clones):    
@@ -816,6 +816,16 @@ def stopCloneEngineThreadSwitch(sw_name, clones):
         clones[sw_name]["stop_event"].set()
         clones[sw_name]["thread"].join()
         del clones[sw_name]
+    
+# Function to stop the threads of the clone engines and clean them up
+def stopCloneEngineThreads(clones):
+        
+    # Stop all packet-in listener threads
+    for sw_name, clone in clones.items():
+        clone["stop_event"].set()
+        clone["thread"].join()
+        print(f"Stopped packet-in listener for {sw_name}")
+    clones.clear()
 
 def stopTunnelMonitorThreads(tunnels):
     
@@ -824,15 +834,17 @@ def stopTunnelMonitorThreads(tunnels):
         tinfo["stop_event"].set()
         tinfo["thread"].join()
         print(f"Stopped tunnel monitor for {tname}")
+    tunnels.clear()
 
 def gracefulShutdown(clones, tunnels):
-    print("Shutting down.")
+    print("Shutting down...")
+
+    # Shut down all gRPC switch connections to break threads loops
+    ShutdownAllSwitchConnections()
 
     stopCloneEngineThreads(clones)
     stopTunnelMonitorThreads(tunnels)
 
-    # Finally, shut down all gRPC switch connections
-    ShutdownAllSwitchConnections()
     print("Controller exited cleanly.")
 
 
@@ -866,7 +878,7 @@ def main(switches_config_path, switch_programs_path, tunnels_config_path, clone_
 
         # Loop to handle user input for resetting switches and showing state
         while True:
-            user_input = input(">>> ").strip()
+            user_input = input("\n>>> \n").strip()
             parts = user_input.split()
             cmd = parts[0].lower()
             
