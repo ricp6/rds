@@ -178,6 +178,23 @@ def createConnectionsToSwitches(switches_config, connections, state):
         state[name] = {}
 
     print("------ Connection successful! ------\n")
+    
+# Function to create all P4Runtime connections to all the switches
+# with gRPC and proto dump files for logging
+def createConnectionToSwitch(switch_config, connections, state):
+    print("------ Connecting to the device... ------")
+
+    name = switch_config["name"]
+    connections[name] = p4runtime_lib.bmv2.Bmv2SwitchConnection(
+        name=name,
+        address=switch_config["address"],
+        device_id=switch_config["device_id"],
+        proto_dump_file=switch_config["proto_dump_file"]
+    )
+    connections[name].MasterArbitrationUpdate()
+    state[name] = {}
+
+    print("------ Connection successful! ------\n")
 
 # Function to load the P4 program configuration from a JSON file
 def loadProgramConfig(switch_programs_path):
@@ -671,18 +688,26 @@ def _listen_single_switch(helper, sw, clones, state):
         print(f"[{sw.name}] listener thread terminating.")
 
 # Function to reset a switch by reinstalling the P4 program and resetting the state
-def resetSwitch(sw_name, connections, program_config, clone_config, tunnels_config, clones, tunnels, state):
+def resetSwitch(sw_name, switches_config_path, switch_programs_path, tunnels_config_path,
+                clone_config_path, old_program_config, old_tunnels_config, connections, clones, tunnels, state):
     print(f"🔄 Resetting switch {sw_name}...")
 
     # Clean ALL tunnel rules from ALL switches
     # This is needed to ensure that the tunnel rules are in sync with the new switch rules
-    cleanTunnelRules(tunnels_config["table"], connections, program_config, tunnels, state)
+    cleanTunnelRules(old_tunnels_config["table"], connections, old_program_config, tunnels, state)
+    
+    # Shut down the switch connection
+    connections[sw_name].shutdown()
     
     # Stop the clone session thread on this switch
     stopCloneEngineThreadSwitch(sw_name, clones)
+    
+    # Load config files
+    switches_config, program_config, tunnels_config, clone_config = loadConfigFiles(
+    switches_config_path, switch_programs_path, tunnels_config_path, clone_config_path)
 
-    # Clear controller-side state for this switch
-    state[sw_name] = {}
+    # Create a new connection to the switch
+    createConnectionToSwitch(switches_config[sw_name], connections, state)
     
     # Reinstall P4 program, clones, default actions, and static rules, 
     # only for this switch
@@ -697,6 +722,7 @@ def resetSwitch(sw_name, connections, program_config, clone_config, tunnels_conf
     printTableRules(program_config[sw_name]["helper"], connections[sw_name])
 
     print(f"✅ {sw_name} has been reset.")
+    return switches_config, program_config, tunnels_config, clone_config
 
 # Function to clean all tunnel rules from a switch's tunnel table using the controller's state
 def cleanTunnelRules(table_name, connections, program_config, tunnels, state):
@@ -759,16 +785,18 @@ def setupSwitches(connections, program_config, clone_config, clones, state, rese
     writeStaticRules(connections, program_config, state)
 
 # Function to perform a full reset of the controller and switches
-def fullReset(switches_config_path, switch_programs_path, tunnels_config_path, clone_config_path, connections, clones, tunnels, state):
+def fullReset(switches_config_path, switch_programs_path, tunnels_config_path, clone_config_path, 
+              connections, clones, tunnels, state):
     print("🔄 Performing full reset of the controller and switches...")
+
+    # Stop all tunnel monitor threads
+    stopTunnelMonitorThreads(tunnels)
+    
+    # Shutdown all switch connections
+    ShutdownAllSwitchConnections()
 
     # Stop all clone engine threads form all switches
     stopCloneEngineThreads(clones)
-    # Stop all tunnel monitor threads
-    stopTunnelMonitorThreads(tunnels)
-
-    # Shutdown all switch connections
-    ShutdownAllSwitchConnections()
     
     # Reload config files
     switches_config, program_config, tunnels_config, clone_config = loadConfigFiles(
@@ -904,12 +932,10 @@ def main(switches_config_path, switch_programs_path, tunnels_config_path, clone_
                     resetAllCounters(connections, program_config, tunnels_config)
                     
                 elif target in connections:
-                    # Load config files
-                    switches_config, program_config, tunnels_config, clone_config = loadConfigFiles(
-                        switches_config_path, switch_programs_path, tunnels_config_path, clone_config_path)
                     # Reset the specified switch
-                    resetSwitch(target, connections, program_config, clone_config,
-                                tunnels_config, clones, tunnels, state)
+                    switches_config, program_config, tunnels_config, clone_config = resetSwitch(
+                        target, switches_config_path, switch_programs_path, tunnels_config_path, 
+                        clone_config_path, connections, clones, tunnels, state)
 
                 else:
                     print(f"Unknown target for reset: '{target}'")
