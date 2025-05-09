@@ -202,21 +202,24 @@ def loadProgramConfig(switch_programs_path):
     return program_config
 
 # Function to install the P4 programs on all switches
-def installP4Programs(connections, program_config):
+def installP4Programs(connections, program_config, reset=False):
     print("------ Installing P4 Programs... ------")
 
     for sw_name, sw_conn in connections.items():
         expected_helper = program_config[sw_name]["helper"] 
         json_path = program_config[sw_name]["json"]
-        installed_p4info = sw_conn.GetInstalledP4Info()
 
-        if installed_p4info is None:
-            print(f"{sw_name}: No P4 program found, installing...")
-        elif installed_p4info != expected_helper.p4info:
-            print(f"{sw_name}: Different P4 program found, re-installing...")
+        if reset:
+            print(f"{sw_name}: Reseting switch, installing P4 program...")
         else:
-            print(f"{sw_name}: Correct P4 program already installed, skipping.")
-            continue
+            installed_p4info = sw_conn.GetInstalledP4Info()
+            if installed_p4info is None:
+                print(f"{sw_name}: No P4 program found, installing...")
+            elif installed_p4info != expected_helper.p4info:
+                print(f"{sw_name}: Different P4 program found, re-installing...")
+            else:
+                print(f"{sw_name}: Correct P4 program already installed, skipping.")
+                continue
 
         sw_conn.SetForwardingPipelineConfig(p4info=expected_helper.p4info, bmv2_json_file_path=json_path)
         print(f"{sw_name}: P4 program installed.")
@@ -224,25 +227,40 @@ def installP4Programs(connections, program_config):
     print("------ P4 Programs Installation done! ------\n")
 
 # Function to write clone engines and their sessionId
-def writeCloneEngines(connections, program_config, clone_config):
+def writeCloneEngines(connections, program_config, clone_config, clones, state):
     print("------ Installing MC Groups and Clone Sessions... ------")
-    
-    for sw_name, cfg in clone_config.items():
-        sw     = connections[sw_name]
-        helper = program_config[sw_name]["helper"]
 
-        if "mcSessionId" in cfg:
-            mc_id  = cfg["mcSessionId"]
-            mc_replicas  = cfg["broadcastReplicas"]
-            writeMcGroup(helper, sw, mc_id, mc_replicas)
-        
-        if "cpuSessionId" in cfg:
-            cpu_id = cfg["cpuSessionId"]
-            cpu_replicas = cfg["cpuReplicas"]
-            writeCpuSession(helper, sw, cpu_id, cpu_replicas)
-        
+    for sw_name, sw in connections.items():
+        if sw_name in clone_config.values():
+            cfg = clone_config[sw_name]
+            helper = program_config[sw_name]["helper"]
+
+            if "mcSessionId" in cfg:
+                mc_id  = cfg["mcSessionId"]
+                mc_replicas  = cfg["broadcastReplicas"]
+                writeMcGroup(helper, sw, mc_id, mc_replicas)
+            
+            if "cpuSessionId" in cfg:
+                cpu_id = cfg["cpuSessionId"]
+                cpu_replicas = cfg["cpuReplicas"]
+                writeCpuSession(helper, sw, cpu_id, cpu_replicas)
+                clones[sw_name]["id"] = cpu_id
+
+                # Start a thread for each switch with a cpu session id defined
+                # to listen for packet-in messages
+                stop_event = threading.Event()
+                clones[sw_name]["stop_event"] = stop_event
+                
+                thread = threading.Thread(
+                    target=_listen_single_switch,
+                    args=(program_config[sw_name]["helper"], connections[sw_name], clones, state),
+                    daemon=True
+                )
+                clones[sw_name]["thread"] = thread
+                thread.start()
+            
     print("------ MC Groups and Clone Sessions done! ------\n")
-    
+        
 # Function to write the default actions on all tables from all switches
 def writeDefaultActions(connections, program_config, state):
     print("------ Writing Default Actions... ------")
@@ -607,22 +625,16 @@ def read_counter(helper, switch, counter_name, index):
     except Exception as e:
         print(f"Error reading counter {counter_name} [{index}]: {e}")
         return 0
-
-# Function to start a thread for each switch with a cpu session id defined
-def listenToPacketIns(connections, program_config, clone_config, state):
-
-    for sw_name, cfg in clone_config.items():
-        if "cpuSessionId" in cfg:
-            threading.Thread(
-                target=_listen_single_switch,
-                args=(program_config[sw_name]["helper"], connections[sw_name], state),
-                daemon=True
-            ).start()
-
+            
 # Function to listen for packet-in messages on a single switch            
-def _listen_single_switch(helper, sw, state):
+def _listen_single_switch(helper, sw, clones, state):
     print(f"🔍 Listening for packet-ins on {sw.name}")
+    
     for response in sw.stream_msg_resp:
+        if clones[sw.name]["stop_event"].is_set():
+            print(f"🛑 Stopping packet-in listener for {sw.name}")
+            break
+        
         # Check if the response contains a packet-in message
         if response.packet:
             #print("Received packet-in message:")
@@ -647,13 +659,16 @@ def _listen_single_switch(helper, sw, state):
             print(f"[{sw.name}] Received non-packet-in message: {response}")
 
 # Function to reset a switch by reinstalling the P4 program and resetting the state
-def resetSwitch(sw_name, connections, program_config, clone_config, tunnels_cfg, tunnels, state):
+def resetSwitch(sw_name, connections, program_config, clone_config, tunnels_cfg, clones, tunnels, state):
     print(f"🔄 Resetting switch {sw_name}...")
 
     # Clean ALL tunnel rules from ALL switches
     # This is needed to ensure that the tunnel rules are in sync with the new switch rules
     cleanTunnelRules(tunnels_cfg["table"], connections, program_config, tunnels, state)
-        
+    
+    # Clean the clone sessions on this switch
+    cleanCloneEngines(sw_name, clones)
+
     # Clear controller-side state for this switch
     state[sw_name] = {}
     
@@ -661,10 +676,10 @@ def resetSwitch(sw_name, connections, program_config, clone_config, tunnels_cfg,
     # only for this switch
     sw_conn = {sw_name: connections[sw_name]}
     sw_program_cfg = {sw_name: program_config[sw_name]}
-    setup_switches(sw_conn, sw_program_cfg, clone_config, state)
+    setupSwitches(sw_conn, sw_program_cfg, clone_config, clones, state, reset=True)
     
     # Reinstall the tunnel rules for all switches
-    setup_tunnels(connections, program_config, tunnels_cfg["tunnels"], tunnels, state)
+    setupTunnels(connections, program_config, tunnels_cfg["tunnels"], tunnels, state)
         
     # Print new table state
     printTableRules(program_config[sw_name]["helper"], connections[sw_name])
@@ -705,7 +720,7 @@ def cleanTunnelRules(table_name, connections, program_config, tunnels, state):
                 print(f"⚠️ Could not remove rule {match_fields} from {sw_name}: {e}")
 
 # Function to setup tunnels and start the load balancing threads
-def setup_tunnels(connections, program_config, tunnels_config, tunnels, state):
+def setupTunnels(connections, program_config, tunnels_config, tunnels, state):
         
     # Initialize the tunnel state and check if any tunnels are already active
     init_tunnel_states(connections, program_config, tunnels_config, tunnels, state)
@@ -723,16 +738,16 @@ def loadConfigFiles(switches_config_path, switch_programs_path, tunnels_config_p
 
 # Function to perform the initial setup of the switches
 # including installing P4 programs, writing clone engines, default actions, and static rules
-def setup_switches(connections, program_config, clone_config, state):
+def setupSwitches(connections, program_config, clone_config, clones, state, reset=False):
     
-    installP4Programs(connections, program_config)
-    writeCloneEngines(connections, program_config, clone_config)
+    installP4Programs(connections, program_config, reset)
+    writeCloneEngines(connections, program_config, clone_config, clones, state)
     writeDefaultActions(connections, program_config, state)
     readTableRules(connections, program_config, state)
     writeStaticRules(connections, program_config, state)
 
 # Function to perform a full reset of the controller and switches
-def full_reset(switches_config_path, switch_programs_path, tunnels_config_path, clone_config_path, connections, tunnels, state):
+def fullReset(switches_config_path, switch_programs_path, tunnels_config_path, clone_config_path, connections, clones, tunnels, state):
     print("🔄 Performing full reset of the controller and switches...")
 
     # Shutdown all switch connections
@@ -746,10 +761,10 @@ def full_reset(switches_config_path, switch_programs_path, tunnels_config_path, 
     createConnectionsToSwitches(switches_config, connections, state)
     
     # Do the initial setup of the switches
-    setup_switches(connections, program_config, clone_config, state)
-    
+    setupSwitches(connections, program_config, clone_config, clones, state, reset=True)
+
     # Setup the tunnels and start the load balancing threads
-    setup_tunnels(connections, program_config, tunnels_config, tunnels, state)
+    setupTunnels(connections, program_config, tunnels_config, tunnels, state)
 
     return switches_config, program_config, tunnels_config, clone_config
 
@@ -759,9 +774,9 @@ def resetAllCounters(connections, program_config, tunnels_config):
     for tcfg in tunnels_config["tunnels"]:
         for side, role in [("switchA", "A"), ("switchB", "B")]:
             sw_name = tcfg[side]
-            helper = program_config[sw_name]["helper"]
-            sw     = connections[sw_name]
-            idxs   = tcfg["counter_index"]
+            helper  = program_config[sw_name]["helper"]
+            sw      = connections[sw_name]
+            idxs    = tcfg["counter_index"]
             counter_name = tcfg["counter"]
             # Reset both up/down indices
             resetCounter(helper, sw, counter_name, idxs[f"{role}_up"])
@@ -775,6 +790,15 @@ def resetCounter(p4info_helper, sw, counter_name, idx):
     counter_id = p4info_helper.get_counters_id(counter_name)
     sw.WriteCounterEntry(counter_id, idx)
     print(f"🔄 Reset counter '{counter_name}' idx={idx} on {sw.name}")
+    
+# Function to stop the threads of the clone engines and clean them up
+def cleanCloneEngines(sw_name, clones):
+    
+    # Check if the switch is already in the clones dictionary
+    if sw_name in clones:
+        clones[sw_name]["stop_event"].set()
+        clones[sw_name]["thread"].join()
+        del clones[sw_name]
 
 
 
@@ -789,6 +813,7 @@ def main(switches_config_path, switch_programs_path, tunnels_config_path, clone_
     state = {}
     connections = {}
     tunnels = {}
+    clones = {}
 
     try:
         # Load config files
@@ -799,22 +824,21 @@ def main(switches_config_path, switch_programs_path, tunnels_config_path, clone_
         createConnectionsToSwitches(switches_config, connections, state)
 
         # Do the initial setup of the switches
-        setup_switches(connections, program_config, clone_config, state)
+        setupSwitches(connections, program_config, clone_config, clones, state)
+        
+        # Write the clone engines and their sessionId
+        writeCloneEngines(connections, program_config, clone_config, clones, state)
 
         # Setup the tunnels and start the load balancing threads
-        setup_tunnels(connections, program_config, tunnels_config, tunnels, state)
-        
-        # Start a thread for each switch with a cpu session id defined
-        # to listen for packet-in messages
-        listenToPacketIns(connections, program_config, clone_config, state)
+        setupTunnels(connections, program_config, tunnels_config, tunnels, state)
 
         # Check the state of the controller
-        #printControllerState(state)
+        printControllerState(state)
 
         # Show all rules set in the tables
-        #for sw_name, switch in connections.items():
+        for sw_name, switch in connections.items():
             # Note: s1 is empty before any traffic
-            #printTableRules(program_config[sw_name]["helper"], switch) 
+            printTableRules(program_config[sw_name]["helper"], switch) 
 
         # Loop to handle user input for resetting switches
         while True:
@@ -824,15 +848,15 @@ def main(switches_config_path, switch_programs_path, tunnels_config_path, clone_
 
                 if target == "all":
                     # Perform a full reset of the controller and switches
-                    switches_config, program_config, tunnels_config, clone_config = full_reset(
+                    switches_config, program_config, tunnels_config, clone_config = fullReset(
                         switch_programs_path, switches_config_path, tunnels_config_path, 
-                        clone_config_path, connections, tunnels, state)
+                        clone_config_path, connections, clones, tunnels, state)
                 
                 elif target == "tunnels":
                     # Clean tunnel rules from all switches
                     cleanTunnelRules(tunnels_config["table"], connections, program_config, tunnels, state)
                     # Setup the tunnels and start the load balancing threads
-                    setup_tunnels(connections, program_config, tunnels_config, tunnels, state)
+                    setupTunnels(connections, program_config, tunnels_config, tunnels, state)
                     
                 elif target == "counters":
                     # Reset all counters on all switches
@@ -844,7 +868,7 @@ def main(switches_config_path, switch_programs_path, tunnels_config_path, clone_
                         switches_config_path, switch_programs_path, tunnels_config_path, clone_config_path)
                     # Reset the specified switch
                     resetSwitch(target, connections, program_config, clone_config,
-                                tunnels_config, tunnels, state)
+                                tunnels_config, clones, tunnels, state)
 
                 else:
                     print(f"Unknown switch '{target}'")
