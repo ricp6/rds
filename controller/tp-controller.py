@@ -825,26 +825,18 @@ def main(switches_config_path, switch_programs_path, tunnels_config_path, clone_
 
         # Do the initial setup of the switches
         setupSwitches(connections, program_config, clone_config, clones, state)
-        
-        # Write the clone engines and their sessionId
-        writeCloneEngines(connections, program_config, clone_config, clones, state)
 
         # Setup the tunnels and start the load balancing threads
         setupTunnels(connections, program_config, tunnels_config, tunnels, state)
 
-        # Check the state of the controller
-        printControllerState(state)
-
-        # Show all rules set in the tables
-        for sw_name, switch in connections.items():
-            # Note: s1 is empty before any traffic
-            printTableRules(program_config[sw_name]["helper"], switch) 
-
-        # Loop to handle user input for resetting switches
+        # Loop to handle user input for resetting switches and showing state
         while True:
             user_input = input(">>> ").strip()
-            if user_input.startswith("reset "):
-                target = user_input[6:].strip()
+            parts = user_input.split()
+            cmd = parts[0].lower()
+            
+            if cmd == "reset" and len(parts) == 2:
+                target = parts[1]
 
                 if target == "all":
                     # Perform a full reset of the controller and switches
@@ -854,9 +846,11 @@ def main(switches_config_path, switch_programs_path, tunnels_config_path, clone_
                 
                 elif target == "tunnels":
                     # Clean tunnel rules from all switches
-                    cleanTunnelRules(tunnels_config["table"], connections, program_config, tunnels, state)
+                    cleanTunnelRules(tunnels_config["table"], connections,
+                                     program_config, tunnels, state)
                     # Setup the tunnels and start the load balancing threads
-                    setupTunnels(connections, program_config, tunnels_config, tunnels, state)
+                    setupTunnels(connections, program_config, tunnels_config, 
+                                 tunnels, state)
                     
                 elif target == "counters":
                     # Reset all counters on all switches
@@ -871,20 +865,34 @@ def main(switches_config_path, switch_programs_path, tunnels_config_path, clone_
                                 tunnels_config, clones, tunnels, state)
 
                 else:
-                    print(f"Unknown switch '{target}'")
+                    print(f"Unknown target for reset: '{target}'")
 
-            elif user_input in ["exit", "quit"]:
+            elif cmd == "show" and len(parts) == 2:
+                target = parts[1]
+                
+                if target == "state":
+                    printControllerState(state)
+                
+                elif target in connections:
+                    helper = program_config[target]["helper"]
+                    printTableRules(helper, connections[target])
+                
+                else:
+                    print(f"Unknown show target: '{target}'")
+                    
+            elif cmd in ["exit", "quit", "q"]:
                 print("Shutting down controller.")
                 # Cleanly shutdown all switch connections, this can cause problems
                 ShutdownAllSwitchConnections()
                 break
+            
             else:
                 print(f"Unknown command: {user_input}")
 
         print("out of the loop")
 
     except KeyboardInterrupt:
-        print(" Shutting down.")
+        print("Shutting down.")
         # Cleanly shutdown all switch connections, this can cause problems
         ShutdownAllSwitchConnections()
     except grpc.RpcError as e:
