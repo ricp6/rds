@@ -127,3 +127,20 @@ def normalize_hex_strings(param: dict) -> dict:
         else:
             new_param[k] = v
     return new_param
+
+# p4runtime_pb2 está mal. Ver como corrigir
+# Writes a value to a specific index of a register on the switch.
+def write_register(helper, switch, register_name, index, value):
+    try:
+        register_id = helper.get_registers_id(register_name)
+        if register_id is None:
+            raise ValueError(f"Register '{register_name}' not found")
+
+        reg_entry = p4runtime_pb2.RegisterEntry()
+        reg_entry.register_id = register_id
+        reg_entry.index.index = index
+        reg_entry.data.bitstring = bytes([value])
+
+        switch.WriteRegisterEntry(reg_entry)
+    except Exception as e:
+        raise Exception(f"Failed to write to register '{register_name}' at index {index}: {e}")

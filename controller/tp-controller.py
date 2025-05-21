@@ -517,6 +517,36 @@ def reset_all_counters(connections, program_config, tunnels_config):
             # Reset both up/down indices
             wr.reset_counter(helper, sw, counter_name, idxs[f"{role}_up"])
             wr.reset_counter(helper, sw, counter_name, idxs[f"{role}_down"])
+
+# Function to reset all registers associated with Bloom Filters on switch r4
+def reset_all_registers(connections, program_config, tunnels_config):
+    print("------ Resetting All Bloom Filter Registers... ------")
+    register_names = tunnels_config.get("register_names", ["bloom_filter_1", "bloom_filter_2"])
+    register_size = tunnels_config.get("register_size", 4096)
+    sw_name = "r4"
+    if sw_name in connections:
+        sw = connections[sw_name]
+        helper = program_config[sw_name]["helper"]
+        for register_name in register_names:
+            try:
+                register_id = helper.get_registers_id(register_name)
+                if register_id is None:
+                    print(f"Warning: Register '{register_name}' not found in {sw_name}, skipping...")
+                    continue
+                for index in range(register_size):
+                    wr.write_register(helper, sw, register_name, index, 0)
+                # Verify a sample entry
+                sample_index = 0
+                value = rd.read_register(helper, sw, register_name, sample_index)
+                if value == 0:
+                    print(f"Success: {sw_name}: Bloom Filter register '{register_name}' reset successfully.")
+                else:
+                    print(f"Error: {sw_name}: Bloom Filter register '{register_name}' not reset (value={value}).")
+            except Exception as e:
+                print(f"Error resetting register '{register_name}' on {sw_name}: {e}")
+    else:
+        print(f"Warning: Switch {sw_name} not found in connections.")
+    print("------ Reset All Bloom Filter Registers done! ------\n")
             
             
 ###############   RESET UTILS   ###############
@@ -605,6 +635,10 @@ def handle_reset(target, switches_config_path, switch_programs_path, tunnels_con
     elif target == "counters":
         # Reset all counters on all switches
         reset_all_counters(connections, program_config, tunnels_config)
+
+    elif target == "BloomFilters":
+        # Reset all counters on all switches
+        reset_all_registers(connections, program_config, tunnels_config)
         
     elif target in connections:
         # Reset the specified switch

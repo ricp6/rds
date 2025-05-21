@@ -4,6 +4,8 @@
     "table": "MyIngress.tunnelLookup",
     "match_field": "meta.tunnel",
     "counter_name": "tunnel_counter",
+    "register_names": ["bloom_filter_1", "bloom_filter_2"],
+    "register_size": 4096,
     "tunnels": [
     {
         "name": "r1-to-r4",

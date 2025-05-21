@@ -270,6 +270,27 @@ class SwitchConnection(object):
             print("P4Runtime WriteCounter:", request)
         else:
             self.client_stub.Write(request)
+    
+    def WriteRegisterEntry(self, register_entry, dry_run=False):
+        request = p4runtime_pb2.WriteRequest()
+        request.device_id = self.device_id
+        request.election_id.low = 1
+        update = request.updates.add()
+        update.type = p4runtime_pb2.Update.MODIFY
+
+        if isinstance(register_entry, dict):
+            reg_entry = p4runtime_pb2.RegisterEntry()
+            reg_entry.register_id = register_entry["register_id"]
+            reg_entry.index.index = register_entry["index"]["index"]
+            reg_entry.data.bitstring = register_entry["data"]["bitstring"]
+            update.entity.register_entry.CopyFrom(reg_entry)
+        else:
+            update.entity.register_entry.CopyFrom(register_entry)
+
+        if dry_run:
+            print("P4Runtime WriteRegister:", request)
+        else:
+            self.client_stub.Write(request)
 
 
 
