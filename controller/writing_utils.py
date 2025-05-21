@@ -1,3 +1,5 @@
+import json 
+
 # Function to reset the packet count of a specific counter on a switch
 def reset_counter(p4info_helper, sw, counter_name, idx):
     """
