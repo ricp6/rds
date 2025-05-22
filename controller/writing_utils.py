@@ -8,6 +8,16 @@ def reset_counter(p4info_helper, sw, counter_name, idx):
     counter_id = p4info_helper.get_counters_id(counter_name)
     sw.WriteCounterEntry(counter_id, idx)
     print(f"🔄 Reset counter '{counter_name}' idx={idx} on {sw.name}")
+
+# Function to reset all entries of a register on the switch.
+def reset_register(p4info_helper, sw, register_id, size):
+    """
+    Reset each entry of a bloom filter to 0
+    """
+    register_name = p4info_helper.get_registers_name(register_id)
+    for idx in range(size):
+        sw.WriteRegisterEntry(register_id, idx)
+    print(f"🔄 Reset register '{register_name}' on {sw.name}")
     
 # Function to write a multicast group entry to the switch
 def write_mc_group(p4info_helper, sw, session_id, broadcast_replicas):
@@ -127,20 +137,3 @@ def normalize_hex_strings(param: dict) -> dict:
         else:
             new_param[k] = v
     return new_param
-
-# p4runtime_pb2 está mal. Ver como corrigir
-# Writes a value to a specific index of a register on the switch.
-def write_register(helper, switch, register_name, index, value):
-    try:
-        register_id = helper.get_registers_id(register_name)
-        if register_id is None:
-            raise ValueError(f"Register '{register_name}' not found")
-
-        reg_entry = p4runtime_pb2.RegisterEntry()
-        reg_entry.register_id = register_id
-        reg_entry.index.index = index
-        reg_entry.data.bitstring = bytes([value])
-
-        switch.WriteRegisterEntry(reg_entry)
-    except Exception as e:
-        raise Exception(f"Failed to write to register '{register_name}' at index {index}: {e}")

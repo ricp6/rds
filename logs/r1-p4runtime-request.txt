@@ -1,0 +1,89 @@
+
+[2025-05-22 11:17:15.363] /p4.v1.P4Runtime/GetForwardingPipelineConfig
+---
+device_id: 2
+---
+
+[2025-05-22 11:17:15.949] /p4.v1.P4Runtime/Read
+---
+device_id: 2
+entities {
+  table_entry {
+    table_id: 47604142
+    is_default_action: true
+  }
+}
+---
+
+[2025-05-22 11:17:16.059] /p4.v1.P4Runtime/Read
+---
+device_id: 2
+entities {
+  table_entry {
+    table_id: 50323762
+    is_default_action: true
+  }
+}
+---
+
+[2025-05-22 11:17:16.101] /p4.v1.P4Runtime/Read
+---
+device_id: 2
+entities {
+  table_entry {
+    table_id: 42051966
+    is_default_action: true
+  }
+}
+---
+
+[2025-05-22 11:17:16.166] /p4.v1.P4Runtime/Read
+---
+device_id: 2
+entities {
+  table_entry {
+    table_id: 39414161
+    is_default_action: true
+  }
+}
+---
+
+[2025-05-22 11:17:16.556] /p4.v1.P4Runtime/GetForwardingPipelineConfig
+---
+device_id: 2
+---
+
+[2025-05-22 11:17:16.557] /p4.v1.P4Runtime/Read
+---
+device_id: 2
+entities {
+  table_entry {
+  }
+}
+---
+
+[2025-05-22 11:17:16.580] /p4.v1.P4Runtime/Read
+---
+device_id: 2
+entities {
+  counter_entry {
+    counter_id: 310394195
+    index {
+      index: 2
+    }
+  }
+}
+---
+
+[2025-05-22 11:17:16.582] /p4.v1.P4Runtime/Read
+---
+device_id: 2
+entities {
+  counter_entry {
+    counter_id: 310394195
+    index {
+      index: 3
+    }
+  }
+}
+---

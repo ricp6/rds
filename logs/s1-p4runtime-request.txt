@@ -1,0 +1,65 @@
+
+[2025-05-22 11:17:15.308] /p4.v1.P4Runtime/GetForwardingPipelineConfig
+---
+device_id: 1
+---
+
+[2025-05-22 11:17:15.683] /p4.v1.P4Runtime/Read
+---
+device_id: 1
+entities {
+  packet_replication_engine_entry {
+    multicast_group_entry {
+      multicast_group_id: 1
+    }
+  }
+}
+---
+
+[2025-05-22 11:17:15.742] /p4.v1.P4Runtime/Read
+---
+device_id: 1
+entities {
+  packet_replication_engine_entry {
+    clone_session_entry {
+      session_id: 100
+    }
+  }
+}
+---
+
+[2025-05-22 11:17:15.827] /p4.v1.P4Runtime/Read
+---
+device_id: 1
+entities {
+  table_entry {
+    table_id: 39157715
+    is_default_action: true
+  }
+}
+---
+
+[2025-05-22 11:17:15.865] /p4.v1.P4Runtime/Read
+---
+device_id: 1
+entities {
+  table_entry {
+    table_id: 46852981
+    is_default_action: true
+  }
+}
+---
+
+[2025-05-22 11:17:16.554] /p4.v1.P4Runtime/GetForwardingPipelineConfig
+---
+device_id: 1
+---
+
+[2025-05-22 11:17:16.555] /p4.v1.P4Runtime/Read
+---
+device_id: 1
+entities {
+  table_entry {
+  }
+}
+---

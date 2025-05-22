@@ -1,0 +1,41 @@
+
+[2025-05-22 11:17:15.585] /p4.v1.P4Runtime/GetForwardingPipelineConfig
+---
+device_id: 6
+---
+
+[2025-05-22 11:17:16.549] /p4.v1.P4Runtime/Read
+---
+device_id: 6
+entities {
+  table_entry {
+    table_id: 39414161
+    is_default_action: true
+  }
+}
+---
+
+[2025-05-22 11:17:16.550] /p4.v1.P4Runtime/Read
+---
+device_id: 6
+entities {
+  table_entry {
+    table_id: 50323762
+    is_default_action: true
+  }
+}
+---
+
+[2025-05-22 11:17:16.570] /p4.v1.P4Runtime/GetForwardingPipelineConfig
+---
+device_id: 6
+---
+
+[2025-05-22 11:17:16.571] /p4.v1.P4Runtime/Read
+---
+device_id: 6
+entities {
+  table_entry {
+  }
+}
+---
