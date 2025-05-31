@@ -468,14 +468,9 @@ control MyIngress(inout headers hdr,
                     }
                 } else if(hdr.icmp.isValid()) {  // Monitor ICMP traffic
 
-                    if(direction == 0) {  // Outgoing packet
-                        if(hdr.icmp.typ == 0) {  // Ping reply
-                            drop();
-                        } 
-                    } else {  // Incoming packet
-                        if(hdr.icmp.typ == 8) {  // Ping request
-                            drop();
-                        }
+                    // Incoming ping request packet
+                    if(direction == 1 && hdr.icmp.typ == 8) {
+                        drop();
                     }
                 }
             }
