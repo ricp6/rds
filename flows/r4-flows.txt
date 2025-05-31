@@ -1,9 +1,9 @@
 reset_state
-table_set_default ipv4Lpm NoAction
+table_set_default ipv4Lpm drop
 table_set_default internalMacLookup drop
 table_set_default tunnelLookup drop
 table_set_default labelLookup drop
-table_set_default checkDirection NoAction
+table_set_default checkDirection drop
 table_set_default allowedPortsTCP NoAction
 table_set_default allowedPortsUDP NoAction
 table_add ipv4Lpm forward 10.0.2.1/32 => 1 aa:00:00:00:00:04

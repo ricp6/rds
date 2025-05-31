@@ -391,22 +391,27 @@ control MyIngress(inout headers hdr,
         if(hdr.mslp.isValid()) { // If encapsulated
             switch(labelLookup.apply().action_run) {
                 removeMSLP: { meta.setRecirculate = 1; }  // If its the last label, removeMSLP and recirculate the ipv4 packet
-                forwardTunnel: { activateFirewall = 1; }  // If still inside the tunnel, forward in the tunnel
+                forwardTunnel: { activateFirewall = 1; }  // If still inside the tunnel, set firewall processing to active
             }
             
         } else if(hdr.ipv4.isValid()) { // If unencapsulated
-            if(ipv4Lpm.apply().hit) { // Dst it the LAN
-                activateFirewall = 1;
+            switch(ipv4Lpm.apply().action_run) { 
+                
+                // Dst it the LAN
+                forward: {
+                    activateFirewall = 1;
+                }
+                // Send through a tunnel
+                sendTunnel: { 
+                    if(hdr.tcp.isValid())       selectTunnel(hdr.tcp.srcPort, hdr.tcp.dstPort);
+                    else if(hdr.udp.isValid())  selectTunnel(hdr.udp.srcPort, hdr.udp.dstPort);
+                    else if(hdr.icmp.isValid()) selectTunnel(hdr.icmp.identifier, hdr.icmp.sequence);
+                    else                        selectTunnel(0x0110, 0x1001); // arbitrary values
 
-            } else { // Send through a tunnel
-                if(hdr.tcp.isValid())       selectTunnel(hdr.tcp.srcPort, hdr.tcp.dstPort);
-                else if(hdr.udp.isValid())  selectTunnel(hdr.udp.srcPort, hdr.udp.dstPort);
-                else if(hdr.icmp.isValid()) selectTunnel(hdr.icmp.identifier, hdr.icmp.sequence);
-                else                        selectTunnel(0x0110, 0x1001); // arbitrary values
-
-                // Create MSLP header and recirculate the packet with MSLP header
-                if(tunnelLookup.apply().hit) {
-                    meta.setRecirculate = 1;
+                    // Create MSLP header and recirculate the packet with MSLP header
+                    if(tunnelLookup.apply().hit) {
+                        meta.setRecirculate = 1;
+                    }
                 }
             }
         } else {  // Deny traffic other than ipv4 or mslp
