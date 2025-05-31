@@ -226,14 +226,20 @@ control MyIngress(inout headers hdr,
         hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
     }
 
+    action sendTunnel() {
+        // Empty action to send the packet through a tunnel
+        // The tunnel will be selected in the next stage
+    }
+
     table ipv4Lpm{
         key = {hdr.ipv4.dstAddr : lpm;}
         actions = {
             forward;
-            NoAction;
+            sendTunnel;
+            drop;
         }
         size = 16;
-        default_action = NoAction;
+        default_action = drop;
     }
 
     action rewriteMacs(macAddr_t srcMac) {
@@ -350,10 +356,10 @@ control MyIngress(inout headers hdr,
         }
         actions = { 
             setDirection;
-            NoAction;
+            drop;
         }
         size = 16;
-        default_action = NoAction;
+        default_action = drop;
     }
 
     table allowedPortsTCP {
