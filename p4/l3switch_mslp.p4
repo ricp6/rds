@@ -215,14 +215,20 @@ control MyIngress(inout headers hdr,
         hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
     }
 
+    action sendTunnel() {
+        // Empty action to send the packet through a tunnel
+        // The tunnel will be selected in the next stage
+    }
+
     table ipv4Lpm{
         key = {hdr.ipv4.dstAddr : lpm;}
         actions = {
             forward;
-            NoAction;
+            sendTunnel;
+            drop;
         }
         size = 16;
-        default_action = NoAction;
+        default_action = drop;
     }
 
     action rewriteMacs(macAddr_t srcMac) {
@@ -252,7 +258,7 @@ control MyIngress(inout headers hdr,
         // set validity of the removed headers
         hdr.mslp.setInvalid();
         hdr.labels[0].setInvalid();
-        hdr.labels[1].setInvalid();  // vale a pena?
+        hdr.labels[1].setInvalid();
         hdr.labels[2].setInvalid();
         hdr.labels[3].setInvalid();
     }
@@ -332,18 +338,23 @@ control MyIngress(inout headers hdr,
             }
             
         } else if(hdr.ipv4.isValid()) { // If unencapsulated
-            if(ipv4Lpm.apply().hit) { // Dst it the LAN
-                internalMacLookup.apply();
+            switch(ipv4Lpm.apply().action_run) { 
+                
+                // Dst it the LAN
+                forward: {
+                    internalMacLookup.apply();
+                }
+                // Send through a tunnel
+                sendTunnel: { 
+                    if(hdr.tcp.isValid())       selectTunnel(hdr.tcp.srcPort, hdr.tcp.dstPort);
+                    else if(hdr.udp.isValid())  selectTunnel(hdr.udp.srcPort, hdr.udp.dstPort);
+                    else if(hdr.icmp.isValid()) selectTunnel(hdr.icmp.identifier, hdr.icmp.sequence);
+                    else                        selectTunnel(0x0110, 0x1001); // arbitrary values
 
-            } else { // Send through a tunnel
-                if(hdr.tcp.isValid())       selectTunnel(hdr.tcp.srcPort, hdr.tcp.dstPort);
-                else if(hdr.udp.isValid())  selectTunnel(hdr.udp.srcPort, hdr.udp.dstPort);
-                else if(hdr.icmp.isValid()) selectTunnel(hdr.icmp.identifier, hdr.icmp.sequence);
-                else                        selectTunnel(0x0110, 0x1001); // arbitrary values
-
-                // Create MSLP header and recirculate the packet with MSLP header
-                if(tunnelLookup.apply().hit) {
-                    meta.setRecirculate = 1;
+                    // Create MSLP header and recirculate the packet with MSLP header
+                    if(tunnelLookup.apply().hit) {
+                        meta.setRecirculate = 1;
+                    }
                 }
             }
         } else {
