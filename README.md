@@ -4,10 +4,10 @@
 
 1. **Start Compile P4 program with API description in P4Info file:**
 ```bash
-p4c-bm2-ss --std p4-16  p4/l2switch.p4 -o configs/json/l2switch.json --p4runtime-files configs/p4info/l2switch.p4info.txt
-p4c-bm2-ss --std p4-16  p4/l3switch_tunnel.p4 -o configs/json/l3switch_tunnel.json  --p4runtime-files configs/p4info/l3switch_tunnel.p4info.txt
-p4c-bm2-ss --std p4-16  p4/l3switch_mslp.p4 -o configs/json/l3switch_mslp.json  --p4runtime-files configs/p4info/l3switch_mslp.p4info.txt
-p4c-bm2-ss --std p4-16  p4/l3switch_mslp_firewall.p4 -o configs/json/l3switch_mslp_firewall.json  --p4runtime-files configs/p4info/l3switch_mslp_firewall.p4info.txt
+p4c-bm2-ss --std p4-16  p4/l2switch.p4 -o json/l2switch.json --p4runtime-files json/l2switch.p4info.txt
+p4c-bm2-ss --std p4-16  p4/l3switch_tunnel.p4 -o json/l3switch_tunnel.json  --p4runtime-files json/l3switch_tunnel.p4info.txt
+p4c-bm2-ss --std p4-16  p4/l3switch_mslp.p4 -o json/l3switch_mslp.json  --p4runtime-files json/l3switch_mslp.p4info.txt
+p4c-bm2-ss --std p4-16  p4/l3switch_mslp_firewall.p4 -o json/l3switch_mslp_firewall.json  --p4runtime-files json/l3switch_mslp_firewall.p4info.txt
 ```
 
 2. **Run the mininet script (terminal 1):**

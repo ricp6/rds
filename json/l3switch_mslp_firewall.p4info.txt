@@ -17,7 +17,10 @@ tables {
     id: 29683729
   }
   action_refs {
-    id: 21257015
+    id: 25391542
+  }
+  action_refs {
+    id: 25652968
   }
   size: 16
 }
@@ -106,7 +109,7 @@ tables {
     id: 27114974
   }
   action_refs {
-    id: 21257015
+    id: 25652968
   }
   size: 16
 }
@@ -174,6 +177,13 @@ actions {
     id: 2
     name: "nextHopMac"
     bitwidth: 48
+  }
+}
+actions {
+  preamble {
+    id: 25391542
+    name: "MyIngress.sendTunnel"
+    alias: "sendTunnel"
   }
 }
 actions {
