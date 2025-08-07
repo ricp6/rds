@@ -1,5 +1,9 @@
 # Trabalho Prático RDS 24/25
 
+Este projeto foi desenvolvido no âmbito da disciplina de Redes Definidas por Software da Universidade do Minho.
+Neste trabalho prático, recorreu-se à linguagem de programação `P4`, uma linguagem de alto nível concebida para definir o comportamento do data plane de dispositivos de rede de forma flexível.
+O principal objetivo consistiu em configurar a rede de modo a implementar túneis com um protocolo próprio, uma firewall com capacidades stateful e uma ligação a um controlador dinâmico desenvolvido em Python.
+
 ## How to Run
 
 1. **Start Compile P4 program with API description in P4Info file:**
